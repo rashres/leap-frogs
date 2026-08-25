@@ -4,6 +4,7 @@ public class Main {
     public static void main(String[] args) {
         //
         System.out.println("Hello world from Group 4's Sprint 1 project skeleton");
-         System.out.println("Hello again : )");
+        System.out.println("Hello again : )");
+        System.out.println("Farewell! May your code compile on the first try!");
     }
 }
