@@ -1,4 +1,5 @@
 package com.neueda.leap;
+import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
@@ -11,9 +12,8 @@ public class Main {
         Scanner scanner = new Scanner(System.in);
         System.out.println("What is your name?");
         String userinput= scanner.nextLine();
-        System.out.println("You entered" + userinput);
+        System.out.println("You entered: " + userinput);
         scanner.close();
     }
 
-    
 }
