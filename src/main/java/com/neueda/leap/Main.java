@@ -1,4 +1,6 @@
 package com.neueda.leap;
+import java.util.Random;
+import java.util.Scanner;
 
 // Random lets us generate a random number.
 // Scanner lets us read what the user types.
@@ -57,4 +59,21 @@ public class Main {
         // Close the Scanner when we are finished using it.
         scanner.close();
     }
+}
+        //
+        System.out.println("Hello world from Group 4's Sprint 1 project skeleton");
+        Random r = new Random();
+        int i = r.nextInt(100);
+        System.out.println("Today's lucky number is " + i);
+         System.out.println("Hello again : )");
+
+        // greet by name
+       
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("What is your name?");
+        String userinput= scanner.nextLine();
+        System.out.println("You entered: " + userinput);
+        scanner.close();
+    }
+
 }
