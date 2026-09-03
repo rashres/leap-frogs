@@ -1,0 +1,136 @@
+<div class="layout">
+  <section class="main">
+    <!-- ---- Hero: consolidated value and range change [US-12][US-13] ---- -->
+    <div class="hero" [class.hero-up]="rising()" [class.hero-down]="!rising()">
+      <div class="hero-top">
+        <div>
+          <p class="hero-label">Portfolio value</p>
+          <h1 class="hero-value num">
+            {{ headlineParts().major }}<span class="minor">{{ headlineParts().minor }}</span>
+          </h1>
+          <div class="hero-change num" [class.up]="rising()" [class.down]="!rising()">
+            <span>{{ rangeChange().money.formatSigned() }}</span>
+            <span class="sep">·</span>
+            <span>{{ rangeChange().percent.isNegative() ? '' : '+' }}{{ rangeChange().percent.toString() }}%</span>
+            <span class="range-label">{{ rangeLabel() }}</span>
+          </div>
+        </div>
+
+        <div class="ccy-switch">
+          <span class="ccy-label">Display in</span>
+          <div class="ccy-buttons">
+            @for (currency of displayCurrencies; track currency) {
+              <button
+                type="button"
+                [class.on]="portfolio.displayCurrency() === currency"
+                (click)="setDisplayCurrency(currency)"
+              >
+                {{ currency }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- ---- Key metrics, at a glance next to the headline value ---- -->
+      <div class="metrics">
+        <div class="metric">
+          <p class="metric-label">Daily P&amp;L</p>
+          <p class="metric-value num" [class.up]="!portfolio.dayChange().isNegative()" [class.down]="portfolio.dayChange().isNegative()">
+            {{ portfolio.dayChange().formatSigned() }}
+            <span class="metric-sub">({{ portfolio.dayChangePercent().isNegative() ? '' : '+' }}{{ portfolio.dayChangePercent().toString() }}%)</span>
+          </p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Total return</p>
+          <p class="metric-value num" [class.up]="!totalReturnPercent().isNegative()" [class.down]="totalReturnPercent().isNegative()">
+            {{ totalReturnPercent().isNegative() ? '' : '+' }}{{ totalReturnPercent().toString() }}%
+          </p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Unrealized gain</p>
+          <p class="metric-value num" [class.up]="!unrealisedGain().isNegative()" [class.down]="unrealisedGain().isNegative()">
+            {{ unrealisedGain().formatSigned() }}
+          </p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Holdings</p>
+          <p class="metric-value num">{{ holdingsCount() }}</p>
+        </div>
+      </div>
+
+      <leap-price-chart
+        [points]="series()"
+        [height]="230"
+        [tone]="rising() ? 'up' : 'down'"
+        (scrub)="onScrub($event)"
+      />
+
+      <div class="ranges">
+        @for (r of ranges; track r) {
+          <button type="button" [class.on]="range() === r" (click)="setRange(r)">{{ r }}</button>
+        }
+      </div>
+
+      <p class="disclosure">
+        Consolidated at indicative FX rates for display only. Cash is held per currency and is never converted
+        automatically — an order settles in its instrument's own currency.
+      </p>
+    </div>
+
+    <!-- ---- Cash, per currency [US-13] ---- -->
+    <leap-cash-panel />
+
+    <!-- ---- Holdings [US-12] ---- -->
+    <leap-holdings-table />
+
+    <!-- ---- Best and worst performers [US-12] ---- -->
+    <leap-performance-panel />
+
+    <!-- ---- Recent activity [US-14] ---- -->
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Recent activity</h2>
+        <a class="link" routerLink="/orders">All orders →</a>
+      </div>
+      @if (recentOrders().length === 0) {
+        <div class="empty-state">
+          <p class="empty-title">No orders yet</p>
+          <p class="empty-body faint">
+            Pick an instrument, review the ticket, and confirm. Orders are saved locally so they survive a
+            reload.
+          </p>
+          <a class="empty-cta" routerLink="/markets">Browse markets →</a>
+        </div>
+      } @else {
+        <ul class="activity">
+          @for (order of recentOrders(); track order.id) {
+            <li>
+              <a [routerLink]="['/instrument', order.instrumentId]">
+                <leap-instrument-logo
+                  [instrumentId]="order.instrumentId"
+                  [symbol]="order.symbol"
+                  [size]="26"
+                />
+                <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
+                  {{ order.side }}
+                </span>
+                <span class="sym">{{ order.symbol }}</span>
+                <span class="qty num dim">{{ order.quantity.toTrimmedString() }}</span>
+                <span class="state">
+                  <span [class]="'pill pill-' + tone(order.state)">{{ label(order.state) }}</span>
+                </span>
+                <span class="when num faint">{{ order.submittedAt.toLocaleTimeString('en-GB') }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+
+  <aside class="rail">
+    <leap-working-orders />
+    <leap-watchlist-rail />
+  </aside>
+</div>

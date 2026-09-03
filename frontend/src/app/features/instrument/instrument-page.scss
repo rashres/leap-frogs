@@ -1,0 +1,304 @@
+.back {
+  display: inline-block;
+  font-size: 12px;
+  margin-bottom: 14px;
+
+  &:hover {
+    color: var(--text-2);
+  }
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 348px;
+  gap: 22px;
+  align-items: start;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  position: sticky;
+  top: calc(var(--nav-height) + 18px);
+}
+
+/* ---- Header -------------------------------------------------------------- */
+
+.ident {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.ident-left {
+  margin-right: auto;
+  min-width: 0;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0;
+    font-size: 27px;
+    font-weight: 750;
+    letter-spacing: -0.017em;
+  }
+}
+
+.name {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+
+.star {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  font-size: 12px;
+  font-weight: 620;
+  color: var(--text-3);
+  white-space: nowrap;
+  transition: all 0.13s ease;
+
+  &:hover {
+    color: var(--text-2);
+  }
+
+  &.on {
+    color: var(--warn);
+    border-color: rgba(255, 176, 32, 0.32);
+    background: var(--warn-soft);
+  }
+}
+
+/* ---- Price --------------------------------------------------------------- */
+
+.price-block {
+  margin-top: -4px;
+}
+
+.price {
+  margin: 0;
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.021em;
+  line-height: 1.1;
+}
+
+.ccy {
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 5px;
+}
+
+.chg {
+  margin: 6px 0 0;
+  font-size: 14px;
+  font-weight: 650;
+
+  .sep {
+    opacity: 0.5;
+    margin: 0 3px;
+  }
+
+  .lbl {
+    font-weight: 500;
+    margin-left: 6px;
+    font-size: 12px;
+  }
+}
+
+.ranges {
+  display: flex;
+  gap: 4px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 13px;
+
+  button {
+    padding: 5px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 650;
+    color: var(--text-3);
+    transition: all 0.13s ease;
+
+    &:hover {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    &.on {
+      color: var(--up);
+      background: var(--up-soft);
+    }
+  }
+}
+
+/* ---- Stats and rules ----------------------------------------------------- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+
+  > div {
+    padding: 13px 16px;
+    border-right: 1px solid var(--border-soft);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    &:last-child {
+      border-right: none;
+    }
+  }
+}
+
+.rules {
+  display: grid;
+  /* Exactly three, so the row fills rather than leaving a dead cell at the end. */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  background: var(--border-soft);
+
+  > div {
+    background: var(--panel);
+    padding: 13px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.k {
+  font-size: 10.5px;
+  font-weight: 620;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.v {
+  font-size: 13.5px;
+  font-weight: 620;
+}
+
+.suspend {
+  margin: 0;
+  padding: 11px 16px;
+  border-top: 1px solid var(--border-soft);
+  font-size: 12px;
+  color: var(--warn);
+}
+
+/* ---- Orders -------------------------------------------------------------- */
+
+.orders {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 11px 16px;
+
+    & + li {
+      border-top: 1px solid var(--border-soft);
+    }
+  }
+}
+
+.side {
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  width: 34px;
+
+  &.buy {
+    color: var(--up);
+  }
+  &.sell {
+    color: var(--down);
+  }
+}
+
+.qty {
+  font-size: 12.5px;
+  font-weight: 620;
+  min-width: 54px;
+}
+
+.fill {
+  font-size: 11.5px;
+  margin-left: auto;
+}
+
+.when {
+  font-size: 11px;
+}
+
+.cancel {
+  font-size: 11px;
+  font-weight: 620;
+  color: var(--down);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+
+  &:hover {
+    background: var(--down-soft);
+  }
+}
+
+/* ---- Position ------------------------------------------------------------ */
+
+.pos {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  background: var(--border-soft);
+
+  > div {
+    background: var(--panel);
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+.lnk {
+  color: var(--accent);
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+@media (max-width: 1080px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rail {
+    position: static;
+  }
+}

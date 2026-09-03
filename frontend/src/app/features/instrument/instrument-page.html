@@ -1,0 +1,194 @@
+@if (instrument(); as inst) {
+  @let q = quote()!;
+  @let change = rangeChange();
+  @let pol = policy()!;
+
+  <a class="back faint" routerLink="/markets">← Markets</a>
+
+  <div class="layout">
+    <section class="main">
+      <!-- ---- Header ---- -->
+      <header class="ident">
+        <leap-instrument-logo [instrumentId]="inst.id" [symbol]="inst.symbol" [size]="50" />
+        <div class="ident-left">
+          <div class="title-row">
+            <h1>{{ inst.symbol }}</h1>
+            <span class="tag">{{ pol.label }}</span>
+            <span class="pill" [class.pill-up]="marketOpen()" [class.pill-muted]="!marketOpen()">
+              {{ marketOpen() ? 'Open' : 'Closed' }}
+            </span>
+            @if (!inst.tradeable) {
+              <span class="pill pill-warn">Suspended</span>
+            }
+          </div>
+          <p class="name dim">{{ inst.name }} · {{ inst.exchange }}</p>
+        </div>
+        <button type="button" class="star" [class.on]="watched()" (click)="toggleWatch()">
+          ★ {{ watched() ? 'Watching' : 'Watch' }}
+        </button>
+      </header>
+
+      <!-- ---- Price ---- -->
+      <div class="price-block">
+        <p class="price num">
+          {{ headlineText() }}
+          <span class="ccy faint">{{ inst.currency }}</span>
+        </p>
+        @if (change) {
+          <p class="chg num" [class.up]="rising()" [class.down]="!rising()">
+            {{ change.deltaText }}
+            <span class="sep">·</span>
+            {{ change.percent.isNegative() ? '' : '+' }}{{ change.percent.toString() }}%
+            <span class="faint lbl">{{ scrubbed() ? 'at cursor' : range() }}</span>
+          </p>
+        }
+      </div>
+
+      <leap-price-chart
+        [points]="series()"
+        [height]="300"
+        [tone]="rising() ? 'up' : 'down'"
+        (scrub)="onScrub($event)"
+      />
+
+      <div class="ranges">
+        @for (r of ranges; track r) {
+          <button type="button" [class.on]="range() === r" (click)="setRange(r)">{{ r }}</button>
+        }
+      </div>
+
+      <!-- ---- Stats ---- -->
+      <div class="panel stats">
+        <div>
+          <span class="k">Previous close</span>
+          <span class="v num">{{ previousCloseText() }}</span>
+        </div>
+        @if (rangeBounds(); as bounds) {
+          <div>
+            <span class="k">{{ range() }} low</span>
+            <span class="v num">{{ bounds.low }}</span>
+          </div>
+          <div>
+            <span class="k">{{ range() }} high</span>
+            <span class="v num">{{ bounds.high }}</span>
+          </div>
+        }
+        <div>
+          <span class="k">Quote observed</span>
+          <span class="v num">{{ q.observedAt.toLocaleTimeString('en-GB') }}</span>
+        </div>
+      </div>
+
+      <!-- ---- Class rules, read from the same policy the validator uses ---- -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">{{ pol.label }} rules</h2>
+          <span class="trace"><code>US-07</code></span>
+        </div>
+        <div class="rules">
+          <div>
+            <span class="k">Settles in</span>
+            <span class="v">{{ inst.currency }}</span>
+          </div>
+          <div>
+            <span class="k">Quantity precision</span>
+            <span class="v">{{ precisionLabel() }}</span>
+          </div>
+          <div>
+            <span class="k">Fractional units</span>
+            <span class="v">{{ pol.fractionalAllowed ? 'Permitted' : 'Not permitted' }}</span>
+          </div>
+          <div class="wide">
+            <span class="k">Trading hours</span>
+            <span class="v">{{ pol.sessionLabel }}</span>
+          </div>
+        </div>
+        @if (!inst.tradeable && inst.suspensionNote) {
+          <p class="suspend">{{ inst.suspensionNote }}</p>
+        }
+      </div>
+
+      <!-- ---- Headlines and sentiment [4.1] ---- -->
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">News · {{ inst.symbol }}</h2>
+          <span class="trace"><code>4.1</code></span>
+        </div>
+        <leap-news-feed [items]="headlines()" [state]="news.state()" [error]="news.error()" />
+      </div>
+
+      <!-- ---- Order history for this instrument [US-14] ---- -->
+      @if (orders().length > 0) {
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Your orders · {{ inst.symbol }}</h2>
+            <span class="trace"><code>US-14</code></span>
+          </div>
+          <ul class="orders">
+            @for (order of orders(); track order.id) {
+              <li>
+                <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
+                  {{ order.side }}
+                </span>
+                <span class="num qty">{{ order.quantity.toTrimmedString() }}</span>
+                <span [class]="'pill pill-' + tone(order.state)">{{ label(order.state) }}</span>
+                <span class="num fill dim">
+                  @if (order.executionQuote) {
+                    at {{ rateText(order.executionQuote) }}
+                  } @else {
+                    indicative {{ rateText(order.indicativeQuote) }}
+                  }
+                </span>
+                <span class="num when faint">{{ order.submittedAt.toLocaleTimeString('en-GB') }}</span>
+                @if (order.state === 'ACCEPTED') {
+                  <button type="button" class="cancel" (click)="cancel(order.id)">Cancel</button>
+                }
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+
+    <!-- ---- Ticket rail ---- -->
+    <aside class="rail">
+      <leap-order-ticket [instrument]="inst" />
+
+      @if (position(); as pos) {
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Your position</h2>
+            <span class="trace"><code>US-12</code></span>
+          </div>
+          <div class="pos">
+            <div>
+              <span class="k">Quantity</span>
+              <span class="v num">{{ pos.quantity.toTrimmedString() }}</span>
+            </div>
+            <div>
+              <span class="k">Average cost</span>
+              <span class="v num">{{ pos.averageCost.format() }}</span>
+            </div>
+            <div>
+              <span class="k">Market value</span>
+              <span class="v num">{{ pos.marketValue.format() }}</span>
+            </div>
+            <div>
+              <span class="k">Unrealised P/L</span>
+              <span
+                class="v num"
+                [class.up]="!pos.unrealisedPnl.isNegative()"
+                [class.down]="pos.unrealisedPnl.isNegative()"
+              >
+                {{ pos.unrealisedPnl.formatSigned() }}
+                ({{ pos.unrealisedPnlPercent.isNegative() ? '' : '+' }}{{ pos.unrealisedPnlPercent.toString() }}%)
+              </span>
+            </div>
+          </div>
+        </div>
+      }
+    </aside>
+  </div>
+} @else {
+  <p class="empty">Instrument not found. <a class="lnk" routerLink="/markets">Browse markets</a></p>
+}

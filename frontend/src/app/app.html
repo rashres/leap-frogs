@@ -1,0 +1,69 @@
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" routerLink="/portfolio">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#00c805" opacity="0.13" />
+        <path
+          d="M6 22 L13 13 L18 18 L26 8"
+          stroke="#00c805"
+          stroke-width="2.6"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span class="brand-text">LEAP</span>
+    </a>
+
+    <nav class="links">
+      <a routerLink="/portfolio" routerLinkActive="active">Portfolio</a>
+      <a routerLink="/markets" routerLinkActive="active">Markets</a>
+      <a routerLink="/news" routerLinkActive="active">News</a>
+      <a routerLink="/orders" routerLinkActive="active">
+        Orders
+        @if (workingCount() > 0) {
+          <span class="badge num">{{ workingCount() }}</span>
+        }
+      </a>
+    </nav>
+
+    <div class="sessions">
+      @for (session of sessions(); track session.code) {
+        <span class="session" [class.on]="session.open" [title]="session.label + ' — ' + session.hours">
+          <i class="dot"></i>{{ session.label }}
+        </span>
+      }
+    </div>
+
+    <div class="nav-right">
+      <!-- [US-15] Fixtures are the default; live data is opt-in per session. -->
+      <button
+        type="button"
+        class="source"
+        [class.on]="live()"
+        [class.bad]="status() === 'degraded'"
+        (click)="toggleSource()"
+        [attr.title]="sourceTitle()"
+        [attr.aria-pressed]="live()"
+      >
+        <i class="src-dot"></i>{{ sourceLabel() }}
+      </button>
+      <span class="clock num">{{ clock() }}</span>
+      <button
+        type="button"
+        class="reset"
+        (click)="resetDemo()"
+        title="Clear saved demo state and reload from fixtures"
+      >
+        Reset
+      </button>
+      <span class="avatar" [attr.aria-label]="'Signed in as ' + clientName" role="img">{{ initials }}</span>
+    </div>
+  </div>
+</header>
+
+<main class="page" id="main" tabindex="-1">
+  <router-outlet />
+</main>

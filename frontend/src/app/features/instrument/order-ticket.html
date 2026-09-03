@@ -1,0 +1,218 @@
+<div class="panel ticket">
+  <!-- Side selector -->
+  <div class="sides" role="group" aria-label="Order side">
+    <button
+      type="button"
+      class="side-btn buy"
+      [class.on]="side() === 'BUY'"
+      [attr.aria-pressed]="side() === 'BUY'"
+      (click)="setSide('BUY')"
+    >
+      Buy
+    </button>
+    <button
+      type="button"
+      class="side-btn sell"
+      [class.on]="side() === 'SELL'"
+      [attr.aria-pressed]="side() === 'SELL'"
+      (click)="setSide('SELL')"
+    >
+      Sell
+    </button>
+  </div>
+
+  <div class="body">
+    @if (step() === 'edit') {
+      <!-- ================= EDIT ================= -->
+
+      <!-- Indicative price [US-16] -->
+      <div class="row">
+        <span class="label">Indicative price</span>
+        <span class="value">
+          <leap-live-price [value]="quote().rate" [currency]="instrument().currency" />
+          <span class="faint ccy">{{ instrument().currency }}</span>
+        </span>
+      </div>
+      <p class="note faint">
+        Live market price, updated continuously. Your order executes against the latest quote at the moment it
+        fills, which may differ.
+      </p>
+
+      <!-- Quantity -->
+      <label class="field">
+        <span class="label">Quantity</span>
+        <div class="input-wrap" [class.bad]="quantityInvalid()">
+          <input
+            type="text"
+            inputmode="decimal"
+            placeholder="0"
+            [value]="quantityText()"
+            (input)="onQuantity($event)"
+            autocomplete="off"
+            [attr.aria-label]="'Quantity of ' + instrument().symbol + ' to ' + side().toLowerCase()"
+            [attr.aria-invalid]="quantityInvalid()"
+          />
+          <button type="button" class="max" (click)="useMax()" aria-label="Use maximum quantity">MAX</button>
+        </div>
+      </label>
+
+      <div class="meta faint">
+        @if (side() === 'BUY') {
+          <span>{{ availableCash().format() }} {{ instrument().currency }} available</span>
+        } @else {
+          <span>{{ heldQuantity().toTrimmedString() }} {{ instrument().symbol }} held</span>
+        }
+        <span class="dot">·</span>
+        <span>{{ policy().quantityScale === 0 ? 'Whole units only' : policy().quantityScale + 'dp max' }}</span>
+      </div>
+
+      <!-- Estimated consideration -->
+      <div class="row total">
+        <span class="label">Estimated {{ side() === 'BUY' ? 'cost' : 'proceeds' }}</span>
+        <span class="value num strong">
+          @if (consideration()) {
+            {{ consideration()!.format() }}
+          } @else {
+            —
+          }
+        </span>
+      </div>
+
+      <!-- [US-07] Live rejection preview -->
+      @if (rejection(); as reason) {
+        <div class="reject" role="status">
+          <div class="reject-head">
+            <span class="pill pill-down">Would be rejected</span>
+            <code>{{ reason.code }}</code>
+          </div>
+          <p>{{ reason.message }}</p>
+          <p class="reject-note faint">
+            Submitting anyway records the rejection and its reason code in your order history.
+          </p>
+        </div>
+      }
+
+      @if (quantityInvalid()) {
+        <div class="reject" role="status">
+          <div class="reject-head"><span class="pill pill-warn">Invalid</span></div>
+          <p>Enter a number, for example 10 or 0.25.</p>
+        </div>
+      }
+
+      <button
+        type="button"
+        class="submit"
+        [class.sell]="side() === 'SELL'"
+        [disabled]="!canSubmit()"
+        (click)="review()"
+      >
+        Review {{ side() === 'BUY' ? 'buy' : 'sell' }} order
+      </button>
+    } @else {
+      <!-- ================= REVIEW ================= -->
+      @let r = reviewed()!;
+
+      <div class="review-head">
+        <span class="pill pill-accent">Confirm</span>
+        <span class="faint">Check this before it is sent</span>
+      </div>
+
+      <dl class="summary">
+        <div>
+          <dt>Action</dt>
+          <dd [class.up]="side() === 'BUY'" [class.down]="side() === 'SELL'">
+            {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ instrument().symbol }}
+          </dd>
+        </div>
+        <div>
+          <dt>Quantity</dt>
+          <dd class="num">{{ r.quantity.toTrimmedString() }}</dd>
+        </div>
+        <div>
+          <dt>Price reviewed</dt>
+          <dd class="num">{{ r.rateText }}</dd>
+        </div>
+        <div>
+          <dt>Settles in</dt>
+          <dd>{{ instrument().currency }}</dd>
+        </div>
+        <div class="grand">
+          <dt>{{ side() === 'BUY' ? 'Total cost' : 'Total proceeds' }}</dt>
+          <dd class="num">{{ r.consideration.format() }}</dd>
+        </div>
+      </dl>
+
+      @if (drift(); as d) {
+        <p class="drift" role="status">
+          Price has moved
+          <strong class="num" [class.up]="!d.negative" [class.down]="d.negative">{{ d.text }}</strong>
+          since you opened this review. The fill will use the latest quote, not the one above.
+        </p>
+      }
+
+      @if (rejection(); as reason) {
+        <div class="reject">
+          <div class="reject-head">
+            <span class="pill pill-down">Will be rejected</span>
+            <code>{{ reason.code }}</code>
+          </div>
+          <p>{{ reason.message }}</p>
+          <p class="reject-note faint">Confirming records the rejection and its reason code.</p>
+        </div>
+      } @else {
+        <p class="passed faint">Passed all pre-trade checks: cash, holdings, tradeability, hours, precision.</p>
+      }
+
+      <div class="actions">
+        <button type="button" class="back" (click)="back()">Back</button>
+        <button type="button" class="submit" [class.sell]="side() === 'SELL'" (click)="confirm()">
+          Confirm {{ side() === 'BUY' ? 'buy' : 'sell' }}
+        </button>
+      </div>
+      <p class="escape faint">Press Esc to go back without sending.</p>
+    }
+
+    <!-- [US-09] Live lifecycle of the order just placed -->
+    @if (placed(); as order) {
+      <div class="placed">
+        <div class="placed-head">
+          <span [class]="'pill pill-' + stateTone(order.state)">{{ stateLabel(order.state) }}</span>
+          <span class="ref num faint">{{ order.reference }}</span>
+          <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss order status">
+            ×
+          </button>
+        </div>
+
+        <ol class="timeline">
+          @for (step of order.transitions; track $index) {
+            <li>
+              <span class="step-state">{{ stateLabel(step.to) }}</span>
+              <span class="step-time num faint">{{ step.at.toLocaleTimeString('en-GB') }}</span>
+              <p class="step-detail faint">{{ step.detail }}</p>
+            </li>
+          }
+        </ol>
+
+        <!-- The two recorded price facts, side by side [US-16][BR-08][BR-14] -->
+        @if (order.executionQuote; as fill) {
+          <div class="quotes">
+            <div>
+              <span class="label faint">You confirmed</span>
+              <span class="num">{{ rateText(order.indicativeQuote) }}</span>
+            </div>
+            <div>
+              <span class="label faint">Filled at</span>
+              <span class="num">{{ rateText(fill) }}</span>
+            </div>
+            @if (slippage(); as slip) {
+              <div>
+                <span class="label faint">Slippage</span>
+                <span class="num" [class.up]="!slip.negative" [class.down]="slip.negative">{{ slip.text }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

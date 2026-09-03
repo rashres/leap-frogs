@@ -1,0 +1,138 @@
+<div class="head">
+  <div class="title-row">
+    <h1>Markets</h1>
+    <input
+      class="search"
+      type="search"
+      placeholder="Search symbol or name…"
+      [value]="query()"
+      (input)="onSearch($event)"
+    />
+  </div>
+  <p class="sub dim">
+    {{ resultCount() }} instruments across five classes. Each class settles in its own currency and keeps
+    its own hours and precision rules.
+  </p>
+</div>
+
+<div class="filters">
+  <select class="filter" [value]="assetClass()" (change)="onAssetClass($event)" aria-label="Filter by asset class">
+    <option value="">All asset classes</option>
+    @for (c of assetClasses(); track c.code) {
+      <option [value]="c.code">{{ c.label }}</option>
+    }
+  </select>
+  <select class="filter" [value]="exchange()" (change)="onExchange($event)" aria-label="Filter by exchange">
+    <option value="">All exchanges</option>
+    @for (x of exchanges(); track x) {
+      <option [value]="x">{{ x }}</option>
+    }
+  </select>
+  <select class="filter" [value]="currency()" (change)="onCurrency($event)" aria-label="Filter by currency">
+    <option value="">All currencies</option>
+    @for (c of currencies(); track c) {
+      <option [value]="c">{{ c }}</option>
+    }
+  </select>
+  @if (hasActiveFilters()) {
+    <button type="button" class="clear-filters" (click)="clearFilters()">Clear filters</button>
+  }
+</div>
+
+@if (!query()) {
+  <leap-movers-strip />
+}
+
+@if (groups().length === 0) {
+  <p class="empty">Nothing matches “{{ query() }}”.</p>
+
+  @if (liveSearchState() === 'loading') {
+    <p class="empty faint">Searching Yahoo Finance…</p>
+  } @else if (liveSearchState() === 'error') {
+    <p class="empty faint">Yahoo Finance search is unavailable right now.</p>
+  } @else if (liveResults().length > 0) {
+    <section class="panel group">
+      <div class="group-head">
+        <div class="group-title">
+          <h2>Live results from Yahoo Finance</h2>
+        </div>
+        <div class="rules faint">
+          <span>Not in this app's instrument universe — informational only, not tradeable here</span>
+        </div>
+      </div>
+      <ul>
+        @for (result of liveResults(); track result.symbol) {
+          <li>
+            <div class="live-row">
+              <div class="ident">
+                <div class="sym">{{ result.symbol }}</div>
+                <div class="name faint">{{ result.name }} · {{ result.exchange }}</div>
+              </div>
+              <span class="pill pill-muted">{{ result.type }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+}
+
+@for (group of groups(); track group.code) {
+  <section class="panel group">
+    <div class="group-head">
+      <div class="group-title">
+        <h2>{{ group.label }}</h2>
+        <span class="pill" [class.pill-up]="group.open" [class.pill-muted]="!group.open">
+          {{ group.open ? 'Open' : 'Closed' }}
+        </span>
+      </div>
+      <div class="rules faint">
+        <span>Settles {{ group.settlement }}</span>
+        <span class="dot">·</span>
+        <span>{{ group.precision }}</span>
+        <span class="dot">·</span>
+        <span>{{ group.hours }}</span>
+      </div>
+    </div>
+
+    <ul>
+      @for (row of group.rows; track row.id) {
+        <li>
+          <a [routerLink]="['/instrument', row.id]" [class.suspended]="!row.tradeable">
+            <button
+              type="button"
+              class="star"
+              [class.on]="row.watched"
+              (click)="toggleWatch($event, row.id)"
+              [attr.aria-label]="row.watched ? 'Remove from watchlist' : 'Add to watchlist'"
+            >
+              ★
+            </button>
+            <leap-instrument-logo [instrumentId]="row.id" [symbol]="row.symbol" [size]="36" />
+            <div class="ident">
+              <div class="sym">
+                {{ row.symbol }}
+                @if (!row.tradeable) {
+                  <span class="pill pill-warn">Suspended</span>
+                }
+              </div>
+              <div class="name faint">{{ row.name }} · {{ row.exchange }}</div>
+            </div>
+            <leap-sparkline
+              [points]="row.spark"
+              [tone]="row.negative ? 'down' : 'up'"
+              [width]="70"
+              [height]="26"
+            />
+            <div class="quote">
+              <leap-live-price class="price" [value]="row.rate" [currency]="row.currency" />
+              <div class="chg num" [class.up]="!row.negative" [class.down]="row.negative">
+                {{ row.negative ? '−' : '+' }}{{ row.change }}%
+              </div>
+            </div>
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+}
