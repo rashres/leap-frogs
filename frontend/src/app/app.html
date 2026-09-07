@@ -21,8 +21,46 @@
       <a routerLink="/portfolio" routerLinkActive="active">Portfolio</a>
       <a routerLink="/markets" routerLinkActive="active">Markets</a>
       <a routerLink="/news" routerLinkActive="active">News</a>
-      <a routerLink="/orders" routerLinkActive="active">Orders</a>
+      <a routerLink="/orders" routerLinkActive="active">
+        Orders
+        @if (workingCount() > 0) {
+          <span class="badge num">{{ workingCount() }}</span>
+        }
+      </a>
     </nav>
+
+    <div class="sessions">
+      @for (session of sessions(); track session.code) {
+        <span class="session" [class.on]="session.open" [title]="session.label + ' — ' + session.hours">
+          <i class="dot"></i>{{ session.label }}
+        </span>
+      }
+    </div>
+
+    <div class="nav-right">
+      <!-- [US-15] Fixtures are the default; live data is opt-in per session. -->
+      <button
+        type="button"
+        class="source"
+        [class.on]="live()"
+        [class.bad]="status() === 'degraded'"
+        (click)="toggleSource()"
+        [attr.title]="sourceTitle()"
+        [attr.aria-pressed]="live()"
+      >
+        <i class="src-dot"></i>{{ sourceLabel() }}
+      </button>
+      <span class="clock num">{{ clock() }}</span>
+      <button
+        type="button"
+        class="reset"
+        (click)="resetDemo()"
+        title="Clear saved demo state and reload from fixtures"
+      >
+        Reset
+      </button>
+      <span class="avatar" [attr.aria-label]="'Signed in as ' + clientName" role="img">{{ initials }}</span>
+    </div>
   </div>
 </header>
 
