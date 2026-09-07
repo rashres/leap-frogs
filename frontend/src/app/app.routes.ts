@@ -9,7 +9,7 @@ export const routes: Routes = [
   {
     path: 'portfolio',
     title: 'Portfolio — LEAP',
-    loadComponent: () => import('./shell/placeholder-page').then((m) => m.PlaceholderPage),
+    loadComponent: () => import('./features/portfolio/portfolio-page').then((m) => m.PortfolioPage),
   },
   { path: '**', redirectTo: 'portfolio' },
 ];
