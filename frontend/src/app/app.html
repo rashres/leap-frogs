@@ -1,0 +1,28 @@
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" routerLink="/portfolio">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#00c805" opacity="0.13" />
+        <path
+          d="M6 22 L13 13 L18 18 L26 8"
+          stroke="#00c805"
+          stroke-width="2.6"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span class="brand-text">LEAP</span>
+    </a>
+
+    <nav class="links">
+      <a routerLink="/portfolio" routerLinkActive="active">Portfolio</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page" id="main" tabindex="-1">
+  <router-outlet />
+</main>
