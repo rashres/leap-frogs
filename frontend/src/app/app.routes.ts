@@ -16,5 +16,10 @@ export const routes: Routes = [
     title: 'Markets — LEAP',
     loadComponent: () => import('./features/markets/markets-page').then((m) => m.MarketsPage),
   },
+  {
+    path: 'orders',
+    title: 'Orders — LEAP',
+    loadComponent: () => import('./features/orders/orders-page').then((m) => m.OrdersPage),
+  },
   { path: '**', redirectTo: 'portfolio' },
 ];
