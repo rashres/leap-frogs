@@ -17,6 +17,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/markets/markets-page').then((m) => m.MarketsPage),
   },
   {
+    path: 'news',
+    title: 'News — LEAP',
+    loadComponent: () => import('./features/news/news-page').then((m) => m.NewsPage),
+  },
+  {
     path: 'orders',
     title: 'Orders — LEAP',
     loadComponent: () => import('./features/orders/orders-page').then((m) => m.OrdersPage),
