@@ -1,0 +1,337 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 336px;
+  gap: 18px;
+  align-items: start;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  position: sticky;
+  top: calc(var(--nav-height) + 16px);
+}
+
+/* ---- Hero ---------------------------------------------------------------- */
+
+.hero {
+  position: relative;
+  padding: 2px 2px 0;
+
+  /* A wash of the day's colour behind the headline. Subtle enough to read as
+     depth rather than decoration, and it tells you the direction before you
+     have read the number. */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -70px -60px auto -70px;
+    height: 280px;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(70% 105% at 26% 6%, var(--hero-glow, transparent), transparent 74%);
+    transition: background 0.6s ease;
+  }
+
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.hero-up {
+  --hero-glow: rgba(0, 200, 5, 0.13);
+}
+
+.hero-down {
+  --hero-glow: rgba(255, 90, 82, 0.1);
+}
+
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin-bottom: 14px;
+  background: var(--border-soft);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.metric {
+  padding: 10px 14px;
+  background: var(--panel-2);
+}
+
+.metric-label {
+  margin: 0 0 4px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.metric-value {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+
+  &.up {
+    color: var(--up);
+  }
+  &.down {
+    color: var(--down);
+  }
+}
+
+.metric-sub {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.82;
+}
+
+.hero-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.hero-value {
+  margin: 0;
+  font-size: 46px;
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.05;
+
+  .minor {
+    color: var(--text-2);
+    font-size: 0.62em;
+    font-weight: 650;
+  }
+}
+
+.hero-change {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin-top: 9px;
+  font-size: 14.5px;
+  font-weight: 600;
+
+  .sep {
+    opacity: 0.5;
+  }
+
+  .range-label {
+    color: var(--text-3);
+    font-weight: 500;
+    margin-left: 3px;
+  }
+}
+
+.ccy-switch {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.ccy-label {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 7px;
+}
+
+.ccy-buttons {
+  display: inline-flex;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  padding: 3px;
+  gap: 2px;
+
+  button {
+    padding: 5px 12px;
+    border-radius: 7px;
+    font-size: 12px;
+    font-weight: 650;
+    color: var(--text-3);
+    transition: all 0.13s ease;
+
+    &:hover {
+      color: var(--text-2);
+    }
+
+    &.on {
+      background: var(--panel-3);
+      color: var(--text);
+    }
+  }
+}
+
+.ranges {
+  display: flex;
+  gap: 4px;
+  margin-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 10px;
+
+  button {
+    padding: 5px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 650;
+    letter-spacing: 0.03em;
+    color: var(--text-3);
+    transition: all 0.13s ease;
+
+    &:hover {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    &.on {
+      color: var(--up);
+      background: var(--up-soft);
+    }
+  }
+}
+
+.disclosure {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--text-3);
+  max-width: 70ch;
+}
+
+/* ---- Recent activity ----------------------------------------------------- */
+
+.link {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.empty-state {
+  padding: 26px 20px 30px;
+  text-align: center;
+}
+
+.empty-title {
+  margin: 0 0 5px;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--text-2);
+}
+
+.empty-body {
+  margin: 0 auto 13px;
+  max-width: 46ch;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.empty-cta {
+  display: inline-block;
+  padding: 7px 15px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  font-size: 12px;
+  font-weight: 620;
+  color: var(--text-2);
+  transition: all 0.13s ease;
+
+  &:hover {
+    color: var(--text);
+    background: var(--panel-3);
+    border-color: var(--border-strong);
+  }
+}
+
+.activity {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  li + li {
+    border-top: 1px solid var(--border-soft);
+  }
+
+  a {
+    display: grid;
+    grid-template-columns: auto 42px 74px 1fr auto auto;
+    align-items: center;
+    gap: 11px;
+    padding: 8px 18px;
+    transition: background 0.12s ease;
+
+    &:hover {
+      background: var(--panel-hover);
+    }
+  }
+}
+
+.side {
+  font-size: 10.5px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+
+  &.buy {
+    color: var(--up);
+  }
+  &.sell {
+    color: var(--down);
+  }
+}
+
+.sym {
+  font-weight: 650;
+  font-size: 13px;
+}
+
+.qty {
+  font-size: 12.5px;
+}
+
+.when {
+  font-size: 11.5px;
+}
+
+@media (max-width: 1080px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .rail {
+    position: static;
+  }
+  .hero-value {
+    font-size: 38px;
+  }
+}
