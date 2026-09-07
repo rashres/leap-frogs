@@ -1,0 +1,190 @@
+<div class="head">
+  <div>
+    <h1>Orders</h1>
+    <p class="sub dim">
+      Every order, accepted or rejected, in the order it was submitted. Expand a row for its full state
+      history.
+    </p>
+  </div>
+  <span class="trace">
+    <code>US-14</code>
+    <code>US-09</code>
+    <code>BR-14</code>
+  </span>
+</div>
+
+<div class="filters">
+  @for (f of filters; track f) {
+    <button type="button" [class.on]="filter() === f" (click)="setFilter(f)">
+      {{ f }}
+      <span class="count num">{{ counts()[f] }}</span>
+    </button>
+  }
+</div>
+
+@if (rows().length === 0) {
+  <div class="panel">
+    <p class="empty">
+      No orders here yet. Head to <a class="lnk" routerLink="/markets">Markets</a> and place one.
+    </p>
+  </div>
+} @else {
+  <div class="panel">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th class="l">Submitted</th>
+            <th class="l">Order</th>
+            <th class="r">Quantity</th>
+            <th class="r">Shown</th>
+            <th class="r">Filled at</th>
+            <th class="r">Consideration</th>
+            <th class="l">State</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of rows(); track order.id) {
+            <tr class="row" [class.open]="expanded() === order.id" (click)="toggle(order.id)">
+              <td class="l num faint">{{ timestamp(order.submittedAt) }}</td>
+              <td class="l">
+                <div class="ident">
+                  <leap-instrument-logo
+                    [instrumentId]="order.instrumentId"
+                    [symbol]="order.symbol"
+                    [size]="26"
+                  />
+                  <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
+                    {{ order.side }}
+                  </span>
+                  <span class="sym">{{ order.symbol }}</span>
+                </div>
+              </td>
+              <td class="r num">{{ order.quantity.toTrimmedString() }}</td>
+              <td class="r num dim">{{ rateText(order.indicativeQuote, order.currency) }}</td>
+              <td class="r num">
+                @if (order.executionQuote) {
+                  {{ rateText(order.executionQuote, order.currency) }}
+                } @else {
+                  <span class="faint">—</span>
+                }
+              </td>
+              <td class="r num strong">
+                @if (order.consideration) {
+                  {{ order.consideration.formatSigned() }}
+                } @else {
+                  <span class="faint">—</span>
+                }
+              </td>
+              <td class="l">
+                <span [class]="'pill pill-' + tone(order.state)">{{ label(order.state) }}</span>
+              </td>
+              <td class="r actions">
+                @if (order.state === 'ACCEPTED') {
+                  <button
+                    type="button"
+                    class="cancel"
+                    (click)="cancel($event, order.id)"
+                    [attr.aria-label]="'Cancel order ' + order.reference"
+                  >
+                    Cancel
+                  </button>
+                }
+                <!-- A real button so the disclosure is keyboard operable and its
+                     state is announced; the row click is mouse convenience only. -->
+                <button
+                  type="button"
+                  class="chev"
+                  (click)="toggleFromButton($event, order.id)"
+                  [attr.aria-expanded]="expanded() === order.id"
+                  [attr.aria-label]="
+                    (expanded() === order.id ? 'Hide' : 'Show') + ' details for order ' + order.reference
+                  "
+                >
+                  {{ expanded() === order.id ? '▴' : '▾' }}
+                </button>
+              </td>
+            </tr>
+
+            @if (expanded() === order.id) {
+              <tr class="detail-row">
+                <td colspan="8">
+                  <div class="detail">
+                    <div class="detail-col">
+                      <h3>Lifecycle</h3>
+                      <ol class="timeline">
+                        @for (step of order.transitions; track $index) {
+                          <li>
+                            <div class="step-top">
+                              <span class="step-state">
+                                @if (step.from) {
+                                  {{ label(step.from) }} → {{ label(step.to) }}
+                                } @else {
+                                  {{ label(step.to) }}
+                                }
+                              </span>
+                              <span class="num faint">{{ timestamp(step.at) }}</span>
+                            </div>
+                            <p class="faint">{{ step.detail }}</p>
+                          </li>
+                        }
+                      </ol>
+                    </div>
+
+                    <div class="detail-col">
+                      <h3>Recorded facts</h3>
+                      <dl>
+                        <div>
+                          <dt>Reference</dt>
+                          <dd class="num">{{ order.reference }}</dd>
+                        </div>
+                        <div>
+                          <dt>Instrument</dt>
+                          <dd>
+                            <a class="lnk" [routerLink]="['/instrument', order.instrumentId]">
+                              {{ order.symbol }} — {{ order.instrumentName }}
+                            </a>
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Indicative quote shown</dt>
+                          <dd class="num">
+                            {{ rateText(order.indicativeQuote, order.currency) }}
+                            <span class="faint">observed {{ timestamp(order.indicativeQuote.observedAt) }}</span>
+                          </dd>
+                        </div>
+                        @if (order.executionQuote; as fill) {
+                          <div>
+                            <dt>Execution quote</dt>
+                            <dd class="num">
+                              {{ rateText(fill, order.currency) }}
+                              <span class="faint">observed {{ timestamp(fill.observedAt) }}</span>
+                            </dd>
+                          </div>
+                        }
+                        @if (order.rejectionReason; as reason) {
+                          <div>
+                            <dt>Rejection reason</dt>
+                            <dd>
+                              <code class="code">{{ reason.code }}</code>
+                              <span class="reason">{{ reason.message }}</span>
+                            </dd>
+                          </div>
+                        }
+                      </dl>
+                      <p class="foot faint">
+                        The indicative quote and the execution quote are stored as two separate facts, each with
+                        its own observation timestamp.
+                      </p>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+}
