@@ -17,20 +17,24 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { NewsService } from '../../core/data/news.service';
 import { NewsFeed } from '../../shared/news-feed';
 import { StockSentimentBoard } from '../../shared/stock-sentiment-board';
+import { PageMascot } from '../../shared/page-mascot';
 
 @Component({
   selector: 'leap-news-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NewsFeed, StockSentimentBoard],
+  imports: [NewsFeed, StockSentimentBoard, PageMascot],
   template: `
     <div class="head">
-      <div>
-        <h1>News</h1>
-        <p class="sub dim">
-          Headlines about the instruments this platform trades, with a transparent sentiment read.
-          Every score shows the words it matched and every stock shows why a headline was filed
-          under it, because a number you cannot check is a number you should not trust.
-        </p>
+      <div class="titled">
+        <leap-page-mascot name="news" />
+        <div>
+          <h1>News</h1>
+          <p class="sub dim">
+            Headlines about the instruments this platform trades, with a transparent sentiment read.
+            Every score shows the words it matched and every stock shows why a headline was filed
+            under it, because a number you cannot check is a number you should not trust.
+          </p>
+        </div>
       </div>
       <span class="trace"><code>4.1</code></span>
     </div>

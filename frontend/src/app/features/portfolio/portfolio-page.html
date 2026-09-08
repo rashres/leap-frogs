@@ -3,16 +3,19 @@
     <!-- ---- Hero: consolidated value and range change [US-12][US-13] ---- -->
     <div class="hero" [class.hero-up]="rising()" [class.hero-down]="!rising()">
       <div class="hero-top">
-        <div>
-          <p class="hero-label">Portfolio value</p>
-          <h1 class="hero-value num">
-            {{ headlineParts().major }}<span class="minor">{{ headlineParts().minor }}</span>
-          </h1>
-          <div class="hero-change num" [class.up]="rising()" [class.down]="!rising()">
-            <span>{{ rangeChange().money.formatSigned() }}</span>
-            <span class="sep">·</span>
-            <span>{{ rangeChange().percent.isNegative() ? '' : '+' }}{{ rangeChange().percent.toString() }}%</span>
-            <span class="range-label">{{ rangeLabel() }}</span>
+        <div class="titled">
+          <leap-page-mascot name="portfolio" [size]="64" />
+          <div>
+            <p class="hero-label">Portfolio value</p>
+            <h1 class="hero-value num">
+              {{ headlineParts().major }}<span class="minor">{{ headlineParts().minor }}</span>
+            </h1>
+            <div class="hero-change num" [class.up]="rising()" [class.down]="!rising()">
+              <span>{{ rangeChange().money.formatSigned() }}</span>
+              <span class="sep">·</span>
+              <span>{{ rangeChange().percent.isNegative() ? '' : '+' }}{{ rangeChange().percent.toString() }}%</span>
+              <span class="range-label">{{ rangeLabel() }}</span>
+            </div>
           </div>
         </div>
 

@@ -26,12 +26,13 @@ import { Sparkline } from '../../shared/sparkline';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { LivePrice } from '../../shared/live-price';
 import { MoversStrip } from './movers-strip';
+import { PageMascot } from '../../shared/page-mascot';
 import { YahooQuoteProvider, type LiveSearchResult } from '../../core/data/yahoo-quote-provider';
 
 @Component({
   selector: 'leap-markets-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Sparkline, InstrumentLogo, LivePrice, MoversStrip],
+  imports: [RouterLink, Sparkline, InstrumentLogo, LivePrice, MoversStrip, PageMascot],
   templateUrl: './markets-page.html',
   styleUrl: './markets-page.scss',
 })

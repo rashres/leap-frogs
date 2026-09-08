@@ -30,6 +30,7 @@ import { PerformancePanel } from './performance-panel';
 import { CashPanel } from './cash-panel';
 import { WatchlistRail } from './watchlist-rail';
 import { WorkingOrders } from './working-orders';
+import { PageMascot } from '../../shared/page-mascot';
 
 const RANGE_LABELS: Record<ChartRange, string> = {
   '1D': 'Today',
@@ -52,6 +53,7 @@ const RANGE_LABELS: Record<ChartRange, string> = {
     CashPanel,
     WatchlistRail,
     WorkingOrders,
+    PageMascot,
   ],
   templateUrl: './portfolio-page.html',
   styleUrl: './portfolio-page.scss',
