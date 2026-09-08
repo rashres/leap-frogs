@@ -60,6 +60,8 @@
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 12px;
+  /* Currency switch drops below the headline value rather than squeezing it. */
+  flex-wrap: wrap;
 }
 
 .metrics {

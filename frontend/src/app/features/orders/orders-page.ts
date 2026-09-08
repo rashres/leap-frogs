@@ -23,13 +23,14 @@ import {
 import { formatRate } from '../../core/money/money';
 import type { CurrencyCode } from '../../core/money/currency';
 import { InstrumentLogo } from '../../shared/instrument-logo';
+import { PageMascot } from '../../shared/page-mascot';
 
 type Filter = 'ALL' | 'WORKING' | 'FILLED' | 'REJECTED';
 
 @Component({
   selector: 'leap-orders-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo],
+  imports: [RouterLink, InstrumentLogo, PageMascot],
   templateUrl: './orders-page.html',
   styleUrl: './orders-page.scss',
 })

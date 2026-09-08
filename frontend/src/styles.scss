@@ -261,6 +261,17 @@ input {
   color: var(--warn);
 }
 
+/* A page title sitting beside its mascot. The page heads are space-between
+   rows, so the two have to be grouped or the frog drifts away from its title. */
+.titled {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* No min-width:0 here. These sit in space-between rows next to items that
+     refuse to shrink, so allowing this one below its content width collapses
+     it and the mascot spills out under its neighbour. */
+}
+
 /* Headline sentiment.
    Deliberately its own set rather than the order-state tones above. Two reasons:
    restyling sentiment must not silently restyle order statuses, and sentiment is

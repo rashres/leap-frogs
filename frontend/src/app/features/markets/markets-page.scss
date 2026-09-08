@@ -7,6 +7,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 20px;
+  /* The search keeps a fixed width, so on a narrow viewport let it drop to its
+     own line rather than crushing the title beside it. */
+  flex-wrap: wrap;
 }
 
 h1 {
