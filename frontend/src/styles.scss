@@ -261,6 +261,55 @@ input {
   color: var(--warn);
 }
 
+/* Headline sentiment.
+   Deliberately its own set rather than the order-state tones above. Two reasons:
+   restyling sentiment must not silently restyle order statuses, and sentiment is
+   a reading of wording, not a price move — so it is outlined where price pills
+   are filled, and carries a glyph so the meaning survives without colour. */
+.sent {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  .glyph {
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  /* Matched-term count. A count, never a percentage — scoreHeadline() counts
+     lexicon hits and cannot support a confidence figure. */
+  .net {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    opacity: 0.75;
+    letter-spacing: 0;
+  }
+}
+.sent-pos {
+  border-color: rgba(47, 208, 122, 0.45);
+  background: rgba(47, 208, 122, 0.12);
+  color: #4ade9a;
+}
+.sent-neu {
+  border-color: var(--border-strong);
+  background: var(--panel-3);
+  color: var(--text-2);
+}
+.sent-neg {
+  border-color: rgba(255, 122, 110, 0.45);
+  background: rgba(255, 122, 110, 0.12);
+  color: #ff9a90;
+}
+
 .tag {
   display: inline-block;
   padding: 2px 6px;

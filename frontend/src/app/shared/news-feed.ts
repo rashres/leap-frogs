@@ -15,6 +15,7 @@ import type {
   AttributedNewsItem,
   ScoredNewsItem,
   SentimentLabel,
+  SentimentScore,
 } from '../core/domain/news';
 import { SENTIMENT_DISCLAIMER, summarise } from '../core/data/sentiment';
 import type { FeedState } from '../core/data/news.service';
@@ -28,9 +29,9 @@ import type { FeedState } from '../core/data/news.service';
     @if (items().length > 0) {
       <div class="bar">
         <div class="counts">
-          <span class="pill pill-good">{{ s.positive }} positive</span>
-          <span class="pill pill-muted">{{ s.neutral }} neutral</span>
-          <span class="pill pill-bad">{{ s.negative }} negative</span>
+          <span class="sent sent-pos"><i class="glyph">▲</i>{{ s.positive }} positive</span>
+          <span class="sent sent-neu"><i class="glyph">■</i>{{ s.neutral }} neutral</span>
+          <span class="sent sent-neg"><i class="glyph">▼</i>{{ s.negative }} negative</span>
         </div>
         <span class="of faint">of {{ s.total }} headlines</span>
       </div>
@@ -59,8 +60,17 @@ import type { FeedState } from '../core/data/news.service';
             @for (item of items(); track item.id) {
               <li>
                 <div class="row">
-                  <span class="pill" [class]="'pill-' + tone(item.sentiment.label)">
+                  <span
+                    class="sent"
+                    [class]="'sent-' + tone(item.sentiment.label)"
+                    [attr.title]="explain(item.sentiment)"
+                  >
+                    <i class="glyph">{{ glyph(item.sentiment.label) }}</i>
                     {{ label(item.sentiment.label) }}
+                    @if (item.sentiment.net !== 0) {
+                      <span class="net">{{ item.sentiment.net > 0 ? '+' : '−'
+                        }}{{ abs(item.sentiment.net) }}</span>
+                    }
                   </span>
                   <a class="title" [href]="item.link" target="_blank" rel="noopener noreferrer">
                     {{ item.title }}
@@ -130,7 +140,7 @@ import type { FeedState } from '../core/data/news.service';
         align-items: flex-start;
         gap: 10px;
       }
-      .pill {
+      .sent {
         flex-shrink: 0;
         margin-top: 1px;
       }
@@ -240,7 +250,26 @@ export class NewsFeed {
   }
 
   tone(value: SentimentLabel): string {
-    return value === 'positive' ? 'good' : value === 'negative' ? 'bad' : 'muted';
+    return value === 'positive' ? 'pos' : value === 'negative' ? 'neg' : 'neu';
+  }
+
+  /** Shape as well as colour, so the label survives a colour-blind reader. */
+  glyph(value: SentimentLabel): string {
+    return value === 'positive' ? '▲' : value === 'negative' ? '▼' : '■';
+  }
+
+  abs(value: number): number {
+    return Math.abs(value);
+  }
+
+  /**
+   * Tooltip behind the count. States what the number counts, because `net` is a
+   * tally of matched words and nothing more — see SentimentScore in domain/news.
+   */
+  explain(score: SentimentScore): string {
+    if (score.matched.length === 0) return 'No lexicon terms matched this headline.';
+    const parts = [`${score.positives} positive`, `${score.negatives} negative`];
+    return `Matched ${parts.join(' and ')} ${score.matched.length === 1 ? 'term' : 'terms'}. Counts of matched words, not a confidence score.`;
   }
 
   /**

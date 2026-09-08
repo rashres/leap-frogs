@@ -64,13 +64,13 @@ import type { StockSentiment } from '../core/domain/news';
               } @else {
                 <span class="counts">
                   @if (row.counts.positive > 0) {
-                    <span class="pill pill-good">{{ row.counts.positive }} pos</span>
+                    <span class="sent sent-pos"><i class="glyph">▲</i>{{ row.counts.positive }} pos</span>
                   }
                   @if (row.counts.neutral > 0) {
-                    <span class="pill pill-muted">{{ row.counts.neutral }} neu</span>
+                    <span class="sent sent-neu"><i class="glyph">■</i>{{ row.counts.neutral }} neu</span>
                   }
                   @if (row.counts.negative > 0) {
-                    <span class="pill pill-bad">{{ row.counts.negative }} neg</span>
+                    <span class="sent sent-neg"><i class="glyph">▼</i>{{ row.counts.negative }} neg</span>
                   }
                 </span>
               }
