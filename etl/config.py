@@ -6,6 +6,12 @@ Credentials loaded from environment variables (.env file or system env).
 """
 
 import os
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file from the same directory as this script
+env_path = Path(__file__).parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 # Database credentials (from environment variables)
 DB_USER = os.getenv('DB_USER', 'postgres')
