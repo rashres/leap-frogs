@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database connection details
-DB_HOST = os.getenv('DB_HOST', 'localhost')
+DB_HOST = os.getenv('DB_HOST', '10.14.139.68')
 DB_PORT = os.getenv('DB_PORT', '5432')
 DB_NAME = os.getenv('POSTGRES_DB', 'leapfrogsdb')
 DB_USER = os.getenv('POSTGRES_USER', 'postgres')
@@ -33,16 +33,6 @@ def connect_to_db():
 
 def query_data(conn, query):
     """Execute a query and return results as a DataFrame."""
-    
-    query = "SELECT symbol, total_volume FROM trading_volume;"
-    
-    plt.bar(df['symbol'], df['total_volume'])
-    plt.xlabel('Symbol')
-    plt.ylabel('Total Volume')
-    plt.title('Trading Volume by Symbol')
-    plt.show()
-    
-    
     try:
         df = pd.read_sql(query, conn)
         return df
@@ -53,10 +43,46 @@ def query_data(conn, query):
 if __name__ == "__main__":
     conn = connect_to_db()
     if conn:
-        # Example: query trading volume data
-        query = "SELECT * FROM trading_volume;"
+        # Query trading volume data
+        query = "SELECT symbol, total_volume FROM trading_volume;"
         df = query_data(conn, query)
         if df is not None:
             print(f"\n{df.shape[0]} rows retrieved")
             print(df.head())
+            
+            # Visualize trading volume by stock symbol
+            plt.figure(figsize=(12, 6))
+            plt.bar(df['symbol'], df['total_volume'])
+            plt.xlabel('Symbol')
+            plt.ylabel('Total Volume')
+            plt.title('Trading Volume by Symbol')
+            plt.show()
+            
+            
+            # Visualize most active instrument as bar graph
+            query = "SELECT symbol, total_volume FROM trading_volume ORDER BY total_volume DESC LIMIT 10;"
+            df_most_active = query_data(conn, query)
+            if df_most_active is not None:
+                plt.figure(figsize=(12, 6))
+                plt.bar(df_most_active['symbol'], df_most_active['trades'])
+                plt.xlabel('Symbol')
+                plt.ylabel('Trades')
+                plt.title('Most Active Instruments by Trading Volume')
+                plt.show()
+            
+            # Visualize client activity trends as a line graph
+            query = "SELECT segment, avg_trades_per_client, activity_date FROM client_activity ORDER BY activity_date;"
+            df_client_activity = query_data(conn, query)
+            if df_client_activity is not None:
+                plt.figure(figsize=(12, 6))
+                for segment, group in df_client_activity.groupby('segment'):
+                    plt.plot(group['activity_date'], group['avg_trades_per_client'], label=f'Segment {segment}')
+                plt.xlabel('Date')
+                plt.ylabel('Activity Count')
+                plt.title('Client Activity Trends')
+                plt.legend()
+                plt.show()
+            
+            
+            
         conn.close()
