@@ -60,7 +60,7 @@ if __name__ == "__main__":
             
             
             # Visualize most active instrument as bar graph
-            query = "SELECT symbol, total_volume FROM trading_volume ORDER BY total_volume DESC LIMIT 10;"
+            query = "SELECT symbol, trades FROM instrument_activity ORDER BY trades DESC LIMIT 10;"
             df_most_active = query_data(conn, query)
             if df_most_active is not None:
                 plt.figure(figsize=(12, 6))
@@ -71,12 +71,12 @@ if __name__ == "__main__":
                 plt.show()
             
             # Visualize client activity trends as a line graph
-            query = "SELECT segment, avg_trades_per_client, activity_date FROM client_activity ORDER BY activity_date;"
+            query = "SELECT segment, avg_trades_per_client, month FROM client_activity ORDER BY month;"
             df_client_activity = query_data(conn, query)
             if df_client_activity is not None:
                 plt.figure(figsize=(12, 6))
                 for segment, group in df_client_activity.groupby('segment'):
-                    plt.plot(group['activity_date'], group['avg_trades_per_client'], label=f'Segment {segment}')
+                    plt.plot(group['month'], group['avg_trades_per_client'], label=f'Segment {segment}')
                 plt.xlabel('Date')
                 plt.ylabel('Activity Count')
                 plt.title('Client Activity Trends')
