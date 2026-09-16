@@ -18,15 +18,8 @@ Version: 1.0 (MVP - Simple Batch ETL)
 import sys
 import os
 from datetime import datetime
-from pathlib import Path
 
-# Load environment variables from .env file
-from dotenv import load_dotenv
-
-# Load .env from the directory where this script is located
-env_path = Path(__file__).parent / '.env'
-load_dotenv(dotenv_path=env_path)
-
+# Config module loads .env automatically
 from config import DB_OPERATIONAL, DB_ANALYTICS
 from logger_config import setup_logger
 from extractor import ETLExtractor
