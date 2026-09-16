@@ -2,3 +2,12 @@
 target/
 **/target/
 .env
+.env.local
+.idea/
+.vscode/
+*.swp
+*.swo
+__pycache__/
+*.pyc
+.DS_Store
+*.log
