@@ -1,3 +1,10 @@
+-- Create Analytics Database
+CREATE DATABASE IF NOT EXISTS leap_analytics;
+
+-- Note: The following tables will be created in leap_analytics database
+-- They must be created by running this script against the leap_analytics database:
+-- psql -U postgres -d leap_analytics < capstone-analytics-schema.sql
+
 CREATE TABLE fact_trades (
     transaction_id          INT PRIMARY KEY,
     account_id              INT             NOT NULL,
