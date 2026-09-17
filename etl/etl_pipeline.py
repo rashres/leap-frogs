@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-LEAP Trading Platform - ETL Pipeline Script
+LeapFrogs Trading Platform - ETL Pipeline Script
 
 Purpose:
     Extract data from Operational Database (PostgreSQL 1)
     Transform using Pandas
     Load into Analytics Database (PostgreSQL 2)
 
-Author: LEAP Team
+Author: Leap Frogs
 Date: 2026-09-15
 Version: 1.0 (MVP - Simple Batch ETL)
 
