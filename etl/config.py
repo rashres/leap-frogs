@@ -26,5 +26,10 @@ DB_PASSWORD_ENCODED = quote(DB_PASSWORD, safe='')
 # Operational Database (Source) - leapfrogsdb
 DB_OPERATIONAL = f"postgresql://{DB_USER}:{DB_PASSWORD_ENCODED}@{DB_HOST}:{DB_PORT}/leapfrogsdb"
 
-# Analytics Database (Target) - leap_analytics
+# Analytics Database (Target) - leap_analyticscat > etl/.env << 'EOF'
+DB_USER=postgres
+DB_PASSWORD=postgres
+DB_HOST=localhost
+DB_PORT=5432
+EOF
 DB_ANALYTICS = f"postgresql://{DB_USER}:{DB_PASSWORD_ENCODED}@{DB_HOST}:{DB_PORT}/leap_analytics"
