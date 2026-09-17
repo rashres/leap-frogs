@@ -56,4 +56,17 @@ public class Order {
         return status;
     }
 
+    public void setOrderPending() {
+        status = "PENDING";
+    }
+
+    public void setOrderFulfilled() {
+        fulfilled_time = Instant.now();
+        status = "FULFILLED";
+    }
+
+    public void setOrderFailed() {
+        status = "FAILED";
+    }
+
 }
