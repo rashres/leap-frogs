@@ -1,9 +1,34 @@
 package com.neueda.leap;
 
+import java.math.BigDecimal;
+import java.time.Instant;
+
 public class Order {
+    int order_id;
+    Account account;
+    Instrument instrument;
+    String side;
+    int quantity;
+    BigDecimal price;
+    String status;
+    Instant placed_time;
+    Instant fulfilled_time;
 
-    public Order() {
-
+    /**
+     * Creates an order
+     *
+     * @param account the account that is making the order
+     * @param instrument the instrument being traded
+     * @param side the transaction type
+     * @param quantity how many instruments are being traded
+     * @param price the price of the transaction
+     */
+    public Order(Account account, Instrument instrument, String side, int quantity, BigDecimal price) {
+        placed_time = Instant.now();
+        this.account = account;
+        this.instrument = instrument;
+        this.side = side;
+        this.quantity = quantity;
     }
 
 }
