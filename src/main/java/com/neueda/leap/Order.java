@@ -21,14 +21,39 @@ public class Order {
      * @param instrument the instrument being traded
      * @param side the transaction type
      * @param quantity how many instruments are being traded
-     * @param price the price of the transaction
      */
-    public Order(Account account, Instrument instrument, String side, int quantity, BigDecimal price) {
+    public Order(Account account, Instrument instrument, String side, int quantity) {
         placed_time = Instant.now();
         this.account = account;
         this.instrument = instrument;
         this.side = side;
         this.quantity = quantity;
+        this.price = MarketService.getPrice();
+        this.status = "CREATED";
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public Instrument getInstrument() {
+        return Instrument;
+    }
+
+    public String getSide() {
+        return side;
+    }
+
+    public int getQuantity() {
+        return quantity;
+    }
+
+    public BigDecimal getPrice() {
+        return price;
+    }
+
+    public String getStatus() {
+        return status;
     }
 
 }
