@@ -8,15 +8,17 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_DB: leapfrogsdb
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     ports:
       - "5432:5432"
     volumes:
       - leap_frogs_postgres_data:/var/lib/postgresql/data
-      # Initialize both databases in the same instance
-      - ./database/capstone-mvp-schema.sql:/docker-entrypoint-initdb.d/001_capstone-mvp-schema.sql:ro
-      - ./database/capstone-analytics-schema.sql:/docker-entrypoint-initdb.d/002_capstone-analytics-schema.sql:ro
+      # First boot only (empty volume). Filenames 1-, 2-, 3- set run order.
+      - ./database/create-analytics-database.sql:/docker-entrypoint-initdb.d/1-create-analytics-database.sql:ro
+      - ./database/capstone-mvp-schema.sql:/docker-entrypoint-initdb.d/2-load-operational-schema.sql:ro
+      - ./database/load-analytics-schema.sh:/docker-entrypoint-initdb.d/3-load-analytics-schema.sh:ro
+      - ./database/capstone-analytics-schema.sql:/analytics-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
