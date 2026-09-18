@@ -13,7 +13,9 @@ public class OrderExecutor {
             return false;
         }
 
-        //TODO: ExternalService Logic
+        ExternalService service = new ExternalService();
+        service.executeTrade(order);
+
 
         Account account = order.getAccount();
         update_holdings(account);
