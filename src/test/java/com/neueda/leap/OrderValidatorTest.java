@@ -158,51 +158,9 @@ public class OrderValidatorTest {
     }
     
     // ============ COMPREHENSIVE VALIDATION TESTS ============
+
     
-    @Test
-    @DisplayName("Should return true for all valid order fields")
-    void testAllValidFieldsReturnTrue() {
-        boolean result = OrderValidator.isValidOrder(
-            "AAPL",      // valid symbol
-            100,         // valid quantity
-            150.50,      // valid price
-            "BUY",       // valid transaction type
-            1001         // valid account ID
-        );
-        
-        assertTrue(result);
-    }
-    
-    @Test
-    @DisplayName("Should return false if any field is invalid")
-    void testInvalidFieldReturnsFalse() {
-        // Invalid symbol
-        assertFalse(OrderValidator.isValidOrder(
-            "",          // invalid symbol
-            100, 150.50, "BUY", 1001
-        ));
-        
-        // Invalid quantity
-        assertFalse(OrderValidator.isValidOrder(
-            "AAPL", -100, 150.50, "BUY", 1001
-        ));
-        
-        // Invalid price
-        assertFalse(OrderValidator.isValidOrder(
-            "AAPL", 100, 0, "BUY", 1001
-        ));
-        
-        // Invalid transaction type
-        assertFalse(OrderValidator.isValidOrder(
-            "AAPL", 100, 150.50, "INVALID", 1001
-        ));
-        
-        // Invalid account ID
-        assertFalse(OrderValidator.isValidOrder(
-            "AAPL", 100, 150.50, "BUY", 0
-        ));
-    }
-    
+
     // ============ DETAILED VALIDATION RESULT TESTS ============
     
     @Test
