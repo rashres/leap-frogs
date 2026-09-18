@@ -34,29 +34,16 @@ class ETLTransformer:
         """
         logger.info("  Transforming: fact_trades (denormalized)")
         
-        # Join transactions with stock
-        df = transactions_df.merge(
-            stock_df,
-            on='stock_id',
-            how='left',
-            suffixes=('', '_stock')
-        )
-        
-        # Join with exchange
-        df = df.merge(
-            exchange_df,
-            on='exchange_id',
-            how='left',
-            suffixes=('', '_exchange')
-        )
-        
-        # Rename columns for analytics schema
-        df = df.rename(columns={
-            'name_stock': 'stock_name',
-            'name_exchange': 'exchange_name',
-            'symbol': 'symbol',
-            'transaction_time': 'transactions_time'
-        })
+        # Rename dimension columns before join so pandas suffixes do not hide them.
+        # stock.name and exchange.name only become name_stock / name_exchange when
+        # both sides already have a `name` column; transactions does not, so the
+        # stock name would otherwise stay as `name` and this select would KeyError.
+        stock = stock_df.rename(columns={'name': 'stock_name'})
+        exchange = exchange_df.rename(columns={'name': 'exchange_name'})
+
+        df = transactions_df.merge(stock, on='stock_id', how='left')
+        df = df.merge(exchange, on='exchange_id', how='left')
+        df = df.rename(columns={'transaction_time': 'transactions_time'})
         
         # Calculate derived fields
         df['amount'] = df['quantity'].astype(float) * df['price'].astype(float)
@@ -102,19 +89,21 @@ class ETLTransformer:
             'amount': 'sum'
         }).reset_index()
         
-        # Pivot to get BUY and SELL columns
+        # Pivot to get BUY and SELL columns (either side may be missing)
         pivot = grouped.pivot(
             index='symbol',
             columns='transaction_type',
             values='quantity'
         ).fillna(0)
-        
-        # Calculate totals
-        trading_volume = pd.DataFrame({
-            'symbol': pivot.index,
-            'buy_volume': pivot.get('BUY', 0),
-            'sell_volume': pivot.get('SELL', 0)
-        }).reset_index(drop=True)
+        pivot.columns.name = None
+        for col in ('BUY', 'SELL'):
+            if col not in pivot.columns:
+                pivot[col] = 0
+
+        trading_volume = pivot.reset_index().rename(columns={
+            'BUY': 'buy_volume',
+            'SELL': 'sell_volume'
+        })
         
         trading_volume['total_volume'] = \
             trading_volume['buy_volume'] + trading_volume['sell_volume']
@@ -186,10 +175,12 @@ class ETLTransformer:
             on='symbol',
             how='left'
         )
-        
-        # Ensure BUY and SELL columns exist (handle case where one type missing)
-        activity['buy_trades'] = activity.get('BUY', 0)
-        activity['sell_trades'] = activity.get('SELL', 0)
+
+        for col in ('BUY', 'SELL'):
+            if col not in activity.columns:
+                activity[col] = 0
+        activity['buy_trades'] = activity['BUY'].fillna(0).astype(int)
+        activity['sell_trades'] = activity['SELL'].fillna(0).astype(int)
         
         # Add stock name
         activity = activity.merge(
@@ -276,6 +267,29 @@ class ETLTransformer:
         logger.info("=" * 70)
         
         try:
+            if transactions_df.empty:
+                logger.warning("No transactions found; writing empty analytics tables")
+                return (
+                    pd.DataFrame(columns=[
+                        'transaction_id', 'account_id', 'symbol', 'segment',
+                        'stock_name', 'exchange_name', 'transaction_type',
+                        'quantity', 'price', 'amount', 'trade_date',
+                        'transactions_time', 'refreshed_at'
+                    ]),
+                    pd.DataFrame(columns=[
+                        'symbol', 'stock_name', 'buy_volume', 'sell_volume',
+                        'total_volume', 'notional', 'refreshed_at'
+                    ]),
+                    pd.DataFrame(columns=[
+                        'symbol', 'stock_name', 'trades', 'clients',
+                        'buy_trades', 'sell_trades', 'refreshed_at'
+                    ]),
+                    pd.DataFrame(columns=[
+                        'month', 'segment', 'active_clients', 'trades',
+                        'volume', 'avg_trades_per_client', 'refreshed_at'
+                    ]),
+                )
+
             fact_trades = ETLTransformer.build_fact_trades(
                 transactions_df, stock_df, exchange_df, account_df
             )
