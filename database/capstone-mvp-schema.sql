@@ -95,15 +95,11 @@ WITH buy_txns AS (
         gs AS i,
         (SELECT MIN(account_id) FROM account WHERE email LIKE '%cooper%' OR email LIKE '%dylan%' OR email LIKE '%white%' OR email LIKE '%green%' OR email LIKE '%harris%') +
         (floor(random() * 5)::int) AS account_id,
-        (ARRAY[1, 2, 3, 4, 5, 6, 7])[floor(random() * 7 + 1)::int] AS stock_id,
+        (ARRAY(SELECT stock_id FROM stock ORDER BY stock_id))[
+            1 + floor(random() * (SELECT COUNT(*) FROM stock))::int
+        ] AS stock_id,
     round((1 + random() * 50)::numeric, 6) AS quantity,
-    round((
-    CASE
-    WHEN (ARRAY[1, 2, 3, 4, 5, 6, 7])[floor(random() * 7 + 1)::int] IN (1, 2, 3, 4, 5, 6)
-    THEN 80 + random() * 420
-    ELSE 0.2 + random() * 65000
-    END
-    )::numeric, 6) AS price,
+    round((80 + random() * 420)::numeric, 6) AS price,
     (now() - interval '1 month') + (random() * interval '1 month') AS transaction_time
 FROM generate_series(1, 35) gs
     )
@@ -139,14 +135,8 @@ WITH existing_holdings AS (
          SELECT
              sc.account_id,
              sc.stock_id,
-             round((random() * (sc.quantity * 0.5))::numeric, 6) AS quantity,  -- Sell up to 50% of holdings
-             round((
-                       CASE
-                           WHEN sc.stock_id IN (1, 2, 3, 4, 5, 6)
-                               THEN 80 + random() * 420
-                           ELSE 0.2 + random() * 65000
-                           END
-                       )::numeric, 6) AS price,
+             GREATEST(round((0.01 + random() * (sc.quantity * 0.5))::numeric, 6), 0.01) AS quantity,
+             round((80 + random() * 420)::numeric, 6) AS price,
              (now() - interval '1 month') + (random() * interval '1 month') AS transaction_time,
              row_number() OVER () AS rn
          FROM sell_candidates sc
