@@ -42,13 +42,19 @@ public class OrderValidator {
     // ============ COMPREHENSIVE VALIDATION METHODS ============
     
     // Validates all order fields at once: returns true only if ALL are valid
-    public static boolean isValidOrder(String symbol, int quantity, double price, 
-                                       String transactionType, int accountId) {
+    public static boolean isValidOrder(Order order) {
+
+        String symbol = order.getInstrument().getSymbol();
+        int quantity = order.getQuantity();
+        double price = order.getPrice().doubleValue();
+        String transactionType = order.getSide();
+        //int accountId = order.getAccount().getAccountId();
+
         return isValidSymbol(symbol)
                 && isValidQuantity(quantity)
                 && isValidPrice(price)
                 && isValidTransactionType(transactionType)
-                && isValidAccountId(accountId);
+                //&& isValidAccountId(accountId);
     }
     
     // ============ DETAILED VALIDATION ERROR REPORTING ============
