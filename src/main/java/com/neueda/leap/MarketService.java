@@ -5,7 +5,6 @@ import java.math.BigDecimal;
 public class MarketService {
 
     public MarketService() {
-
     }
 
     public static BigDecimal getPrice() {
