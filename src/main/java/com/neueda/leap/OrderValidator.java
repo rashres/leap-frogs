@@ -53,7 +53,7 @@ public class OrderValidator {
         return isValidSymbol(symbol)
                 && isValidQuantity(quantity)
                 && isValidPrice(price)
-                && isValidTransactionType(transactionType)
+                && isValidTransactionType(transactionType);
                 //&& isValidAccountId(accountId);
     }
     
