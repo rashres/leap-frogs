@@ -8,7 +8,7 @@ import logging
 from typing import Tuple
 
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,9 @@ class ETLExtractor:
         """Initialize database connection"""
         try:
             self.engine = create_engine(connection_string)
-            logger.info(f"✓ Connected to Operational DB")
+            with self.engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            logger.info("✓ Connected to Operational DB")
         except Exception as e:
             logger.error(f"✗ Failed to connect to Operational DB: {e}")
             raise
