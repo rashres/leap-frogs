@@ -37,7 +37,7 @@ public class Order {
     }
 
     public Instrument getInstrument() {
-        return Instrument;
+        return instrument;
     }
 
     public String getSide() {

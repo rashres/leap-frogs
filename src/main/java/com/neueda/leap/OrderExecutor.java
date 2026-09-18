@@ -6,7 +6,7 @@ public class OrderExecutor {
     }
 
     public void process_order(Order order) {
-        
+
     }
 
 }
