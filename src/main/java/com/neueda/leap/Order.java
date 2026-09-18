@@ -4,15 +4,15 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public class Order {
-    int order_id;
-    Account account;
-    Instrument instrument;
-    String side;
-    int quantity;
-    BigDecimal price;
-    String status;
-    Instant placed_time;
-    Instant fulfilled_time;
+    private int order_id;
+    private Account account;
+    private Instrument instrument;
+    private String side;
+    private int quantity;
+    private BigDecimal price;
+    private String status;
+    private Instant placed_time;
+    private Instant fulfilled_time;
 
     /**
      * Creates an order

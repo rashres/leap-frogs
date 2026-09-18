@@ -16,7 +16,7 @@ public class OrderExecutor {
         //TODO: ExternalService Logic
 
         Account account = order.getAccount();
-        
+
         return true;
     }
 
