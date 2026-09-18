@@ -16,8 +16,15 @@ public class OrderExecutor {
         //TODO: ExternalService Logic
 
         Account account = order.getAccount();
+        update_holdings(account);
+
+        order.setStatus("COMPLETE");
 
         return true;
+    }
+
+    private void update_holdings(Account account) {
+
     }
 
 }
