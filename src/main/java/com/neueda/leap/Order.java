@@ -57,10 +57,14 @@ public class Order {
     }
 
     public void setStatus(String status) {
-        if (status.equals("COMPLETE")) {
-            fulfilled_time = Instant.now();
+        switch(status) {
+            case "COMPLETE":
+                fulfilled_time = Instant.now();
+            case "PENDING":
+            case "FAILED":
+                this.status = status;
+                break;
         }
-        this.status = status;
     }
 
 }
