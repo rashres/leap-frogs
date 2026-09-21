@@ -16,16 +16,25 @@ public class OrderExecutor {
         ExternalService service = new ExternalService();
         service.executeTrade(order);
 
-
-        Account account = order.getAccount();
-        update_holdings(account);
+        update_holdings(order);
 
         order.setStatus("COMPLETE");
 
         return true;
     }
 
-    private void update_holdings(Account account) {
+    private void update_holdings(Order order) {
+
+        Account account = order.getAccount();
+        Instrument instrument = order.getInstrument();
+
+        if (account.getHolding(instrument) != null) {
+            Holding holding = new Holding(account.getAccountId(), instrument, order.getQuantity());
+            account.addHolding(instrument, holding);
+        } else {
+            Holding holding = account.getHolding(instrument);
+            holding.updateQuantity(order.getSide(), order.getQuantity());
+        }
 
     }
 
