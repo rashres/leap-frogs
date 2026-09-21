@@ -8,7 +8,7 @@ public class Order {
     private Account account;
     private Instrument instrument;
     private String side;
-    private int quantity;
+    private BigDecimal quantity;
     private BigDecimal price;
     private String status;
     private Instant placed_time;
@@ -22,7 +22,7 @@ public class Order {
      * @param side the transaction type
      * @param quantity how many instruments are being traded
      */
-    public Order(Account account, Instrument instrument, String side, int quantity) {
+    public Order(Account account, Instrument instrument, String side, BigDecimal quantity) {
         placed_time = Instant.now();
         this.account = account;
         this.instrument = instrument;
@@ -44,7 +44,7 @@ public class Order {
         return side;
     }
 
-    public int getQuantity() {
+    public BigDecimal getQuantity() {
         return quantity;
     }
 

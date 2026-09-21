@@ -15,8 +15,7 @@ public class Holding {
     public Holding() {
     }
 
-    public Holding(int holdingId, int accountId, Instrument instrument, BigDecimal quantity) {
-        this.holdingId = holdingId;
+    public Holding( int accountId, Instrument instrument, BigDecimal quantity) {
         this.accountId = accountId;
         this.instrument = instrument;
         this.quantity = quantity;
@@ -52,6 +51,15 @@ public class Holding {
 
     public void setQuantity(BigDecimal quantity) {
         this.quantity = quantity;
+    }
+
+    public void updateQuantity(String side, BigDecimal quantity) {
+        switch (side) {
+            case "BUY":
+                this.quantity.add(quantity);
+            case "SELL":
+                this.quantity.subtract(quantity);
+        }
     }
 
     public BigDecimal getCostBasis() {
