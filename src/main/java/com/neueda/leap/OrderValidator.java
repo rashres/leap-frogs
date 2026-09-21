@@ -1,5 +1,7 @@
 package com.neueda.leap;
 
+import java.math.BigDecimal;
+
 // Utility class for validating trade order fields and generating detailed error reports
 public class OrderValidator {
     
@@ -16,8 +18,10 @@ public class OrderValidator {
     }
     
     // Validates quantity: must be positive (> 0)
-    public static boolean isValidQuantity(int quantity) {
-        return quantity > 0;
+    public static boolean isValidQuantity(BigDecimal quantity) {
+        BigDecimal zero = new BigDecimal("0");
+        int result = quantity.compareTo(zero);
+        return result > 0;
     }
     
     // Validates price: must be positive (> 0)
@@ -45,7 +49,7 @@ public class OrderValidator {
     public static boolean isValidOrder(Order order) {
 
         String symbol = order.getInstrument().getSymbol();
-        int quantity = order.getQuantity();
+        BigDecimal quantity = order.getQuantity();
         double price = order.getPrice().doubleValue();
         String transactionType = order.getSide();
         //int accountId = order.getAccount().getAccountId();
@@ -60,7 +64,7 @@ public class OrderValidator {
     // ============ DETAILED VALIDATION ERROR REPORTING ============
     
     // Validates all order fields and collects detailed error messages
-    public static ValidationResult validateOrderWithDetails(String symbol, int quantity, double price,
+    public static ValidationResult validateOrderWithDetails(String symbol, BigDecimal quantity, double price,
                                                             String transactionType, int accountId) {
         ValidationResult result = new ValidationResult();
         if (!isValidSymbol(symbol)) {

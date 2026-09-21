@@ -14,8 +14,11 @@ public class Main {
 
         Account account = new Account(1001, "Jane Doe", "jane@example.com", new BigDecimal("10000.00"));
 
-        Order buyOrder = new Order(account, apple, "BUY", 10);
-        Order sellOrder = new Order(account, microsoft, "SELL", 5);
+        BigDecimal b1 = new BigDecimal("10");
+        BigDecimal b2 = new BigDecimal("5");
+
+        Order buyOrder = new Order(account, apple, "BUY", b1);
+        Order sellOrder = new Order(account, microsoft, "SELL", b2);
 
         OrderExecutor executor = new OrderExecutor();
         executor.process_order(buyOrder);
