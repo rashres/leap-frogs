@@ -21,8 +21,11 @@ public class Main {
         Order sellOrder = new Order(account, microsoft, "SELL", b2);
 
         OrderExecutor executor = new OrderExecutor();
-        executor.process_order(buyOrder);
-        executor.process_order(sellOrder);
+        System.out.println(executor.process_order(buyOrder));
+        System.out.println(executor.process_order(sellOrder));
+
+        Holding final_hold = account.getHolding(apple);
+        System.out.println("1st order: " + final_hold.getInstrument().getName());
 
         System.out.println("Orders processed");
     }
