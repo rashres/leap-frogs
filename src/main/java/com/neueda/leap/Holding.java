@@ -56,9 +56,9 @@ public class Holding {
     public void updateQuantity(String side, BigDecimal quantity) {
         switch (side) {
             case "BUY":
-                this.quantity.add(quantity);
+                this.quantity = this.quantity.add(quantity);
             case "SELL":
-                this.quantity.subtract(quantity);
+                this.quantity = this.quantity.subtract(quantity);
         }
     }
 
