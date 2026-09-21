@@ -38,7 +38,6 @@ public class Main {
         System.out.println("\nOrder 2 Results");
         System.out.println("Holding: " + hold2.getInstrument().getName());
         System.out.println("Quantity: " + hold2.getQuantity());
-
         System.out.println("Orders processed");
     }
 }
