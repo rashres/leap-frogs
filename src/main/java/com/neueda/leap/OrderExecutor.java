@@ -29,11 +29,11 @@ public class OrderExecutor {
         Instrument instrument = order.getInstrument();
 
         if (account.getHolding(instrument) != null) {
-            Holding holding = new Holding(account.getAccountId(), instrument, order.getQuantity());
-            account.addHolding(instrument, holding);
-        } else {
             Holding holding = account.getHolding(instrument);
             holding.updateQuantity(order.getSide(), order.getQuantity());
+        } else {
+            Holding holding = new Holding(account.getAccountId(), instrument, order.getQuantity());
+            account.addHolding(instrument, holding);
         }
 
     }

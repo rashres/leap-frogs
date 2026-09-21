@@ -8,7 +8,7 @@ public class MarketService {
     }
 
     public static BigDecimal getPrice() {
-        BigDecimal price = new BigDecimal(0.00000);
+        BigDecimal price = new BigDecimal(1.00000);
         return price;
     }
 
