@@ -16,6 +16,7 @@ Version: 1.0 (MVP - Simple Batch ETL)
 """
 
 import sys
+import os
 from datetime import datetime
 
 # Config module loads .env automatically
