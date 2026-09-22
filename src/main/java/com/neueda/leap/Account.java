@@ -63,7 +63,13 @@ public class Account {
         holdings.put(instrument, holding);
     }
 
-    public void updateCashBalance(BigDecimal amount) {
-        this.cashBalance = this.cashBalance.add(amount);
+    public void updateCashBalance(BigDecimal amount, String side) {
+        switch (side) {
+            case "BUY":
+                this.cashBalance = this.cashBalance.subtract(amount);
+                break;
+            case "SELL":
+                this.cashBalance = this.cashBalance.add(amount);
+        }
     }
 }
