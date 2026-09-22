@@ -23,21 +23,21 @@ public class Main {
         Order sellOrder2 = new Order(account, microsoft, "SELL", b3);
 
         OrderExecutor executor = new OrderExecutor();
+
         System.out.println(executor.process_order(buyOrder));
-        System.out.println(executor.process_order(sellOrder));
-        System.out.println(executor.process_order(sellOrder2));
-
         Holding hold1 = account.getHolding(apple);
-        Holding hold2 = account.getHolding(microsoft);
-
-
         System.out.println("\nOrder 1 Results");
         System.out.println("Holding: " + hold1.getInstrument().getName());
         System.out.println("Quantity: " + hold1.getQuantity());
+        System.out.println("Updated Balance: " + account.getCashBalance());
 
+        System.out.println(executor.process_order(sellOrder));
+        System.out.println(executor.process_order(sellOrder2));
+        Holding hold2 = account.getHolding(microsoft);
         System.out.println("\nOrder 2 Results");
         System.out.println("Holding: " + hold2.getInstrument().getName());
         System.out.println("Quantity: " + hold2.getQuantity());
+        System.out.println("Updated Balance: " + account.getCashBalance());
 
         System.out.println("Orders processed");
     }
