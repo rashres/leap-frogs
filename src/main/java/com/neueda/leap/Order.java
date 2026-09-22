@@ -52,6 +52,10 @@ public class Order {
         return price;
     }
 
+    public BigDecimal getValue() {
+        return quantity.multiply(price);
+    }
+
     public String getStatus() {
         return status;
     }
