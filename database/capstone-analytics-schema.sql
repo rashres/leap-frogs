@@ -1,4 +1,5 @@
 -- Create Analytics Database
+CREATE DATABASE IF NOT EXISTS leap_analytics;
 
 -- Note: The following tables will be created in leap_analytics database
 -- They must be created by running this script against the leap_analytics database:
