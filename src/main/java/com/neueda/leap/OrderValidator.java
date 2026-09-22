@@ -43,45 +43,110 @@ public class OrderValidator {
         return accountId > 0;
     }
     
+    // ============ FUND VERIFICATION METHODS ============
+    
+    // Verifies account has sufficient cash to buy
+    public static boolean isValidCashBalance(Account account, BigDecimal quantity, BigDecimal price) {
+        if (account == null) {
+            return false;
+        }
+        BigDecimal requiredCash = quantity.multiply(price);
+        BigDecimal availableCash = account.getCashBalance();
+        return availableCash != null && availableCash.compareTo(requiredCash) >= 0;
+    }
+    
+    // Verifies account has sufficient shares to sell
+    public static boolean hasEnoughShares(Account account, Instrument instrument, BigDecimal quantity) {
+        if (account == null || instrument == null) {
+            return false;
+        }
+        Holding holding = account.getHolding(instrument);
+        if (holding == null) {
+            return false;
+        }
+        BigDecimal availableShares = holding.getQuantity();
+        return availableShares != null && availableShares.compareTo(quantity) >= 0;
+    }
+    
     // ============ COMPREHENSIVE VALIDATION METHODS ============
     
     // Validates all order fields at once: returns true only if ALL are valid
     public static boolean isValidOrder(Order order) {
+        if (order == null) {
+            return false;
+        }
 
         String symbol = order.getInstrument().getSymbol();
         BigDecimal quantity = order.getQuantity();
-        double price = order.getPrice().doubleValue();
+        BigDecimal price = order.getPrice();
         String transactionType = order.getSide();
-        //int accountId = order.getAccount().getAccountId();
+        Account account = order.getAccount();
+        Instrument instrument = order.getInstrument();
 
-        return isValidSymbol(symbol)
-                && isValidQuantity(quantity)
-                && isValidPrice(price)
-                && isValidTransactionType(transactionType);
-                //&& isValidAccountId(accountId);
+        // Validate basic order fields
+        if (!isValidSymbol(symbol)
+                || !isValidQuantity(quantity)
+                || !isValidPrice(price.doubleValue())
+                || !isValidTransactionType(transactionType)) {
+            return false;
+        }
+
+        // Validate sufficient funds/shares
+        if ("BUY".equalsIgnoreCase(transactionType)) {
+            return isValidCashBalance(account, quantity, price);
+        } else if ("SELL".equalsIgnoreCase(transactionType)) {
+            return hasEnoughShares(account, instrument, quantity);
+        }
+
+        return false;
     }
     
     // ============ DETAILED VALIDATION ERROR REPORTING ============
     
-    // Validates all order fields and collects detailed error messages
-    public static ValidationResult validateOrderWithDetails(String symbol, BigDecimal quantity, double price,
-                                                            String transactionType, int accountId) {
+    // Validates all order fields including funds and collects detailed error messages
+    public static ValidationResult validateOrderWithDetails(Order order) {
         ValidationResult result = new ValidationResult();
+        
+        if (order == null) {
+            result.addError("Order: cannot be null");
+            return result;
+        }
+
+        String symbol = order.getInstrument().getSymbol();
+        BigDecimal quantity = order.getQuantity();
+        BigDecimal price = order.getPrice();
+        String transactionType = order.getSide();
+        Account account = order.getAccount();
+        Instrument instrument = order.getInstrument();
+
+        // Validate basic fields
         if (!isValidSymbol(symbol)) {
             result.addError("Symbol: must be non-null, non-empty, and max 20 characters");
         }
         if (!isValidQuantity(quantity)) {
-            result.addError("Quantity: must be a positive integer (greater than 0)");
+            result.addError("Quantity: must be a positive value (greater than 0)");
         }
-        if (!isValidPrice(price)) {
+        if (!isValidPrice(price.doubleValue())) {
             result.addError("Price: must be a positive decimal (greater than 0)");
         }
         if (!isValidTransactionType(transactionType)) {
             result.addError("TransactionType: must be 'BUY' or 'SELL'");
         }
-        if (!isValidAccountId(accountId)) {
-            result.addError("AccountId: must be a positive integer (greater than 0)");
+
+        // Validate funds based on transaction type
+        if ("BUY".equalsIgnoreCase(transactionType)) {
+            if (!isValidCashBalance(account, quantity, price)) {
+                result.addError("Insufficient cash: required " + quantity.multiply(price) 
+                    + ", available " + (account != null ? account.getCashBalance() : "N/A"));
+            }
+        } else if ("SELL".equalsIgnoreCase(transactionType)) {
+            if (!hasEnoughShares(account, instrument, quantity)) {
+                Holding holding = account != null ? account.getHolding(instrument) : null;
+                result.addError("Insufficient shares: required " + quantity 
+                    + ", available " + (holding != null ? holding.getQuantity() : "0"));
+            }
         }
+
         return result;
     }
     
