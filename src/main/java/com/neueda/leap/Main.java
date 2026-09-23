@@ -84,9 +84,13 @@ public class Main {
                                 System.out.println("" + quantity + " shares of " + name + " sold");
                                 break;
                         }
-                        BigDecimal value = holding.getQuantity().multiply(order.getPrice());
-                        System.out.println(name + " Holding: " + holding.getQuantity() + " shares, Value: $" + value);
-                        System.out.println("Updated Balance: " + account.getCashBalance());
+                        if (account.getHolding(instrument) != null) {
+                            BigDecimal value = holding.getQuantity().multiply(order.getPrice());
+                            System.out.println(name + " Holding: " + holding.getQuantity() + " shares, Value: $" + value);
+                            System.out.println("Updated Balance: " + account.getCashBalance());
+                        } else {
+                            System.out.println("No Holding for " + instrument.getName());
+                        }
                     }
                     break;
                 case "HOLDINGS":
