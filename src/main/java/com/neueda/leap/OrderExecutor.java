@@ -12,6 +12,7 @@ public class OrderExecutor {
 
         if (!OrderValidator.isValidOrder(order)) {
             order.setStatus("FAILED");
+            System.out.println("Order could not be Processed");
             return false;
         }
 
@@ -22,6 +23,7 @@ public class OrderExecutor {
         update_balance(order);
 
         order.setStatus("COMPLETE");
+        System.out.println("Order Processed");
 
         return true;
     }
