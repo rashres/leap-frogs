@@ -14,11 +14,13 @@ public class Main {
 
         Instrument AAPL = new Instrument(1, "AAPL", "AAPL Inc.", nasdaq.getExchangeId());
         Instrument MSFT = new Instrument(2, "MSFT", "MSFT Corporation", nasdaq.getExchangeId());
+        Instrument NVDA = new Instrument(3, "NVDA", "NVIDIA Corporation", nasdaq.getExchangeId());
 
         Map<String, Instrument> map = new HashMap<String, Instrument>();
 
         map.put("AAPL", AAPL);
         map.put("MSFT", MSFT);
+        map.put("NVDA", NVDA);
 
         Account account = new Account(1001, "Jane Doe", "jane@example.com", new BigDecimal("10000.00"));
 
