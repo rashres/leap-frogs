@@ -58,13 +58,15 @@ public class Main {
         while (on) {
             System.out.println("\nEnter Command:");
             String command = scan.nextLine();
+            Instrument instrument;
+            BigDecimal quantity;
             switch (command) {
                 case "ORDER":
                     System.out.println("Enter Instrument");
                     String name = scan.nextLine();
-                    Instrument instrument = map.get(name);
+                    instrument = map.get(name);
                     System.out.println("Enter amount:");
-                    BigDecimal quantity = BigDecimal.valueOf(scan.nextDouble());
+                    quantity = BigDecimal.valueOf(scan.nextDouble());
                     scan.nextLine();
                     System.out.println("BUY or SELL?");
                     String side = scan.nextLine();
@@ -82,9 +84,22 @@ public class Main {
                                 System.out.println("" + quantity + " shares of " + name + " sold");
                                 break;
                         }
-                        BigDecimal value = quantity.multiply(order.getPrice());
+                        BigDecimal value = holding.getQuantity().multiply(order.getPrice());
                         System.out.println(name + " Holding: " + holding.getQuantity() + " shares, Value: $" + value);
                         System.out.println("Updated Balance: " + account.getCashBalance());
+                    }
+                    break;
+                case "HOLDINGS":
+                    Map<Instrument, Holding> holdings = account.getHoldings();
+                    System.out.println("\nAll Holdings:");
+                    for (Map.Entry<Instrument, Holding> entry : holdings.entrySet()) {
+                        instrument = entry.getKey();
+                        Holding holding = entry.getValue();
+                        System.out.println("\n" + instrument.getName());
+                        System.out.println("Shares: " + holding.getQuantity());
+                        quantity = holding.getQuantity();
+                        BigDecimal value = quantity.multiply(instrument.getPrice());
+                        System.out.println("Total Value: $" + value);
                     }
                     break;
                 case "END":

@@ -1,5 +1,6 @@
 package com.neueda.leap;
 
+import java.math.BigDecimal;
 import java.util.Objects;
 
 public class Instrument {
@@ -67,6 +68,10 @@ public class Instrument {
 
     public String displayName() {
         return symbol + " - " + name;
+    }
+
+    public BigDecimal getPrice() {
+        return MarketService.getPrice();
     }
     
     @Override
