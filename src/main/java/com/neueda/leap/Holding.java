@@ -57,8 +57,10 @@ public class Holding {
         switch (side) {
             case "BUY":
                 this.quantity = this.quantity.add(quantity);
+                break;
             case "SELL":
                 this.quantity = this.quantity.subtract(quantity);
+                break;
         }
     }
 
