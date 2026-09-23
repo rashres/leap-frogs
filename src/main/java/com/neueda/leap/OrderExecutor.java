@@ -1,6 +1,7 @@
 package com.neueda.leap;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 public class OrderExecutor {
 
@@ -37,6 +38,12 @@ public class OrderExecutor {
         if (account.getHolding(instrument) != null) {
             holding = account.getHolding(instrument);
             holding.updateQuantity(order.getSide(), order.getQuantity());
+            BigDecimal zero = new BigDecimal(0.00000);
+            BigDecimal holdQuantity = holding.getQuantity();
+            if (zero.compareTo(holdQuantity) == 0) {
+                Map<Instrument, Holding> holdings = account.getHoldings();
+                holdings.remove(instrument);
+            }
         } else {
             holding = new Holding(account.getAccountId(), instrument, order.getQuantity());
             account.addHolding(instrument, holding);
