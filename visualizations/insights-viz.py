@@ -12,8 +12,8 @@ load_dotenv('/home/ec2-user/leap-frogs/.env')
 DB_HOST = os.getenv('DB_HOST', 'localhost')
 DB_PORT = os.getenv('DB_PORT', '8100')
 DB_NAME = os.getenv('POSTGRES_DB', 'leap_analytics')
-DB_USER = os.getenv('POSTGRES_USER', 'postgres')
-DB_PASSWORD = os.getenv('POSTGRES_PASSWORD', 'postgres')
+DB_USER = os.getenv('POSTGRES_USER')
+DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
 
 def connect_to_db():
     """Establish connection to the PostgreSQL database."""
