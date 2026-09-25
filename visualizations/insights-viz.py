@@ -7,25 +7,17 @@ from dotenv import load_dotenv
 
 load_dotenv('/home/ec2-user/leap-frogs/.env')
 
-
-# Database connection details
-DB_HOST = os.getenv('DB_HOST', 'localhost')
-DB_PORT = os.getenv('DB_PORT', '8100')
-DB_NAME = os.getenv('POSTGRES_DB', 'leap_analytics')
-DB_USER = os.getenv('POSTGRES_USER')
-DB_PASSWORD = os.getenv('POSTGRES_PASSWORD')
-
 def connect_to_db():
     """Establish connection to the PostgreSQL database."""
     try:
         conn = psycopg2.connect(
-            host=DB_HOST,
-            port=DB_PORT,
-            database=DB_NAME,
-            user=DB_USER,
-            password=DB_PASSWORD
-        )
-        print(f"✓ Connected to {DB_NAME} on {DB_HOST}:{DB_PORT}")
+        host=os.getenv('DB_HOST', 'localhost'),
+        port=os.getenv('DB_PORT', '8100'),
+        database=os.getenv('POSTGRES_DB', 'leap_analytics'),
+        user=os.getenv('POSTGRES_USER'),
+        password=os.getenv('POSTGRES_PASSWORD')
+    )
+        print(f"✓ Connected to {os.getenv('POSTGRES_DB', 'leap_analytics')} on {os.getenv('DB_HOST', 'localhost')}:{os.getenv('DB_PORT', '8100')}")
         return conn
     except psycopg2.Error as e:
         print(f"✗ Error connecting to database: {e}")
