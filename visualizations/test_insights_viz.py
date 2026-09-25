@@ -3,18 +3,15 @@ from unittest.mock import patch, MagicMock
 import pandas as pd
 import os
 import sys
-import importlib.util
 
-# Import the module to test (handle dash in filename)
-spec = importlib.util.spec_from_file_location("insights_viz", "insights-viz.py")
-insights_viz = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(insights_viz)
+# Import the module to test
+import insights_viz
 
 
 class TestInsightsViz(unittest.TestCase):
     """Unit tests for insights-viz.py"""
 
-    @patch('insights_viz.psycopg2.connect')
+    @patch.object(sys.modules['insights_viz'].psycopg2, 'connect')
     def test_connect_to_db_success(self, mock_connect):
         """Test successful database connection"""
         # Mock a successful connection
@@ -26,17 +23,17 @@ class TestInsightsViz(unittest.TestCase):
         self.assertIsNotNone(result)
         mock_connect.assert_called_once()
 
-    @patch('insights_viz.psycopg2.connect')
+    @patch.object(sys.modules['insights_viz'].psycopg2, 'connect')
     def test_connect_to_db_failure(self, mock_connect):
         """Test database connection failure"""
         # Mock a connection error
-        mock_connect.side_effect = Exception("Connection refused")
+        mock_connect.side_effect = sys.modules['insights_viz'].psycopg2.Error("Connection refused")
         
         result = insights_viz.connect_to_db()
         
         self.assertIsNone(result)
 
-    @patch('insights_viz.pd.read_sql')
+    @patch.object(sys.modules['insights_viz'].pd, 'read_sql')
     def test_query_data_success(self, mock_read_sql):
         """Test successful query execution"""
         # Create mock data
@@ -53,11 +50,11 @@ class TestInsightsViz(unittest.TestCase):
         self.assertEqual(len(result), 3)
         self.assertIn('symbol', result.columns)
 
-    @patch('insights_viz.pd.read_sql')
+    @patch.object(sys.modules['insights_viz'].pd, 'read_sql')
     def test_query_data_failure(self, mock_read_sql):
         """Test query execution failure"""
         # Mock a query error
-        mock_read_sql.side_effect = Exception("Query error")
+        mock_read_sql.side_effect = sys.modules['insights_viz'].psycopg2.Error("Query error")
         mock_conn = MagicMock()
         
         result = insights_viz.query_data(mock_conn, "SELECT * FROM trading_volume;")
