@@ -1,4 +1,4 @@
-package com.neueda.leap.controller;
+package com.neueda.leap.controllers;
 
 import com.neueda.leap.services.domain.Order;
 import com.neueda.leap.services.OrderService;
