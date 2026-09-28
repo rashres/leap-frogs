@@ -1,9 +1,11 @@
-package com.neueda.leap.services.domain;
+package com.neueda.leap;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+
+import com.neueda.leap.services.domain.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.CommandLineRunner;
