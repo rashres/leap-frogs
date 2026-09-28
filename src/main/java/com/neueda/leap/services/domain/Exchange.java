@@ -1,4 +1,4 @@
-package com.neueda.leap.domain;
+package com.neueda.leap.services.domain;
 
 public class Exchange {
     private int exchange_id;
