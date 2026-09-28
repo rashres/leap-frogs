@@ -1,7 +1,7 @@
 package com.neueda.leap.controller;
 
 import com.neueda.leap.services.domain.Order;
-import com.neueda.leap.services.domain.OrderExecutor;
+import com.neueda.leap.services.OrderService;
 import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -16,7 +16,7 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 public class OrderController {
     
-    private static final OrderExecutor executor = new OrderExecutor();
+    private static final OrderService executor = new OrderService();
     private static final Map<Integer, Order> orderRepository = new HashMap<>();
     private static int orderIdCounter = 1;
 
