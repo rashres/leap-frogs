@@ -1,4 +1,4 @@
-package com.neueda.leap.controller;
+package com.neueda.leap.controllers;
 
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
