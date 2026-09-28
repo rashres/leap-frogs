@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
+import com.neueda.leap.services.OrderService;
 import com.neueda.leap.services.domain.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -47,7 +48,7 @@ class ConsoleRunner implements CommandLineRunner {
         Order sellOrder = new Order(account, MSFT, "BUY", b2);
         Order sellOrder2 = new Order(account, MSFT, "SELL", b3);
 
-        OrderExecutor executor = new OrderExecutor();
+        OrderService executor = new OrderService();
 
         /*
         System.out.println(executor.process_order(buyOrder));
