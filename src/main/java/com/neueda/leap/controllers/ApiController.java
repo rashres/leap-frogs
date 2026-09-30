@@ -4,6 +4,10 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -16,6 +20,12 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 @Tag(name = "API Info", description = "Root API information and health check endpoints")
 public class ApiController {
+
+    private final JdbcTemplate jdbcTemplate;
+
+    public ApiController(JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
+    }
 
     /**
      * API Root Info
@@ -51,14 +61,28 @@ public class ApiController {
     @GetMapping("/health")
     @Operation(summary = "Health Check", description = "Verifies the health status of the Leap Frogs API service and its dependencies")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Service is healthy")
+        @ApiResponse(responseCode = "200", description = "Service and database are healthy"),
+        @ApiResponse(responseCode = "503", description = "Database is unreachable")
     })
-    public Map<String, Object> health() {
+    public ResponseEntity<Map<String, Object>> health() {
+        boolean databaseUp = isDatabaseUp();
+
         Map<String, Object> health = new HashMap<>();
-        health.put("status", "UP");
+        health.put("status", databaseUp ? "UP" : "DOWN");
         health.put("service", "Leap Frogs API");
         health.put("timestamp", System.currentTimeMillis());
-        health.put("database", "PENDING (not connected yet)");
-        return health;
+        health.put("database", databaseUp ? "UP" : "DOWN");
+
+        HttpStatus httpStatus = databaseUp ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE;
+        return ResponseEntity.status(httpStatus).body(health);
+    }
+
+    private boolean isDatabaseUp() {
+        try {
+            jdbcTemplate.queryForObject("SELECT 1", Integer.class);
+            return true;
+        } catch (DataAccessException e) {
+            return false;
+        }
     }
 }
