@@ -1,6 +1,5 @@
-package com.neueda.leap.dtos;
+package com.neueda.leap.controllers.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
