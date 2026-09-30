@@ -25,10 +25,10 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
-        <!-- Spring Data JPA (ORM and database connectivity) -->
+        <!-- Bean Validation (@NotNull, @Positive, ... on request DTOs) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
 
         <!-- PostgreSQL Driver -->
@@ -57,7 +57,7 @@
         <dependency>
             <groupId>org.springdoc</groupId>
             <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-            <version>2.0.2</version>
+            <version>2.3.0</version>
         </dependency>
 
         <!-- MyBatis Spring Boot Starter -->
