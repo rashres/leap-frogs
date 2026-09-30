@@ -1,5 +1,9 @@
 package com.neueda.leap.controllers;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +14,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("")
 @CrossOrigin(origins = "*")
+@Tag(name = "API Info", description = "Root API information and health check endpoints")
 public class ApiController {
 
     /**
@@ -17,6 +22,10 @@ public class ApiController {
      * GET /api
      */
     @GetMapping
+    @Operation(summary = "Get API Information", description = "Returns general information about the Leap Frogs Trading API including version, status, and available endpoints")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Successfully retrieved API info")
+    })
     public Map<String, Object> apiInfo() {
         Map<String, Object> info = new HashMap<>();
         info.put("service", "Leap Frogs Trading API");
@@ -40,6 +49,10 @@ public class ApiController {
      * GET /api/health
      */
     @GetMapping("/health")
+    @Operation(summary = "Health Check", description = "Verifies the health status of the Leap Frogs API service and its dependencies")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Service is healthy")
+    })
     public Map<String, Object> health() {
         Map<String, Object> health = new HashMap<>();
         health.put("status", "UP");
