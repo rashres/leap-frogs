@@ -47,8 +47,8 @@ public class ApiController {
             "POST /api/orders - Submit order",
             "GET /api/orders - List orders",
             "GET /api/orders/{id} - Get order",
-            "GET /api/accounts - List accounts (coming soon)",
-            "GET /api/accounts/{id} - Get account (coming soon)",
+            "GET /api/accounts - List accounts",
+            "GET /api/accounts/{id} - Get account",
             "GET /api/instruments - List instruments (coming soon)"
         });
         return info;

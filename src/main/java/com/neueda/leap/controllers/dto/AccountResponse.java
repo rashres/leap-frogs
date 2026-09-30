@@ -8,15 +8,13 @@ public record AccountResponse(
         int accountId,
         String name,
         String email,
-        BigDecimal cashBalance,
-        int holdingsCount
+        BigDecimal cashBalance
 ) {
     public static AccountResponse from(Account account) {
         return new AccountResponse(
                 account.getAccountId(),
                 account.getName(),
                 account.getEmail(),
-                account.getCashBalance(),
-                account.getHoldings().size());
+                account.getCashBalance());
     }
 }
