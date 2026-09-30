@@ -32,6 +32,14 @@ public class Order {
         this.status = "CREATED";
     }
 
+    public int getOrderId() {
+        return order_id;
+    }
+
+    public void setOrderId(int orderId) {
+        this.order_id = orderId;
+    }
+
     public Account getAccount() {
         return account;
     }
@@ -58,6 +66,14 @@ public class Order {
 
     public String getStatus() {
         return status;
+    }
+
+    public Instant getPlacedTime() {
+        return placed_time;
+    }
+
+    public Instant getFulfilledTime() {
+        return fulfilled_time;
     }
 
     public void setStatus(String status) {

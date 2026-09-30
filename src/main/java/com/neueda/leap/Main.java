@@ -10,6 +10,7 @@ import com.neueda.leap.services.domain.*;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 @SpringBootApplication
@@ -20,6 +21,7 @@ public class Main {
 }
 
 @Component
+@Profile("console")
 class ConsoleRunner implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
