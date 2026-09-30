@@ -20,11 +20,14 @@ import java.util.Map;
 @CrossOrigin(origins = "*")
 @Tag(name = "Orders", description = "Order management endpoints")
 public class OrderController {
-    
-    private static final OrderService executor = new OrderService();
+
+    private final OrderService executor;
     private static final Map<Integer, Order> orderRepository = new HashMap<>();
     private static int orderIdCounter = 1;
 
+    public OrderController(OrderService executor) {
+        this.executor = executor;
+    }
     /**
      * Submit a new order
      * POST /api/orders
