@@ -18,6 +18,7 @@ public class Main {
     public static void main(String[] args) {
         SpringApplication.run(Main.class, args);
     }
+<<<<<<< Updated upstream
 }
 
 @Component
@@ -136,4 +137,6 @@ class ConsoleRunner implements CommandLineRunner {
 
         System.out.println("Session Ended");
     }
+=======
+>>>>>>> Stashed changes
 }
