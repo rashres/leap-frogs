@@ -9,16 +9,23 @@ import java.util.Map;
 @Service
 public class OrderService {
 
-    public OrderService() {
+    AccountService accountService;
+
+    public OrderService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
+    /*
     public boolean submitOrder(Account account, Instrument instrument, String side, BigDecimal quantity) {
         Order order = new Order(account, instrument, side, quantity);
         return process_order(order);
     }
+    */
 
-    public boolean process_order(Order order) {
+    public boolean process_order(Order order, String accountId) {
         order.setStatus("PENDING");
+
+
 
         if (!OrderValidator.isValidOrder(order)) {
             order.setStatus("FAILED");
