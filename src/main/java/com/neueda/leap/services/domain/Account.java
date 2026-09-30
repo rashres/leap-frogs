@@ -11,6 +11,11 @@ public class Account {
     private BigDecimal cashBalance;
     private Map<Instrument, Holding> holdings;
 
+    // Used by MyBatis, which creates the object first and then calls the setters.
+    public Account() {
+        this.holdings = new HashMap<>();
+    }
+
     public Account(int accountId, String name, String email, BigDecimal cashBalance) {
         this.accountId = accountId;
         this.name = name;
