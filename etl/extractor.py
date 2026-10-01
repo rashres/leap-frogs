@@ -44,10 +44,10 @@ class ETLExtractor:
             transactions_df = pd.read_sql("SELECT * FROM transactions", self.engine)
             logger.info(f"  ✓ Extracted {len(transactions_df)} transaction records")
             
-            # Extract stock
-            logger.info("Extracting: stock")
-            stock_df = pd.read_sql("SELECT * FROM stock", self.engine)
-            logger.info(f"  ✓ Extracted {len(stock_df)} stock records")
+            # Extract instrument
+            logger.info("Extracting: instrument")
+            stock_df = pd.read_sql("SELECT * FROM instrument", self.engine)
+            logger.info(f"  ✓ Extracted {len(stock_df)} instrument records")
             
             # Extract exchange
             logger.info("Extracting: exchange")

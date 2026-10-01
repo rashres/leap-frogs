@@ -41,7 +41,7 @@ class ETLTransformer:
         stock = stock_df.rename(columns={'name': 'stock_name'})
         exchange = exchange_df.rename(columns={'name': 'exchange_name'})
 
-        df = transactions_df.merge(stock, on='stock_id', how='left')
+        df = transactions_df.merge(stock, on='instrument_id', how='left')
         df = df.merge(exchange, on='exchange_id', how='left')
         df = df.rename(columns={'transaction_time': 'transactions_time'})
         
@@ -78,7 +78,7 @@ class ETLTransformer:
         logger.info("  Transforming: trading_volume (aggregated)")
         
         # Join transactions with stock
-        df = transactions_df.merge(stock_df, on='stock_id', how='left')
+        df = transactions_df.merge(stock_df, on='instrument_id', how='left')
         
         # Calculate amount for notional
         df['amount'] = df['quantity'].astype(float) * df['price'].astype(float)
@@ -155,7 +155,7 @@ class ETLTransformer:
         logger.info("  Transforming: instrument_activity (aggregated)")
         
         # Join transactions with stock
-        df = transactions_df.merge(stock_df, on='stock_id', how='left')
+        df = transactions_df.merge(stock_df, on='instrument_id', how='left')
         
         # Group by symbol and calculate metrics
         activity = df.groupby('symbol').agg({
