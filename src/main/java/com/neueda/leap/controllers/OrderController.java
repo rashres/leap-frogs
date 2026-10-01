@@ -19,7 +19,7 @@ import java.util.Map;
  * Provides endpoints to submit, retrieve, and manage orders
  */
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/{accountID}/orders")
 @CrossOrigin(origins = "*")
 @Tag(name = "Orders", description = "Order management endpoints")
 public class OrderController {
@@ -42,7 +42,7 @@ public class OrderController {
         @ApiResponse(responseCode = "200", description = "Order submitted successfully"),
         @ApiResponse(responseCode = "400", description = "Invalid order request - missing or invalid accountId, instrumentId, side, or quantity")
     })
-    public Map<String, Object> submitOrder(@org.springframework.web.bind.annotation.RequestBody OrderRequest request) {
+    public Map<String, Object> submitOrder(@org.springframework.web.bind.annotation.RequestBody OrderRequest request, @PathVariable int accountID) {
         Map<String, Object> response = new HashMap<>();
         
         try {
@@ -59,6 +59,8 @@ public class OrderController {
             // For now, store in memory
             int orderId = orderIdCounter++;
             orderRepository.put(orderId, order);
+
+            executor.process_order(order, accountID);
 
             response.put("status", "SUCCESS");
             response.put("orderId", orderId);
