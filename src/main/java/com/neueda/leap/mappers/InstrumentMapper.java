@@ -9,5 +9,5 @@ import java.util.List;
 
 public interface InstrumentMapper {
     @Select("SELECT stock_id symbol, name from stock WHERE stock_id=#{stock_id}")
-    List<Instrument> findByStockId(int stock_id);
+    Instrument findByStockId(int stock_id);
 }
