@@ -32,7 +32,7 @@ public record OrderResponse(
         @Schema(description = "Total order value (quantity × price)", example = "15050.00")
         BigDecimal value,
         
-        @Schema(description = "Current order status", example = "PENDING", allowableValues = {"PENDING", "FILLED", "CANCELLED"})
+        @Schema(description = "Current order status", example = "PENDING", allowableValues = {"CREATED", "PENDING", "COMPLETE", "FAILED"})
         String status,
         
         @Schema(description = "Timestamp when order was placed")
