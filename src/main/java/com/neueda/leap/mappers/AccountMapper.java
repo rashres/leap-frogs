@@ -1,4 +1,4 @@
-package com.neueda.leap.repositories;
+package com.neueda.leap.mappers;
 
 import com.neueda.leap.services.domain.Account;
 import org.apache.ibatis.annotations.Mapper;

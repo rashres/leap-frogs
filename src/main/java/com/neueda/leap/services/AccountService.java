@@ -1,16 +1,11 @@
 package com.neueda.leap.services;
 
 
-import com.neueda.leap.repositories.AccountMapper;
+import com.neueda.leap.mappers.AccountMapper;
 import com.neueda.leap.services.domain.Account;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-
-import com.neueda.leap.services.domain.Account;
-import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
 
 
 @Service
