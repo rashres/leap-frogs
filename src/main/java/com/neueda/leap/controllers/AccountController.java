@@ -3,6 +3,7 @@ package com.neueda.leap.controllers;
 import com.neueda.leap.controllers.dto.AccountResponse;
 import com.neueda.leap.services.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -48,7 +49,7 @@ public class AccountController {
         @ApiResponse(responseCode = "200", description = "Account found"),
         @ApiResponse(responseCode = "404", description = "Account not found")
     })
-    public AccountResponse getAccount(@PathVariable int id) {
+    public AccountResponse getAccount(@PathVariable @Parameter(description = "The unique identifier of the account") int id) {
         return AccountResponse.from(accountService.findById(id));
     }
 }
