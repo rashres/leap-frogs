@@ -49,7 +49,8 @@ public class ApiController {
             "GET /api/orders/{id} - Get order",
             "GET /api/accounts - List accounts",
             "GET /api/accounts/{id} - Get account",
-            "GET /api/instruments - List instruments (coming soon)"
+            "GET /api/instruments - List instruments",
+            "GET /api/instruments/{id} - Get instrument"
         });
         return info;
     }
