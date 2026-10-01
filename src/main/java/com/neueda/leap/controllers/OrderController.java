@@ -1,8 +1,10 @@
 package com.neueda.leap.controllers;
 
+import com.neueda.leap.controllers.dto.OrderRequest;
 import com.neueda.leap.services.domain.Order;
 import com.neueda.leap.services.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -31,22 +33,15 @@ public class OrderController {
     /**
      * Submit a new order
      * POST /api/orders
-     * 
-     * Request Body:
-     * {
-     *   "accountId": 1001,
-     *   "instrumentId": 1,
-     *   "side": "BUY",
-     *   "quantity": "10"
-     * }
      */
     @PostMapping
-    @Operation(summary = "Submit a new order", description = "Creates and submits a new trading order")
+    @Operation(summary = "Submit a new order", description = "Creates and submits a new trading order. Validates account and instrument IDs, then creates an order with the specified side and quantity.")
+    @RequestBody(description = "Order submission details including account ID, instrument ID, trade side (BUY/SELL), and quantity")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Order submitted successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid order request")
+        @ApiResponse(responseCode = "400", description = "Invalid order request - missing or invalid accountId, instrumentId, side, or quantity")
     })
-    public Map<String, Object> submitOrder(@RequestBody OrderRequest request) {
+    public Map<String, Object> submitOrder(@org.springframework.web.bind.annotation.RequestBody OrderRequest request) {
         Map<String, Object> response = new HashMap<>();
         
         try {
@@ -140,27 +135,4 @@ public class OrderController {
         response.put("service", "OrderService");
         return response;
     }
-}
-
-/**
- * Request body for submitting orders
- */
-class OrderRequest {
-    private Integer accountId;
-    private Integer instrumentId;
-    private String side;
-    private String quantity;
-
-    // Getters and Setters
-    public Integer getAccountId() { return accountId; }
-    public void setAccountId(Integer accountId) { this.accountId = accountId; }
-
-    public Integer getInstrumentId() { return instrumentId; }
-    public void setInstrumentId(Integer instrumentId) { this.instrumentId = instrumentId; }
-
-    public String getSide() { return side; }
-    public void setSide(String side) { this.side = side; }
-
-    public String getQuantity() { return quantity; }
-    public void setQuantity(String quantity) { this.quantity = quantity; }
 }
