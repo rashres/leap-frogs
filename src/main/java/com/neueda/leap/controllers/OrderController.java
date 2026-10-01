@@ -60,6 +60,7 @@ public class OrderController {
             int orderId = orderIdCounter++;
             orderRepository.put(orderId, order);
 
+            //send to order service
             executor.process_order(order, accountID);
 
             response.put("status", "SUCCESS");
