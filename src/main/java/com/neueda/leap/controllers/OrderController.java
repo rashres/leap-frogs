@@ -4,6 +4,7 @@ import com.neueda.leap.controllers.dto.OrderRequest;
 import com.neueda.leap.services.domain.Order;
 import com.neueda.leap.services.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -46,14 +47,14 @@ public class OrderController {
         
         try {
             // Validate input
-            if (request.getAccountId() == null || request.getInstrumentId() == null) {
+            if (request.accountId() == null || request.instrumentId() == null) {
                 response.put("status", "ERROR");
                 response.put("message", "accountId and instrumentId are required");
                 return response;
             }
 
             // Create order (will be linked to real Account/Instrument once we have DB)
-            Order order = new Order(null, null, request.getSide(), new BigDecimal(request.getQuantity()));
+            Order order = new Order(null, null, request.side(), new BigDecimal(request.quantity()));
             
             // For now, store in memory
             int orderId = orderIdCounter++;
@@ -62,8 +63,8 @@ public class OrderController {
             response.put("status", "SUCCESS");
             response.put("orderId", orderId);
             response.put("message", "Order submitted successfully");
-            response.put("side", request.getSide());
-            response.put("quantity", request.getQuantity());
+            response.put("side", request.side());
+            response.put("quantity", request.quantity());
             
         } catch (Exception e) {
             response.put("status", "ERROR");
@@ -83,7 +84,7 @@ public class OrderController {
         @ApiResponse(responseCode = "200", description = "Order found"),
         @ApiResponse(responseCode = "404", description = "Order not found")
     })
-    public Map<String, Object> getOrder(@PathVariable Integer orderId) {
+    public Map<String, Object> getOrder(@PathVariable @Parameter(description = "The unique identifier of the order") Integer orderId) {
         Map<String, Object> response = new HashMap<>();
         
         Order order = orderRepository.get(orderId);
