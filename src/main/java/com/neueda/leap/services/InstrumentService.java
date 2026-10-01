@@ -20,7 +20,7 @@ public class InstrumentService {
     }
 
     public Instrument findById(int instrumentId) {
-        Instrument instrument = instrumentMapper.findById(instrumentId);
+        Instrument instrument = instrumentMapper.findByStockId(instrumentId);
         if (instrument == null) {
             throw new ResourceNotFoundException("Instrument", instrumentId);
         }
