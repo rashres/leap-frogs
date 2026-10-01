@@ -22,10 +22,10 @@ public class OrderService {
     }
     */
 
-    public boolean process_order(Order order, String accountId) {
+    public boolean process_order(Order order, int accountId) {
         order.setStatus("PENDING");
 
-
+        Account account = accountService.findById(accountId);
 
         if (!OrderValidator.isValidOrder(order)) {
             order.setStatus("FAILED");
@@ -36,8 +36,8 @@ public class OrderService {
         ExternalService service = new ExternalService();
         service.executeTrade(order);
 
-        update_holdings(order);
-        update_balance(order);
+        update_holdings(order, account);
+        update_balance(order, account);
 
         order.setStatus("COMPLETE");
         System.out.println("Order Processed");
@@ -45,9 +45,8 @@ public class OrderService {
         return true;
     }
 
-    private void update_holdings(Order order) {
+    private void update_holdings(Order order, Account account) {
 
-        Account account = order.getAccount();
         Instrument instrument = order.getInstrument();
         Holding holding;
 
@@ -67,9 +66,8 @@ public class OrderService {
 
     }
 
-    private void update_balance(Order order) {
+    private void update_balance(Order order, Account account) {
 
-        Account account = order.getAccount();
         BigDecimal value = order.getValue();
         String side = order.getSide();
 
