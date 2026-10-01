@@ -9,6 +9,7 @@ public class Instrument {
     private String symbol;
     private String name;
     private int exchangeId;
+    private Exchange exchange;
 
     public Instrument(){
 
@@ -64,6 +65,14 @@ public class Instrument {
             throw new IllegalArgumentException("Exchange ID must be positive");
         }
         this.exchangeId = exchangeId;
+    }
+
+    public Exchange getExchange() {
+        return exchange;
+    }
+
+    public void setExchange(Exchange exchange) {
+        this.exchange = exchange;
     }
 
     public String displayName() {
