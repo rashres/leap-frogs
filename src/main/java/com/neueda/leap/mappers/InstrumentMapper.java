@@ -32,5 +32,5 @@ public interface InstrumentMapper {
 
     @Select(SELECT_WITH_EXCHANGE + " WHERE s.stock_id = #{stockId}")
     @ResultMap("instrumentWithExchange")
-    Instrument findById(int stockId);
+    Instrument findByStockId(int stockId);
 }
