@@ -6,6 +6,6 @@ import com.neueda.leap.services.domain.Holding;
 
 @Mapper
 public interface HoldingsMapper {
-    @Select("SELECT holding_id, stock_id, quantity from holdings WHERE holding_id= #{holding_id}")
+    @Select("SELECT holding_id, instrument_id, quantity from holdings WHERE holding_id= #{holding_id}")
     Holding findById(int holding_id);
 }
