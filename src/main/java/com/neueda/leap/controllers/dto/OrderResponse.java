@@ -45,7 +45,7 @@ public record OrderResponse(
         return new OrderResponse(
                 order.getOrderId(),
                 order.getAccount().getAccountId(),
-                order.getInstrument().getStockId(),
+                order.getInstrument().getInstrumentId(),
                 order.getInstrument().getSymbol(),
                 order.getSide(),
                 order.getQuantity(),

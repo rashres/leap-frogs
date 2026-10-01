@@ -8,6 +8,6 @@ import java.util.List;
 @Mapper
 
 public interface InstrumentMapper {
-    @Select("SELECT stock_id symbol, name from stock WHERE stock_id=#{stock_id}")
-    List<Instrument> findByStockId(int stock_id);
+    @Select("SELECT instrument_id, symbol, name, exchange_id from instrument WHERE instrument_id=#{instrument_id}")
+    List<Instrument> findByInstrumentId(int instrument_id);
 }

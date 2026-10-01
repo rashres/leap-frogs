@@ -30,7 +30,7 @@ public record HoldingResponse(
         Instrument instrument = holding.getInstrument();
         BigDecimal price = instrument.getPrice();
         return new HoldingResponse(
-                instrument.getStockId(),
+                instrument.getInstrumentId(),
                 instrument.getSymbol(),
                 instrument.getName(),
                 holding.getQuantity(),
