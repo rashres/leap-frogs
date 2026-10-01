@@ -118,7 +118,7 @@ class ETLTransformer:
             how='left'
         )
         
-        # Add stock name from stock table
+        # Add stock name from instrument table
         trading_volume = trading_volume.merge(
             stock_df[['symbol', 'name']].drop_duplicates(),
             on='symbol',
