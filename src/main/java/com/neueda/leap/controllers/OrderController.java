@@ -5,6 +5,10 @@ import com.neueda.leap.services.domain.Order;
 import com.neueda.leap.services.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -36,13 +40,33 @@ public class OrderController {
      * POST /api/orders
      */
     @PostMapping
-    @Operation(summary = "Submit a new order", description = "Creates and submits a new trading order. Validates account and instrument IDs, then creates an order with the specified side and quantity.")
-    @RequestBody(description = "Order submission details including account ID, instrument ID, trade side (BUY/SELL), and quantity")
+    @Operation(
+        summary = "Submit a new order",
+        description = "Creates and submits a new trading order. Validates account and instrument IDs, then creates an order with the specified side and quantity. "
+                    + "Failures are reported in the response body with status ERROR rather than as an HTTP error code."
+    )
+    @RequestBody(
+        required = true,
+        description = "Order submission details including account ID, instrument ID, trade side (BUY/SELL), and quantity",
+        content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderRequest.class))
+    )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Order submitted successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid order request - missing or invalid accountId, instrumentId, side, or quantity")
+        @ApiResponse(
+            responseCode = "200",
+            description = "Request processed. Check the status field for SUCCESS or ERROR.",
+            content = @Content(mediaType = "application/json", examples = {
+                @ExampleObject(name = "Success", value = """
+                        {"status":"SUCCESS","orderId":1,"message":"Order submitted successfully","side":"BUY","quantity":"10"}"""),
+                @ExampleObject(name = "Validation error", value = """
+                        {"status":"ERROR","message":"accountId and instrumentId are required"}""")
+            })
+        )
     })
-    public Map<String, Object> submitOrder(@org.springframework.web.bind.annotation.RequestBody OrderRequest request, @PathVariable int accountID) {
+    public Map<String, Object> submitOrder(
+            @org.springframework.web.bind.annotation.RequestBody OrderRequest request,
+            @PathVariable
+            @Parameter(description = "The unique identifier of the account submitting the order", example = "1001", required = true)
+            int accountID) {
         Map<String, Object> response = new HashMap<>();
         
         try {
@@ -82,12 +106,27 @@ public class OrderController {
      * GET /api/orders/{orderId}
      */
     @GetMapping("/{orderId}")
-    @Operation(summary = "Get order by ID", description = "Retrieves a specific order by its ID")
+    @Operation(
+        summary = "Get order by ID",
+        description = "Retrieves a specific order by its ID. A missing order is reported in the body with status NOT_FOUND, not as an HTTP 404.",
+        parameters = @Parameter(
+            name = "accountID", in = ParameterIn.PATH, required = true,
+            description = "The unique identifier of the account that owns the order", example = "1001"
+        )
+    )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Order found"),
-        @ApiResponse(responseCode = "404", description = "Order not found")
+        @ApiResponse(
+            responseCode = "200",
+            description = "Request processed. Check the status field for SUCCESS or NOT_FOUND.",
+            content = @Content(mediaType = "application/json", examples = {
+                @ExampleObject(name = "Order found", value = """
+                        {"status":"SUCCESS","orderId":1,"side":"BUY","quantity":10,"price":150.50,"orderStatus":"COMPLETE"}"""),
+                @ExampleObject(name = "Order not found", value = """
+                        {"status":"NOT_FOUND","message":"Order 1 not found"}""")
+            })
+        )
     })
-    public Map<String, Object> getOrder(@PathVariable @Parameter(description = "The unique identifier of the order") Integer orderId) {
+    public Map<String, Object> getOrder(@PathVariable @Parameter(description = "The unique identifier of the order", example = "1") Integer orderId) {
         Map<String, Object> response = new HashMap<>();
         
         Order order = orderRepository.get(orderId);
@@ -112,9 +151,21 @@ public class OrderController {
      * GET /api/orders
      */
     @GetMapping
-    @Operation(summary = "List all orders", description = "Retrieves a list of all orders in the system")
+    @Operation(
+        summary = "List all orders",
+        description = "Retrieves a list of all orders in the system. Orders are returned keyed by order ID.",
+        parameters = @Parameter(
+            name = "accountID", in = ParameterIn.PATH, required = true,
+            description = "The unique identifier of the account in the request path", example = "1001"
+        )
+    )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved all orders")
+        @ApiResponse(
+            responseCode = "200",
+            description = "Successfully retrieved all orders",
+            content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
+                    {"status":"SUCCESS","totalOrders":1,"orders":{"1":{"side":"BUY","quantity":10,"price":150.50,"status":"COMPLETE"}}}"""))
+        )
     })
     public Map<String, Object> listOrders() {
         Map<String, Object> response = new HashMap<>();
@@ -129,9 +180,21 @@ public class OrderController {
      * GET /api/orders/health
      */
     @GetMapping("/health")
-    @Operation(summary = "Order service health check", description = "Verifies the health status of the order service")
+    @Operation(
+        summary = "Order service health check",
+        description = "Verifies the health status of the order service",
+        parameters = @Parameter(
+            name = "accountID", in = ParameterIn.PATH, required = true,
+            description = "The unique identifier of the account in the request path", example = "1001"
+        )
+    )
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Service is healthy")
+        @ApiResponse(
+            responseCode = "200",
+            description = "Service is healthy",
+            content = @Content(mediaType = "application/json", examples = @ExampleObject(value = """
+                    {"status":"UP","service":"OrderService"}"""))
+        )
     })
     public Map<String, String> health() {
         Map<String, String> response = new HashMap<>();
