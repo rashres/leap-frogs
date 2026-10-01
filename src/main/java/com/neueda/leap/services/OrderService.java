@@ -1,5 +1,6 @@
 package com.neueda.leap.services;
 
+import com.neueda.leap.mappers.InstrumentMapper;
 import com.neueda.leap.services.domain.*;
 import org.springframework.stereotype.Service;
 
@@ -10,17 +11,18 @@ import java.util.Map;
 public class OrderService {
 
     AccountService accountService;
+    InstrumentMapper instrumentMapper;
 
-    public OrderService(AccountService accountService) {
+    public OrderService(AccountService accountService, InstrumentMapper instrumentMapper) {
         this.accountService = accountService;
+        this.instrumentMapper = instrumentMapper;
     }
 
-    /*
-    public boolean submitOrder(Account account, Instrument instrument, String side, BigDecimal quantity) {
-        Order order = new Order(account, instrument, side, quantity);
-        return process_order(order);
+    public Order create_order(int accountID, int instrumentID, String side, String quantity) {
+        Account account = accountService.findById(accountID);
+        Instrument instrument = instrumentMapper.findByInstrumentId(instrumentID);
+        return new Order(account, instrument, side, new BigDecimal(quantity));
     }
-    */
 
     public boolean process_order(Order order, int accountId) {
         order.setStatus("PENDING");

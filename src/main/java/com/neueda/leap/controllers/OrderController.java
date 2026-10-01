@@ -78,7 +78,7 @@ public class OrderController {
             }
 
             // Create order (will be linked to real Account/Instrument once we have DB)
-            Order order = new Order(null, null, request.side(), new BigDecimal(request.quantity()));
+            Order order = executor.create_order(accountID,request.instrumentId(), request.side(), request.quantity());
             
             // For now, store in memory
             int orderId = orderIdCounter++;
