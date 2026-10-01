@@ -30,6 +30,10 @@ CREATE TABLE transactions (
     transaction_type   VARCHAR(4) NOT NULL CHECK (transaction_type IN ('BUY', 'SELL')),
     quantity           NUMERIC(18,6) NOT NULL CHECK (quantity > 0),
     price              NUMERIC(18,6) NOT NULL CHECK (price > 0),
+    -- Outcome of the order. Mirrors Order.setStatus() in the Java domain:
+    -- COMPLETE = executed successfully, FAILED = rejected by validation.
+    status             VARCHAR(10) NOT NULL DEFAULT 'COMPLETE'
+                       CHECK (status IN ('PENDING', 'COMPLETE', 'FAILED')),
     transaction_time   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -152,7 +156,14 @@ SELECT
 FROM sell_txns
 WHERE rn <= 15;  -- Limit to 15 SELL transactions
 
--- 4) Rebuild holdings to match all transactions (BUY adds, SELL subtracts)
+-- 3b) A couple of rejected orders, so the status column and the holdings
+--     filter below are both exercised by the sample data.
+INSERT INTO transactions (account_id, instrument_id, transaction_type, quantity, price, status) VALUES
+  (1, 1, 'BUY',  5, 150.00, 'FAILED'),
+  (1, 2, 'SELL', 1, 300.00, 'FAILED');
+
+-- 4) Rebuild holdings from successful transactions (BUY adds, SELL subtracts).
+--    Rejected (FAILED) and in-flight (PENDING) rows must not move holdings.
 DELETE FROM holdings;
 
 INSERT INTO holdings (account_id, instrument_id, quantity, updated_at)
@@ -170,6 +181,7 @@ SELECT
     ) AS quantity,
     now()
 FROM transactions t
+WHERE t.status = 'COMPLETE'
 GROUP BY t.account_id, t.instrument_id
 HAVING round(
                SUM(
