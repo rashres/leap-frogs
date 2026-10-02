@@ -23,7 +23,7 @@ public interface HoldingsMapper {
      * Insert or update a holding (upsert)
      */
     @Insert("INSERT INTO holdings (account_id, instrument_id, quantity, updated_at) " +
-            "VALUES (#{accountId}, #{instrument.id}, #{quantity}, #{updatedAt}) " +
+            "VALUES (#{accountId}, #{instrument.instrumentId}, #{quantity}, #{updatedAt}) " +
             "ON CONFLICT (account_id, instrument_id) DO UPDATE SET " +
             "quantity = EXCLUDED.quantity, updated_at = EXCLUDED.updated_at")
     void upsertHolding(Holding holding);
