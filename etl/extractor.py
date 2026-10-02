@@ -30,7 +30,11 @@ class ETLExtractor:
     def extract_all_data(self) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """
         Extract all source tables from operational database.
-        
+
+        Transactions are restricted to status = 'COMPLETE'; rejected (FAILED)
+        and unsettled (PENDING) orders are excluded so they do not inflate
+        analytics volume.
+
         Returns:
             Tuple of (transactions_df, stock_df, exchange_df, account_df)
         """
@@ -39,10 +43,14 @@ class ETLExtractor:
         logger.info("=" * 70)
         
         try:
-            # Extract transactions
-            logger.info("Extracting: transactions")
-            transactions_df = pd.read_sql("SELECT * FROM transactions", self.engine)
-            logger.info(f"  ✓ Extracted {len(transactions_df)} transaction records")
+            # Extract transactions. Only settled trades belong in analytics:
+            # FAILED orders were rejected and PENDING ones have not settled, so
+            # counting either would overstate volume on the dashboards.
+            logger.info("Extracting: transactions (status = COMPLETE)")
+            transactions_df = pd.read_sql(
+                "SELECT * FROM transactions WHERE status = 'COMPLETE'", self.engine
+            )
+            logger.info(f"  ✓ Extracted {len(transactions_df)} completed transaction records")
             
             # Extract instrument
             logger.info("Extracting: instrument")
