@@ -1,5 +1,6 @@
 package com.neueda.leap.controllers.dto;
 
+import com.neueda.leap.services.OrderResult;
 import com.neueda.leap.services.domain.Order;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -32,16 +33,27 @@ public record OrderResponse(
         @Schema(description = "Total order value (quantity × price)", example = "15050.00")
         BigDecimal value,
         
-        @Schema(description = "Current order status", example = "PENDING", allowableValues = {"CREATED", "PENDING", "COMPLETE", "FAILED"})
+        @Schema(description = "Current order status", example = "COMPLETE", allowableValues = {"CREATED", "PENDING", "COMPLETE", "FAILED"})
         String status,
         
         @Schema(description = "Timestamp when order was placed")
         Instant placedTime,
         
-        @Schema(description = "Timestamp when order was fulfilled (null if pending)")
-        Instant fulfilledTime
+        @Schema(description = "Timestamp when order was fulfilled (null if not fulfilled)")
+        Instant fulfilledTime,
+
+        @Schema(description = "Why the order was rejected (only set on a FAILED order just submitted)", example = "Insufficient cash: required 500, available 120.00")
+        String message
 ) {
     public static OrderResponse from(Order order) {
+        return from(order, null);
+    }
+
+    public static OrderResponse from(OrderResult result) {
+        return from(result.order(), result.rejectionReason());
+    }
+
+    private static OrderResponse from(Order order, String message) {
         return new OrderResponse(
                 order.getOrderId(),
                 order.getAccount().getAccountId(),
@@ -53,6 +65,7 @@ public record OrderResponse(
                 order.getValue(),
                 order.getStatus(),
                 order.getPlacedTime(),
-                order.getFulfilledTime());
+                order.getFulfilledTime(),
+                message);
     }
 }
