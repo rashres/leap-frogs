@@ -5,6 +5,7 @@ import com.neueda.leap.mappers.AccountMapper;
 import com.neueda.leap.services.domain.Account;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 
@@ -27,6 +28,11 @@ public class AccountService {
             throw new ResourceNotFoundException("Account", accountId);
         }
         return account;
+    }
+
+    public void updateBalance(BigDecimal value, Account account, String side) {
+        account.updateCashBalance(value, side);
+        accountMapper.updateBalance(account.getAccountId(), account.getCashBalance());
     }
 
 }

@@ -83,7 +83,7 @@ public class OrderService {
         BigDecimal value = order.getValue();
         String side = order.getSide();
 
-        account.updateCashBalance(value, side);
+        accountService.updateBalance(value, account, side);
     }
 
 }
