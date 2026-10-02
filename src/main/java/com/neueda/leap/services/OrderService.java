@@ -1,6 +1,8 @@
 package com.neueda.leap.services;
 
+import com.neueda.leap.mappers.HoldingsMapper;
 import com.neueda.leap.mappers.InstrumentMapper;
+import com.neueda.leap.mappers.OrderMapper;
 import com.neueda.leap.services.domain.*;
 import org.springframework.stereotype.Service;
 
@@ -12,10 +14,14 @@ public class OrderService {
 
     AccountService accountService;
     InstrumentMapper instrumentMapper;
+    HoldingsMapper holdingsMapper;
+    OrderMapper orderMapper;
 
-    public OrderService(AccountService accountService, InstrumentMapper instrumentMapper) {
+    public OrderService(AccountService accountService, InstrumentMapper instrumentMapper, HoldingsMapper holdingsMapper, OrderMapper orderMapper) {
         this.accountService = accountService;
         this.instrumentMapper = instrumentMapper;
+        this.holdingsMapper = holdingsMapper;
+        this.orderMapper = orderMapper;
     }
 
     public Order create_order(int accountID, int instrumentID, String side, String quantity) {
@@ -44,6 +50,8 @@ public class OrderService {
         order.setStatus("COMPLETE");
         System.out.println("Order Processed");
 
+        orderMapper.insertOrder(order);
+
         return true;
     }
 
@@ -65,6 +73,8 @@ public class OrderService {
             holding = new Holding(account.getAccountId(), instrument, order.getQuantity());
             account.addHolding(instrument, holding);
         }
+
+        holdingsMapper.upsertHolding(holding);
 
     }
 
