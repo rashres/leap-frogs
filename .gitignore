@@ -3,6 +3,15 @@ target/
 **/target/
 .env
 .env.local
+
+# Node / Angular frontend build output
+node_modules/
+**/node_modules/
+dist/
+**/dist/
+.angular/
+**/.angular/
+
 .idea/
 .vscode/
 *.swp
