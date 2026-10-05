@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Single PostgreSQL Instance with both Operational and Analytics Databases
   postgres:
