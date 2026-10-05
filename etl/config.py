@@ -31,7 +31,7 @@ ANALYTICS_SCHEMA_PATH = PROJECT_ROOT / "database" / "capstone-analytics-schema.s
 
 def _url(database: str) -> str:
     return (
-        f"postgresql+psycopg2://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}"
+        f"postgresql://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}"
         f"@{DB_HOST}:{DB_PORT}/{database}"
     )
 
