@@ -1,36 +1,37 @@
-package com.neueda.leap;
+package com.neueda.leap.services.domain;
 
 import java.math.BigDecimal;
 import java.util.Objects;
 
 public class Instrument {
 
-    private int stockId;
+    private int instrumentId;
     private String symbol;
     private String name;
     private int exchangeId;
+    private Exchange exchange;
 
     public Instrument(){
 
     }
 
-    public Instrument(int stockId, String symbol, String name, int exchangeId){
-        this.stockId = stockId;
+    public Instrument(int instrumentId, String symbol, String name, int exchangeId){
+        this.instrumentId = instrumentId;
         this.symbol = symbol;
         this.name = name;
         this.exchangeId = exchangeId;
 
     }
 
-    public int getStockId(){
-        return stockId;
+    public int getInstrumentId(){
+        return instrumentId;
     }
 
-    public void setStockId(int stockId){
-        if (stockId <= 0) {
-            throw new IllegalArgumentException("Stock ID must be positive");
+    public void setInstrumentId(int instrumentId){
+        if (instrumentId <= 0) {
+            throw new IllegalArgumentException("Instrument ID must be positive");
         }
-        this.stockId = stockId;
+        this.instrumentId = instrumentId;
     }
     
     public String getSymbol(){
@@ -66,6 +67,14 @@ public class Instrument {
         this.exchangeId = exchangeId;
     }
 
+    public Exchange getExchange() {
+        return exchange;
+    }
+
+    public void setExchange(Exchange exchange) {
+        this.exchange = exchange;
+    }
+
     public String displayName() {
         return symbol + " - " + name;
     }
@@ -76,12 +85,12 @@ public class Instrument {
     
     @Override
     public String toString() {
-        return "Instrument{stockId=" + stockId + ", symbol=" + symbol + ", name=" + name + ", exchangeId=" + exchangeId + "}";
+        return "Instrument{instrumentId=" + instrumentId + ", symbol=" + symbol + ", name=" + name + ", exchangeId=" + exchangeId + "}";
     }
     
     
     @Override
     public int hashCode() {
-        return Objects.hash(stockId, symbol, name, exchangeId);
+        return Objects.hash(instrumentId, symbol, name, exchangeId);
     }
 }
