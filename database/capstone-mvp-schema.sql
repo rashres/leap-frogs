@@ -1,5 +1,5 @@
 -- Simple MVP trading platform schema (Sprint 3 capstone design).
--- Single flat schema, 5 tables only: account, exchange, stock, transactions, holdings.
+-- Single flat schema, 5 tables only: account, exchange, instrument, transactions, holdings.
 
 CREATE TABLE account (
     account_id    SERIAL PRIMARY KEY,
@@ -15,8 +15,8 @@ CREATE TABLE exchange (
     country        VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE stock (
-    stock_id       SERIAL PRIMARY KEY,
+CREATE TABLE instrument (
+    instrument_id       SERIAL PRIMARY KEY,
     symbol         VARCHAR(20) NOT NULL,
     name           VARCHAR(150) NOT NULL,
     exchange_id    INT NOT NULL REFERENCES exchange(exchange_id),
@@ -26,43 +26,47 @@ CREATE TABLE stock (
 CREATE TABLE transactions (
     transaction_id     SERIAL PRIMARY KEY,
     account_id            INT NOT NULL REFERENCES account(account_id),
-    stock_id           INT NOT NULL REFERENCES stock(stock_id),
+    instrument_id           INT NOT NULL REFERENCES instrument(instrument_id),
     transaction_type   VARCHAR(4) NOT NULL CHECK (transaction_type IN ('BUY', 'SELL')),
     quantity           NUMERIC(18,6) NOT NULL CHECK (quantity > 0),
     price              NUMERIC(18,6) NOT NULL CHECK (price > 0),
+    -- Outcome of the order. Mirrors Order.setStatus() in the Java domain:
+    -- COMPLETE = executed successfully, FAILED = rejected by validation.
+    status             VARCHAR(10) NOT NULL DEFAULT 'COMPLETE'
+                       CHECK (status IN ('PENDING', 'COMPLETE', 'FAILED')),
     transaction_time   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE holdings (
     holding_id     SERIAL PRIMARY KEY,
     account_id        INT NOT NULL REFERENCES account(account_id),
-    stock_id       INT NOT NULL REFERENCES stock(stock_id),
+    instrument_id       INT NOT NULL REFERENCES instrument(instrument_id),
     quantity       NUMERIC(18,6) NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (account_id, stock_id)
+    UNIQUE (account_id, instrument_id)
 );
 
 -- Indexes
 CREATE INDEX idx_transactions_account ON transactions(account_id);
-CREATE INDEX idx_transactions_stock ON transactions(stock_id);
+CREATE INDEX idx_transactions_instrument ON transactions(instrument_id);
 CREATE INDEX idx_transactions_time ON transactions(transaction_time);
-CREATE INDEX idx_stock_exchange ON stock(exchange_id);
+CREATE INDEX idx_instrument_exchange ON instrument(exchange_id);
 CREATE INDEX idx_holdings_account ON holdings(account_id);
 
 -- Sample data (Single Entry)
 INSERT INTO exchange (name, country) VALUES ('NASDAQ', 'USA'), ('Binance', 'Global');
 
-INSERT INTO stock (symbol, name, exchange_id) VALUES
+INSERT INTO instrument (symbol, name, exchange_id) VALUES
   ('AAPL', 'Apple Inc.', 1),
   ('BTC-USD', 'Bitcoin', 2);
 
 INSERT INTO account (name, email, cash_balance) VALUES
   ('Jane Doe', 'jane@example.com', 10000.00);
 
-INSERT INTO transactions (account_id, stock_id, transaction_type, quantity, price) VALUES
+INSERT INTO transactions (account_id, instrument_id, transaction_type, quantity, price) VALUES
   (1, 1, 'BUY', 10, 150.00);
 
-INSERT INTO holdings (account_id, stock_id, quantity) VALUES
+INSERT INTO holdings (account_id, instrument_id, quantity) VALUES
   (1, 1, 10);
 
 -- ============================================================
@@ -77,8 +81,8 @@ INSERT INTO account (name, email, cash_balance) VALUES
                                                     ('David Green', 'david.green@example.com', 20000.00),
                                                     ('Emma Harris', 'emma.harris@example.com', 8000.00);
 
--- 2) Add a few more stocks for variety
-INSERT INTO stock (symbol, name, exchange_id) VALUES
+-- 2) Add a few more instruments for variety
+INSERT INTO instrument (symbol, name, exchange_id) VALUES
                                                   ('MSFT', 'Microsoft Corporation', 1),
                                                   ('AMZN', 'Amazon.com, Inc.', 1),
                                                   ('TSLA', 'Tesla, Inc.', 1),
@@ -95,18 +99,18 @@ WITH buy_txns AS (
         gs AS i,
         (SELECT MIN(account_id) FROM account WHERE email LIKE '%cooper%' OR email LIKE '%dylan%' OR email LIKE '%white%' OR email LIKE '%green%' OR email LIKE '%harris%') +
         (floor(random() * 5)::int) AS account_id,
-        (ARRAY(SELECT stock_id FROM stock ORDER BY stock_id))[
-            1 + floor(random() * (SELECT COUNT(*) FROM stock))::int
-        ] AS stock_id,
+        (ARRAY(SELECT instrument_id FROM instrument ORDER BY instrument_id))[
+            1 + floor(random() * (SELECT COUNT(*) FROM instrument))::int
+        ] AS instrument_id,
     round((1 + random() * 50)::numeric, 6) AS quantity,
     round((80 + random() * 420)::numeric, 6) AS price,
     (now() - interval '1 month') + (random() * interval '1 month') AS transaction_time
 FROM generate_series(1, 35) gs
     )
-INSERT INTO transactions (account_id, stock_id, transaction_type, quantity, price, transaction_time)
+INSERT INTO transactions (account_id, instrument_id, transaction_type, quantity, price, transaction_time)
 SELECT
     account_id,
-    stock_id,
+    instrument_id,
     'BUY',
     quantity,
     price,
@@ -117,7 +121,7 @@ FROM buy_txns;
 WITH existing_holdings AS (
     SELECT
         h.account_id,
-        h.stock_id,
+        h.instrument_id,
         h.quantity,
         row_number() OVER (PARTITION BY h.account_id ORDER BY random()) AS rn
     FROM holdings h
@@ -125,7 +129,7 @@ WITH existing_holdings AS (
      sell_candidates AS (
          SELECT
              account_id,
-             stock_id,
+             instrument_id,
              quantity,
              rn
          FROM existing_holdings
@@ -134,17 +138,17 @@ WITH existing_holdings AS (
      sell_txns AS (
          SELECT
              sc.account_id,
-             sc.stock_id,
+             sc.instrument_id,
              GREATEST(round((0.01 + random() * (sc.quantity * 0.5))::numeric, 6), 0.01) AS quantity,
              round((80 + random() * 420)::numeric, 6) AS price,
              (now() - interval '1 month') + (random() * interval '1 month') AS transaction_time,
              row_number() OVER () AS rn
          FROM sell_candidates sc
      )
-INSERT INTO transactions (account_id, stock_id, transaction_type, quantity, price, transaction_time)
+INSERT INTO transactions (account_id, instrument_id, transaction_type, quantity, price, transaction_time)
 SELECT
     account_id,
-    stock_id,
+    instrument_id,
     'SELL',
     quantity,
     price,
@@ -152,13 +156,20 @@ SELECT
 FROM sell_txns
 WHERE rn <= 15;  -- Limit to 15 SELL transactions
 
--- 4) Rebuild holdings to match all transactions (BUY adds, SELL subtracts)
+-- 3b) A couple of rejected orders, so the status column and the holdings
+--     filter below are both exercised by the sample data.
+INSERT INTO transactions (account_id, instrument_id, transaction_type, quantity, price, status) VALUES
+  (1, 1, 'BUY',  5, 150.00, 'FAILED'),
+  (1, 2, 'SELL', 1, 300.00, 'FAILED');
+
+-- 4) Rebuild holdings from successful transactions (BUY adds, SELL subtracts).
+--    Rejected (FAILED) and in-flight (PENDING) rows must not move holdings.
 DELETE FROM holdings;
 
-INSERT INTO holdings (account_id, stock_id, quantity, updated_at)
+INSERT INTO holdings (account_id, instrument_id, quantity, updated_at)
 SELECT
     t.account_id,
-    t.stock_id,
+    t.instrument_id,
     round(
             SUM(
                     CASE
@@ -170,7 +181,8 @@ SELECT
     ) AS quantity,
     now()
 FROM transactions t
-GROUP BY t.account_id, t.stock_id
+WHERE t.status = 'COMPLETE'
+GROUP BY t.account_id, t.instrument_id
 HAVING round(
                SUM(
                        CASE
