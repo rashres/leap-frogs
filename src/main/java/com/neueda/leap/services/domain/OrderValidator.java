@@ -28,6 +28,12 @@ public class OrderValidator {
     public static boolean isValidPrice(double price) {
         return price > 0;
     }
+
+    // Null-safe overload. Price is null when no market price has been fetched
+    // for the instrument yet, which must not be treated as a tradeable price.
+    public static boolean isValidPrice(BigDecimal price) {
+        return price != null && price.signum() > 0;
+    }
     
     // Validates transaction type: must be "BUY" or "SELL" (case-insensitive)
     public static boolean isValidTransactionType(String transactionType) {
@@ -47,7 +53,7 @@ public class OrderValidator {
     
     // Verifies account has sufficient cash to buy
     public static boolean isValidCashBalance(Account account, BigDecimal quantity, BigDecimal price) {
-        if (account == null) {
+        if (account == null || quantity == null || price == null) {
             return false;
         }
         BigDecimal requiredCash = quantity.multiply(price);
@@ -86,7 +92,7 @@ public class OrderValidator {
         // Validate basic order fields
         if (!isValidSymbol(symbol)
                 || !isValidQuantity(quantity)
-                || !isValidPrice(price.doubleValue())
+                || !isValidPrice(price)
                 || !isValidTransactionType(transactionType)) {
             return false;
         }
@@ -126,17 +132,19 @@ public class OrderValidator {
         if (!isValidQuantity(quantity)) {
             result.addError("Quantity: must be a positive value (greater than 0)");
         }
-        if (!isValidPrice(price.doubleValue())) {
+        if (!isValidPrice(price)) {
             result.addError("Price: must be a positive decimal (greater than 0)");
         }
         if (!isValidTransactionType(transactionType)) {
             result.addError("TransactionType: must be 'BUY' or 'SELL'");
         }
 
-        // Validate funds based on transaction type
-        if ("BUY".equalsIgnoreCase(transactionType)) {
+        // Validate funds based on transaction type. The cash check needs a
+        // price, so it is skipped when the instrument has none yet - that is
+        // already reported above as an invalid price.
+        if ("BUY".equalsIgnoreCase(transactionType) && isValidPrice(price)) {
             if (!isValidCashBalance(account, quantity, price)) {
-                result.addError("Insufficient cash: required " + quantity.multiply(price) 
+                result.addError("Insufficient cash: required " + quantity.multiply(price)
                     + ", available " + (account != null ? account.getCashBalance() : "N/A"));
             }
         } else if ("SELL".equalsIgnoreCase(transactionType)) {

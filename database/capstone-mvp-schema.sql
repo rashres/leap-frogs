@@ -20,6 +20,10 @@ CREATE TABLE instrument (
     symbol         VARCHAR(20) NOT NULL,
     name           VARCHAR(150) NOT NULL,
     exchange_id    INT NOT NULL REFERENCES exchange(exchange_id),
+    -- Latest market price, refreshed by etl/price_fetcher.py (yfinance).
+    -- NULL until the first fetch runs; orders are rejected while it is NULL.
+    last_price         NUMERIC(18,6) CHECK (last_price > 0),
+    price_updated_at   TIMESTAMPTZ,
     UNIQUE (symbol, exchange_id)
 );
 
