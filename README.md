@@ -40,7 +40,7 @@ We use **Gitflow** to keep things organized:
 - **Main** - Interactive demo showing trading workflow
 
 ### Database Layer (`database/`)
-- **leapfrogsdb** - Source database (accounts, transactions, stocks)
+- **leapfrogsdb** - Source database (accounts, transactions, instruments)
 - **leap_analytics** - Target database (aggregated analytics tables)
 - Schema files: `capstone-mvp-schema.sql`, `capstone-analytics-schema.sql`
 
@@ -49,7 +49,7 @@ Extract → Transform → Load trading data into analytics database.
 
 | Phase | What It Does |
 |-------|-------------|
-| **Extract** | Reads transactions, accounts, stocks from `leapfrogsdb` |
+| **Extract** | Reads transactions, accounts, instruments from `leapfrogsdb` |
 | **Transform** | Joins & aggregates into analytics tables |
 | **Load** | Writes to `leap_analytics` (trading_volume, instrument_activity, client_activity, fact_trades) |
 | **Verify** | Logs row counts to confirm success |
