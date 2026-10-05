@@ -32,7 +32,10 @@ public class Order {
         this.instrument = instrument;
         this.side = side;
         this.quantity = quantity;
-        this.price = MarketService.getPrice();
+        // Price is taken from the instrument at the moment the order is created,
+        // so the order keeps the price it was agreed at even if the market moves.
+        // Null means no price has been fetched yet; OrderValidator rejects that.
+        this.price = instrument != null ? instrument.getPrice() : null;
         this.status = "CREATED";
     }
 
