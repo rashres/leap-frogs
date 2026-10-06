@@ -1,0 +1,537 @@
+/* LEAP Console: global design tokens and shared primitives.
+   Tokens, base rules, panels and pills are taken from the team's Angular app
+   (branch fe/21-page-mascots, frontend/src/styles.scss) so both UIs look like
+   one product. Buttons, form fields and tables are added here. */
+
+:root {
+  /* Surfaces: near-black canvas with progressively lifted panels. */
+  --bg: #000000;
+  --panel: #0c1015;
+  --panel-2: #12181f;
+  --panel-3: #1a222c;
+  --panel-hover: #161d26;
+  --border: #212a34;
+  --border-soft: #161d25;
+  --border-strong: #2f3a47;
+
+  --text: #eef3f8;
+  --text-2: #9dabbb;
+  --text-3: #717f8e;
+
+  /* Directional semantics: green up / buy, red down / sell. */
+  --up: #00c805;
+  --up-soft: rgba(0, 200, 5, 0.14);
+  --down: #ff5a52;
+  --down-soft: rgba(255, 90, 82, 0.14);
+
+  --accent: #4c8dff;
+  --accent-soft: rgba(76, 141, 255, 0.14);
+  --warn: #ffb020;
+  --warn-soft: rgba(255, 176, 32, 0.13);
+
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-sm: 6px;
+
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, system-ui, sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --nav-height: 58px;
+  --page-max: 1280px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+}
+
+/* Fixed-width digits so changing figures do not jitter. */
+.num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+button {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.skip-link {
+  position: absolute;
+  left: 12px;
+  top: -60px;
+  z-index: 100;
+  padding: 10px 16px;
+  background: var(--panel-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 650;
+  transition: top 0.15s ease;
+
+  &:focus {
+    top: 10px;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--panel-3);
+  border-radius: 6px;
+  border: 2px solid var(--bg);
+}
+
+/* ---- Text tones ----------------------------------------------------------- */
+
+.up {
+  color: var(--up);
+}
+.down {
+  color: var(--down);
+}
+.dim {
+  color: var(--text-2);
+}
+.faint {
+  color: var(--text-3);
+}
+.mono {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+
+/* ---- Panels --------------------------------------------------------------- */
+
+.panel {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  min-width: 0;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin: 0;
+}
+
+.panel-body {
+  padding: 18px;
+}
+
+/* ---- Pills ---------------------------------------------------------------- */
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.pill-good {
+  background: var(--up-soft);
+  color: var(--up);
+}
+.pill-bad {
+  background: var(--down-soft);
+  color: var(--down);
+}
+.pill-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pill-warn {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.pill-muted {
+  background: var(--panel-3);
+  color: var(--text-2);
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-3);
+  color: var(--text-2);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.side {
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+
+  &.buy {
+    color: var(--up);
+  }
+  &.sell {
+    color: var(--down);
+  }
+}
+
+/* ---- Buttons -------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 620;
+  white-space: nowrap;
+  transition: background 0.13s ease, border-color 0.13s ease, opacity 0.13s ease;
+
+  &:hover:not(:disabled) {
+    background: var(--panel-3);
+    border-color: var(--border-strong);
+  }
+
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background: #3b7cf0;
+    border-color: #3b7cf0;
+  }
+}
+.btn-buy {
+  background: var(--up);
+  border-color: var(--up);
+  color: #00210a;
+
+  &:hover:not(:disabled) {
+    background: #00b305;
+    border-color: #00b305;
+  }
+}
+.btn-sell {
+  background: var(--down);
+  border-color: var(--down);
+  color: #2a0503;
+
+  &:hover:not(:disabled) {
+    background: #ef4b43;
+    border-color: #ef4b43;
+  }
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-2);
+
+  &:hover:not(:disabled) {
+    background: var(--panel-2);
+    border-color: var(--border-soft);
+    color: var(--text);
+  }
+}
+.btn-sm {
+  height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
+/* ---- Form fields ---------------------------------------------------------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+
+  > label,
+  > .label {
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+  }
+
+  .hint {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  .error-text {
+    font-size: 12px;
+    color: var(--down);
+  }
+}
+
+.input,
+.select {
+  height: 36px;
+  width: 100%;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text);
+  outline: none;
+  transition: border-color 0.13s ease;
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+
+  &:focus {
+    border-color: var(--accent);
+  }
+
+  &.invalid {
+    border-color: var(--down);
+  }
+
+  &::placeholder {
+    color: var(--text-3);
+  }
+}
+
+.select {
+  appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239dabbb' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  cursor: pointer;
+}
+
+/* Segmented control: a row of mutually exclusive buttons (filters, BUY/SELL). */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: var(--radius-sm);
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+
+  button {
+    height: 28px;
+    padding: 0 12px;
+    border-radius: 4px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-2);
+    white-space: nowrap;
+    transition: background 0.13s ease, color 0.13s ease;
+
+    &:hover {
+      color: var(--text);
+    }
+
+    &.on {
+      background: var(--panel-3);
+      color: var(--text);
+      box-shadow: inset 0 0 0 1px var(--border-strong);
+    }
+
+    .count {
+      margin-left: 6px;
+      color: var(--text-3);
+      font-weight: 500;
+    }
+  }
+}
+
+/* ---- Tables --------------------------------------------------------------- */
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    padding: 10px 18px;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    text-align: left;
+    border-bottom: 1px solid var(--border-soft);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border-soft);
+    vertical-align: middle;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr.clickable {
+    cursor: pointer;
+    transition: background 0.1s ease;
+
+    &:hover {
+      background: var(--panel-hover);
+    }
+  }
+
+  .r {
+    text-align: right;
+  }
+
+  .strong {
+    font-weight: 650;
+  }
+}
+
+/* Instrument identity cell: logo + symbol + name. */
+.ident {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+
+  .ident-text {
+    min-width: 0;
+  }
+
+  .sym {
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  .name {
+    font-size: 12px;
+    color: var(--text-3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ---- Layout helpers ------------------------------------------------------- */
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.link {
+  color: var(--accent);
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
