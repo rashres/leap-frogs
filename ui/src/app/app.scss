@@ -1,0 +1,129 @@
+/* Shell layout adapted from the team's Angular app (fe/21-page-mascots, app.scss). */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.86);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.nav-inner {
+  max-width: var(--page-max);
+  min-height: var(--nav-height);
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.brand-mark {
+  width: 28px;
+  height: 28px;
+}
+
+.brand-text {
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+}
+
+.brand-sub {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.links {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.links a {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  font-weight: 550;
+  color: var(--text-2);
+  white-space: nowrap;
+  transition: color 0.13s ease, background 0.13s ease;
+
+  &:hover {
+    color: var(--text);
+    background: var(--panel-2);
+  }
+
+  &.active {
+    color: var(--text);
+    background: var(--panel-3);
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1px var(--border-strong);
+  }
+
+  &.active::after {
+    content: '';
+    position: absolute;
+    left: 13px;
+    right: 13px;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--accent);
+  }
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+  padding: 26px 24px 80px;
+  outline: none;
+}
+
+@media (max-width: 760px) {
+  .nav-inner {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding: 10px 16px;
+  }
+
+  .links {
+    order: 3;
+    width: 100%;
+  }
+
+  .page {
+    padding: 18px 16px 60px;
+  }
+}
