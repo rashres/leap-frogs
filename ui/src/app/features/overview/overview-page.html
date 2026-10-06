@@ -1,0 +1,80 @@
+<leap-page-header
+  title="Overview"
+  subtitle="A testing console for the LEAP trading API. Everything on these pages talks to the real Spring Boot API through /api."
+  mascot="portfolio"
+>
+  <a class="btn" href="/api/swagger-ui.html" target="_blank" rel="noopener">Swagger UI ↗</a>
+  <button type="button" class="btn" (click)="refresh()">Refresh</button>
+</leap-page-header>
+
+<div class="stats">
+  <leap-stat-card label="Accounts" [value]="account.accounts().length" [sub]="'Total cash ' + totalCash()" />
+  <leap-stat-card label="Instruments" [value]="instruments.data()?.length ?? '—'" [sub]="marketCount() + ' markets'" />
+  <leap-stat-card label="API" [value]="apiCard().value" [tone]="apiCard().tone" [sub]="apiCard().sub" />
+  <leap-stat-card
+    label="Acting as"
+    [value]="account.active()?.name ?? '—'"
+    [sub]="account.active() ? 'Account #' + account.active()!.accountId : 'Pick an account in the header'"
+  />
+</div>
+
+<div class="grid">
+  <section class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Service</h2>
+      @if (info.data(); as i) {
+        <span class="pill pill-good">{{ i.status }}</span>
+      }
+    </div>
+    <leap-async-state [loading]="info.initialLoading()" [error]="info.error()" (retry)="info.reload()">
+      @if (info.data(); as i) {
+        <dl class="kv">
+          <div><dt>Service</dt><dd>{{ i.service }}</dd></div>
+          <div><dt>Version</dt><dd class="num">{{ i.version }}</dd></div>
+          <div>
+            <dt>Database</dt>
+            <dd>
+              @switch (apiStatus.lastHealth()?.database) {
+                @case ('UP') { <span class="pill pill-good">UP</span> }
+                @case ('DOWN') { <span class="pill pill-bad">DOWN</span> }
+                @default { <span class="faint">Unknown</span> }
+              }
+            </dd>
+          </div>
+          <div><dt>API docs</dt><dd><a class="link" [href]="i.documentation" target="_blank" rel="noopener">{{ i.documentation }}</a></dd></div>
+          <div><dt>OpenAPI</dt><dd><a class="link" [href]="i.openapi" target="_blank" rel="noopener">{{ i.openapi }}</a></dd></div>
+        </dl>
+      }
+    </leap-async-state>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2 class="panel-title">Endpoint coverage</h2>
+      <span class="faint small">{{ endpoints.length }} endpoints on main</span>
+    </div>
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Path</th>
+            <th>Tested on</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (e of endpoints; track e.method + e.path) {
+            <tr>
+              <td><span class="method" [class.post]="e.method === 'POST'">{{ e.method }}</span></td>
+              <td>
+                <div class="mono">{{ e.path }}</div>
+                <div class="faint small">{{ e.what }}</div>
+              </td>
+              <td><a class="link" [routerLink]="e.link">{{ e.page }}</a></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
