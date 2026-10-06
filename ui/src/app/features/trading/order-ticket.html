@@ -1,0 +1,148 @@
+<form class="ticket" (submit)="$event.preventDefault(); submit()" novalidate>
+  <div class="segmented sides" role="group" aria-label="Order side">
+    <button type="button" class="buy" [class.on]="side() === 'BUY'" (click)="setSide('BUY')" [attr.aria-pressed]="side() === 'BUY'">
+      Buy
+    </button>
+    <button type="button" class="sell" [class.on]="side() === 'SELL'" (click)="setSide('SELL')" [attr.aria-pressed]="side() === 'SELL'">
+      Sell
+    </button>
+  </div>
+
+  @if (lockInstrument() && selected(); as inst) {
+    <div class="locked">
+      <leap-instrument-logo [symbol]="inst.symbol" [size]="34" />
+      <div>
+        <div class="sym">{{ inst.symbol }}</div>
+        <div class="faint small">{{ inst.name }} · {{ inst.exchange }}</div>
+      </div>
+    </div>
+  } @else {
+    <div class="field">
+      <label for="ticket-instrument">Instrument</label>
+      <select
+        id="ticket-instrument"
+        class="select"
+        [class.invalid]="touched() && instrumentId() == null"
+        (change)="chooseInstrument($event)"
+      >
+        <option value="" [selected]="instrumentId() == null">Choose an instrument…</option>
+        @for (inst of instruments(); track inst.instrumentId) {
+          <option [value]="inst.instrumentId" [selected]="inst.instrumentId === instrumentId()">
+            {{ inst.symbol }} · {{ inst.name }} ({{ inst.exchange }})
+          </option>
+        }
+      </select>
+      @if (touched() && instrumentId() == null) {
+        <span class="error-text">Choose an instrument.</span>
+      }
+      @if (fieldError('instrumentId'); as msg) {
+        <span class="error-text">API: {{ msg }}</span>
+      }
+    </div>
+  }
+
+  <div class="field">
+    <label for="ticket-qty">Quantity</label>
+    <div class="qty-row">
+      <input
+        id="ticket-qty"
+        class="input num"
+        inputmode="decimal"
+        autocomplete="off"
+        placeholder="0"
+        [value]="quantityText()"
+        [class.invalid]="(touched() && !skipBrowserChecks() && quantityError()) || fieldError('quantity')"
+        (input)="setQuantity($event)"
+      />
+      @if (side() === 'SELL' && held() > 0) {
+        <button type="button" class="btn btn-sm" (click)="useMax()">Max</button>
+      }
+    </div>
+    @if (touched() && !skipBrowserChecks() && quantityError(); as msg) {
+      <span class="error-text">{{ msg }}</span>
+    }
+    @if (fieldError('quantity'); as msg) {
+      <span class="error-text">API: {{ msg }}</span>
+    }
+    @if (fieldError('side'); as msg) {
+      <span class="error-text">API: {{ msg }}</span>
+    }
+  </div>
+
+  <dl class="facts">
+    @if (cash() != null) {
+      <div>
+        <dt>Available cash</dt>
+        <dd class="num">{{ cash() | usd }}</dd>
+      </div>
+    }
+    @if (instrumentId() != null) {
+      <div>
+        <dt>Currently held</dt>
+        <dd class="num">{{ held() | qty }}</dd>
+      </div>
+    }
+    <div>
+      <dt>Estimated value</dt>
+      <dd class="num">
+        @if (estimate() != null) {
+          {{ estimate() | usd }}
+        } @else {
+          <span class="faint" title="The API sets the execution price when the order is placed.">Priced at execution</span>
+        }
+      </dd>
+    </div>
+  </dl>
+
+  <button
+    type="submit"
+    class="btn submit"
+    [class.btn-buy]="side() === 'BUY'"
+    [class.btn-sell]="side() === 'SELL'"
+    [disabled]="!canSubmit()"
+  >
+    @if (submitting()) {
+      Placing…
+    } @else if (accountId() == null) {
+      Choose an account first
+    } @else {
+      {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ selected()?.symbol ?? '' }}
+    }
+  </button>
+
+  <label class="skip">
+    <input type="checkbox" [checked]="skipBrowserChecks()" (change)="toggleSkipChecks($event)" />
+    Skip browser checks (send as typed, to test API validation)
+  </label>
+
+  @if (result(); as r) {
+    <div class="outcome" [class.good]="r.kind === 'completed'" [class.bad]="r.kind === 'rejected'" role="status">
+      <div class="outcome-head">
+        <span class="title">{{ r.kind === 'completed' ? 'Order completed' : 'Order rejected' }}</span>
+        <leap-status-pill [status]="r.order.status" />
+      </div>
+      @if (r.kind === 'rejected') {
+        <p class="reason">{{ r.reason }}</p>
+      }
+      <dl class="facts compact">
+        <div><dt>Order</dt><dd class="num">#{{ r.order.orderId }}</dd></div>
+        <div><dt>Side · Qty</dt><dd class="num">{{ r.order.side }} {{ r.order.quantity | qty }} {{ r.order.symbol }}</dd></div>
+        <div><dt>Price</dt><dd class="num">{{ r.order.price | usd }}</dd></div>
+        <div><dt>Value</dt><dd class="num">{{ r.order.value | usd }}</dd></div>
+        <div><dt>Placed</dt><dd class="num">{{ r.order.placedTime | dateTime }}</dd></div>
+      </dl>
+      <p class="faint small">
+        {{ r.kind === 'completed' ? 'HTTP 201 · cash and holdings updated.' : 'HTTP 422 · saved as FAILED; cash and holdings unchanged.' }}
+      </p>
+    </div>
+  }
+
+  @if (error(); as e) {
+    <div class="outcome bad" role="alert">
+      <div class="outcome-head">
+        <span class="title">{{ e.unreachable ? 'API unreachable' : 'HTTP ' + e.status + ' · ' + e.title }}</span>
+      </div>
+      <p class="reason">{{ e.message }}</p>
+    </div>
+  }
+</form>
