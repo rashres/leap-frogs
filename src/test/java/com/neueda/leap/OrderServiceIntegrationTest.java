@@ -74,7 +74,8 @@ class OrderServiceIntegrationTest {
         assertFalse(orders.isEmpty(), "Should have at least one order in database");
         Order dbOrder = orders.get(0);
         assertEquals("BUY", dbOrder.getSide());
-        assertEquals(quantity, dbOrder.getQuantity());
+        assertEquals(0, quantity.compareTo(dbOrder.getQuantity()), 
+                "Quantity should match (use compareTo for BigDecimal)");
         assertEquals("COMPLETE", dbOrder.getStatus());
     }
 
