@@ -217,14 +217,15 @@ def seed(connection_string: str, wipe_first: bool) -> int:
         conn.execute(text("DELETE FROM holdings WHERE account_id = ANY(:ids)"), {"ids": sample_ids})
         conn.execute(
             text("""
-                INSERT INTO holdings (account_id, instrument_id, quantity, updated_at)
-                SELECT account_id, instrument_id,
-                       SUM(CASE WHEN transaction_type = 'BUY' THEN quantity ELSE -quantity END),
+                INSERT INTO holdings (account_id, instrument_id, symbol, quantity, updated_at)
+                SELECT t.account_id, t.instrument_id, i.symbol,
+                       SUM(CASE WHEN t.transaction_type = 'BUY' THEN t.quantity ELSE -t.quantity END),
                        now()
-                  FROM transactions
-                 WHERE account_id = ANY(:ids) AND status = 'COMPLETE'
-                 GROUP BY account_id, instrument_id
-                HAVING SUM(CASE WHEN transaction_type = 'BUY' THEN quantity ELSE -quantity END) > 0
+                  FROM transactions t
+                  JOIN instrument i USING (instrument_id)
+                 WHERE t.account_id = ANY(:ids) AND t.status = 'COMPLETE'
+                 GROUP BY t.account_id, t.instrument_id, i.symbol
+                HAVING SUM(CASE WHEN t.transaction_type = 'BUY' THEN t.quantity ELSE -t.quantity END) > 0
             """),
             {"ids": sample_ids},
         )
