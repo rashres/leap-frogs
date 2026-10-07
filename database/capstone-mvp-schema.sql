@@ -46,6 +46,8 @@ CREATE TABLE holdings (
     holding_id     SERIAL PRIMARY KEY,
     account_id        INT NOT NULL REFERENCES account(account_id),
     instrument_id       INT NOT NULL REFERENCES instrument(instrument_id),
+    -- Copy of instrument.symbol, so the table reads on its own. Written with every upsert.
+    symbol         VARCHAR(20) NOT NULL,
     quantity       NUMERIC(18,6) NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (account_id, instrument_id)
