@@ -16,7 +16,6 @@ services:
       - leap_frogs_postgres_data:/var/lib/postgresql/data
       # First boot only (empty volume). Filenames 1-, 2-, 3- set run order.
       - ./database/create-analytics-database.sql:/docker-entrypoint-initdb.d/1-create-analytics-database.sql:ro
-      - ./database/capstone-mvp-schema.sql:/docker-entrypoint-initdb.d/2-load-operational-schema.sql:ro
       - ./database/load-analytics-schema.sh:/docker-entrypoint-initdb.d/3-load-analytics-schema.sh:ro
       - ./database/capstone-analytics-schema.sql:/analytics-schema.sql:ro
     healthcheck:
