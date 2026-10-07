@@ -26,23 +26,62 @@
 
       <div class="price-block">
         <p class="price num">
-          {{ inst.lastPrice != null ? priceText() : '—' }}
+          {{ inst.lastPrice != null || scrubbed() ? priceText() : '—' }}
           <span class="ccy faint">USD</span>
         </p>
-        <p class="chg faint">
-          @if (updatedText(); as at) {
-            Updated {{ at }}
+        @if (rangeChange(); as change) {
+          <p class="chg num" [class.up]="rising()" [class.down]="!rising()">
+            {{ change.deltaText }}
+            <span class="sep">·</span>
+            {{ change.percentText }}
+            <span class="faint lbl">{{ scrubbed() ? 'at cursor' : range() }}</span>
+          </p>
+        } @else {
+          <p class="chg faint">
+            @if (updatedText(); as at) {
+              Updated {{ at }}
+            } @else {
+              No price yet. The price feed has not written one for this instrument.
+            }
+          </p>
+        }
+      </div>
+
+      @if (series().length >= 2) {
+        <leap-price-chart [points]="series()" [height]="300" [tone]="rising() ? 'up' : 'down'" (scrub)="scrubbed.set($event)" />
+      } @else {
+        <div class="panel chart-empty faint">
+          @if (history.initialLoading()) {
+            Loading price history…
+          } @else if (history.error(); as e) {
+            {{ e.message }}
           } @else {
-            No price yet. The price feed has not written one for this instrument.
+            No price history in this range yet. The price feed records a point every run.
           }
-        </p>
+        </div>
+      }
+
+      <div class="ranges">
+        @for (r of ranges; track r) {
+          <button type="button" [class.on]="range() === r" (click)="setRange(r)">{{ r }}</button>
+        }
       </div>
 
       <div class="panel stats">
         <div>
           <span class="k">Last price</span>
-          <span class="v num">{{ inst.lastPrice != null ? priceText() : '—' }}</span>
+          <span class="v num">{{ lastPriceText() }}</span>
         </div>
+        @if (rangeBounds(); as bounds) {
+          <div>
+            <span class="k">{{ range() }} low</span>
+            <span class="v num">{{ bounds.low }}</span>
+          </div>
+          <div>
+            <span class="k">{{ range() }} high</span>
+            <span class="v num">{{ bounds.high }}</span>
+          </div>
+        }
         <div>
           <span class="k">Price updated</span>
           <span class="v num">{{ updatedStamp() }}</span>

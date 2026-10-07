@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal } from '@angular/core';
-import { formatUsd } from './format';
+import { formatPrice } from './format';
 
 const FLASH_MS = 480;
 
@@ -46,7 +46,7 @@ const FLASH_MS = 480;
 export class LivePrice {
   readonly value = input.required<number | null>();
 
-  readonly text = computed(() => formatUsd(this.value()));
+  readonly text = computed(() => formatPrice(this.value()));
   readonly flash = signal<'up' | 'down' | null>(null);
 
   private previous: number | null = null;

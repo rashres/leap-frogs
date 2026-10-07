@@ -3,7 +3,7 @@ import { RouterLink } from '@angular/router';
 import type { Order } from '../../core/api/models';
 import { MarketStore } from '../../core/state/market.store';
 import { PortfolioStore } from '../../core/state/portfolio.store';
-import { formatQty, formatStamp, formatUsd } from '../../shared/format';
+import { formatPrice, formatQty, formatStamp, formatUsd } from '../../shared/format';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { PageMascot } from '../../shared/page-mascot';
@@ -66,7 +66,7 @@ export class OrdersPage {
         steps.push({
           state: 'Submitted → Filled',
           at: formatStamp(o.fulfilledTime),
-          detail: `Executed at ${formatUsd(o.price)}; cash and holdings updated.`,
+          detail: `Executed at ${formatPrice(o.price)}; cash and holdings updated.`,
         });
       } else if (o.status === 'FAILED') {
         steps.push({
@@ -86,7 +86,7 @@ export class OrdersPage {
         tone: statusTone(o.status),
         submitted: formatStamp(o.placedTime),
         quantity: formatQty(o.quantity),
-        price: formatUsd(o.price),
+        price: formatPrice(o.price),
         value: formatUsd(o.value),
         fulfilled: o.fulfilledTime ? formatStamp(o.fulfilledTime) : '—',
         steps,

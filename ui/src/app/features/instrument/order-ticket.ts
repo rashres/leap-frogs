@@ -5,7 +5,7 @@ import type { Instrument, Order, OrderSide } from '../../core/api/models';
 import { OrdersService } from '../../core/api/orders.service';
 import { ActiveAccountService } from '../../core/state/active-account.service';
 import { PortfolioStore } from '../../core/state/portfolio.store';
-import { formatQty, formatSignedUsd, formatTime, formatUsd } from '../../shared/format';
+import { formatQty, formatSignedUsd, formatPrice, formatTime, formatUsd } from '../../shared/format';
 import { LivePrice } from '../../shared/live-price';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 
@@ -93,7 +93,7 @@ export class OrderTicket {
     return Math.floor((this.cash() / price) * factor) / factor;
   });
 
-  readonly priceText = computed(() => formatUsd(this.price()));
+  readonly priceText = computed(() => formatPrice(this.price()));
   readonly considerationText = computed(() => formatUsd(this.consideration()));
   readonly cashText = computed(() => formatUsd(this.cash()));
   readonly heldText = computed(() => formatQty(this.held()));
@@ -104,7 +104,7 @@ export class OrderTicket {
     if (!quantity) return null;
     return {
       quantity: formatQty(quantity),
-      priceText: formatUsd(price),
+      priceText: formatPrice(price),
       consideration: price != null ? formatUsd(price * quantity) : '—',
     };
   });
@@ -137,14 +137,14 @@ export class OrderTicket {
           ? {
               state: 'Filled',
               at: formatTime(order.fulfilledTime),
-              detail: `Executed at ${formatUsd(order.price)} for ${formatUsd(order.value)}.`,
+              detail: `Executed at ${formatPrice(order.price)} for ${formatUsd(order.value)}.`,
             }
           : { state: 'Rejected', at: formatTime(order.placedTime), detail: reason ?? 'Rejected by the API.' },
       ],
       quotes: filled
         ? {
-            confirmed: formatUsd(confirmedPrice),
-            filled: formatUsd(order.price),
+            confirmed: formatPrice(confirmedPrice),
+            filled: formatPrice(order.price),
             slippage: slip != null ? { text: formatSignedUsd(slip), negative: slip < 0 } : null,
           }
         : null,
