@@ -18,6 +18,41 @@ export function formatUsd(value: number | null | undefined): string {
   return value == null ? '—' : usdFormat.format(value);
 }
 
+/** "+$1,234.50" / "−$12.00", with a true minus sign. */
+export function formatSignedUsd(value: number | null | undefined): string {
+  if (value == null) {
+    return '—';
+  }
+  return `${value < 0 ? '−' : '+'}${usdFormat.format(Math.abs(value))}`;
+}
+
+/** "+3.21%" / "−0.50%". */
+export function formatSignedPct(value: number | null | undefined): string {
+  if (value == null) {
+    return '—';
+  }
+  return `${value < 0 ? '−' : '+'}${Math.abs(value).toFixed(2)}%`;
+}
+
+export function formatTime(value: string | number | Date | null | undefined): string {
+  if (value == null) {
+    return '—';
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleTimeString('en-GB');
+}
+
+/** "05 Oct, 14:03:22", the timestamp style used on the orders screen. */
+export function formatStamp(value: string | number | Date | null | undefined): string {
+  if (value == null) {
+    return '—';
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? '—'
+    : date.toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
 export function formatQty(value: number | null | undefined): string {
   return value == null ? '—' : qtyFormat.format(value);
 }

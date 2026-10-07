@@ -1,30 +1,31 @@
 import { Routes } from '@angular/router';
 
-const accountDetail = () => import('./features/accounts/account-detail-page').then((m) => m.AccountDetailPage);
-
 export const routes: Routes = [
+  { path: '', pathMatch: 'full', redirectTo: 'portfolio' },
   {
-    path: '',
-    pathMatch: 'full',
-    title: 'Overview · LEAP Console',
-    loadComponent: () => import('./features/overview/overview-page').then((m) => m.OverviewPage),
+    path: 'portfolio',
+    title: 'Portfolio — LEAP',
+    loadComponent: () => import('./features/portfolio/portfolio-page').then((m) => m.PortfolioPage),
   },
-  { path: 'portfolio', title: 'Portfolio · LEAP Console', loadComponent: accountDetail },
   {
-    path: 'accounts',
-    title: 'Accounts · LEAP Console',
-    loadComponent: () => import('./features/accounts/accounts-page').then((m) => m.AccountsPage),
+    path: 'markets',
+    title: 'Markets — LEAP',
+    loadComponent: () => import('./features/markets/markets-page').then((m) => m.MarketsPage),
   },
-  { path: 'accounts/:id', title: 'Account · LEAP Console', loadComponent: accountDetail },
   {
-    path: 'instruments',
-    title: 'Instruments · LEAP Console',
-    loadComponent: () => import('./features/instruments/instruments-page').then((m) => m.InstrumentsPage),
+    path: 'news',
+    title: 'News — LEAP',
+    loadComponent: () => import('./features/news/news-page').then((m) => m.NewsPage),
   },
   {
     path: 'orders',
-    title: 'Orders · LEAP Console',
+    title: 'Orders — LEAP',
     loadComponent: () => import('./features/orders/orders-page').then((m) => m.OrdersPage),
   },
-  { path: '**', redirectTo: '' },
+  {
+    path: 'instrument/:id',
+    title: 'Instrument — LEAP',
+    loadComponent: () => import('./features/instrument/instrument-page').then((m) => m.InstrumentPage),
+  },
+  { path: '**', redirectTo: 'portfolio' },
 ];

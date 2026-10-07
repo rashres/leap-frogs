@@ -1,10 +1,9 @@
-/* LEAP Console: global design tokens and shared primitives.
-   Tokens, base rules, panels and pills are taken from the team's Angular app
-   (branch fe/21-page-mascots, frontend/src/styles.scss) so both UIs look like
-   one product. Buttons, form fields and tables are added here. */
+/* LEAP — global design tokens and base styles.
+   Dark-first trading UI: black canvas, lifted panels, green/red directional
+   semantics, tabular figures everywhere a number can change. [chore] */
 
 :root {
-  /* Surfaces: near-black canvas with progressively lifted panels. */
+  /* Surfaces — near-black canvas with progressively lifted panels. */
   --bg: #000000;
   --panel: #0c1015;
   --panel-2: #12181f;
@@ -14,15 +13,19 @@
   --border-soft: #161d25;
   --border-strong: #2f3a47;
 
+  /* Type. --text-3 is lifted from #5f6b79, which sat on the WCAG AA boundary
+     against a pure black canvas; this clears it with room to spare. */
   --text: #eef3f8;
   --text-2: #9dabbb;
   --text-3: #717f8e;
 
-  /* Directional semantics: green up / buy, red down / sell. */
+  /* Directional semantics. Green up / red down. */
   --up: #00c805;
   --up-soft: rgba(0, 200, 5, 0.14);
+  --up-line: rgba(0, 200, 5, 0.45);
   --down: #ff5a52;
   --down-soft: rgba(255, 90, 82, 0.14);
+  --down-line: rgba(255, 90, 82, 0.45);
 
   --accent: #4c8dff;
   --accent-soft: rgba(76, 141, 255, 0.14);
@@ -33,11 +36,13 @@
   --radius-lg: 14px;
   --radius-sm: 6px;
 
+  --shadow-lift: 0 8px 28px rgba(0, 0, 0, 0.6);
+
   --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, system-ui, sans-serif;
   --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --nav-height: 58px;
-  --page-max: 1280px;
+  --page-max: 1440px;
 }
 
 * {
@@ -48,7 +53,7 @@ html,
 body {
   margin: 0;
   padding: 0;
-  min-height: 100%;
+  height: 100%;
 }
 
 body {
@@ -61,14 +66,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-h1,
-h2,
-h3 {
-  margin: 0;
-}
-
-/* Fixed-width digits so changing figures do not jitter. */
-.num {
+/* Any element showing a figure that can change gets fixed-width digits, so
+   prices do not jitter horizontally as they tick. */
+.num,
+.tabular {
   font-variant-numeric: tabular-nums;
   font-feature-settings: 'tnum' 1;
 }
@@ -87,8 +88,7 @@ a {
   text-decoration: none;
 }
 
-input,
-select {
+input {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
@@ -98,12 +98,16 @@ select {
   background: var(--accent-soft);
 }
 
+/* Keyboard focus. There was previously no focus indicator anywhere, which made
+   the whole app unusable without a mouse. :focus-visible keeps it off mouse
+   clicks while always showing it for keyboard and assistive tech. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
+/* Skip link — first tab stop, so keyboard users can bypass the nav. */
 .skip-link {
   position: absolute;
   left: 12px;
@@ -122,6 +126,7 @@ select {
   }
 }
 
+/* Visually hidden but announced by screen readers. */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -134,6 +139,15 @@ select {
   border: 0;
 }
 
+/* Stretches a link over its positioned ancestor so a whole row is clickable
+   while remaining a single real, focusable link. */
+.stretch-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+}
+
+/* Scrollbars — thin and dark, so panels do not get bright edges. */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -146,8 +160,46 @@ select {
   border-radius: 6px;
   border: 2px solid var(--bg);
 }
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-strong);
+}
 
-/* ---- Text tones ----------------------------------------------------------- */
+/* ---- Shared primitives ---------------------------------------------------- */
+
+.panel {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+
+  /* Hairline highlight along the top edge — reads as a lit surface rather than
+     a flat rectangle, which keeps stacked panels distinguishable on black. */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0 12px auto 12px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.055), transparent);
+    pointer-events: none;
+  }
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.panel-title {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin: 0;
+}
 
 .up {
   color: var(--up);
@@ -161,44 +213,6 @@ select {
 .faint {
   color: var(--text-3);
 }
-.mono {
-  font-family: var(--font-mono);
-  font-size: 12px;
-}
-
-/* ---- Panels --------------------------------------------------------------- */
-
-.panel {
-  position: relative;
-  background: var(--panel);
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
-  min-width: 0;
-}
-
-.panel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.panel-title {
-  font-size: 12px;
-  font-weight: 650;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-2);
-  margin: 0;
-}
-
-.panel-body {
-  padding: 18px;
-}
-
-/* ---- Pills ---------------------------------------------------------------- */
 
 .pill {
   display: inline-flex;
@@ -211,6 +225,21 @@ select {
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
+.pill-up {
+  background: var(--up-soft);
+  color: var(--up);
+}
+.pill-down {
+  background: var(--down-soft);
+  color: var(--down);
+}
+.pill-muted {
+  background: var(--panel-3);
+  color: var(--text-2);
+}
+
+/* Order-state tones. These names come from stateTone() in core/domain/order.ts;
+   keep the two in step or a state renders as unstyled text. */
 .pill-good {
   background: var(--up-soft);
   color: var(--up);
@@ -218,6 +247,10 @@ select {
 .pill-bad {
   background: var(--down-soft);
   color: var(--down);
+}
+.pill-pending {
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 .pill-accent {
   background: var(--accent-soft);
@@ -227,9 +260,65 @@ select {
   background: var(--warn-soft);
   color: var(--warn);
 }
-.pill-muted {
+
+/* A page title sitting beside its mascot. The page heads are space-between
+   rows, so the two have to be grouped or the frog drifts away from its title. */
+.titled {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  /* No min-width:0 here. These sit in space-between rows next to items that
+     refuse to shrink, so allowing this one below its content width collapses
+     it and the mascot spills out under its neighbour. */
+}
+
+/* Headline sentiment.
+   Deliberately its own set rather than the order-state tones above. Two reasons:
+   restyling sentiment must not silently restyle order statuses, and sentiment is
+   a reading of wording, not a price move — so it is outlined where price pills
+   are filled, and carries a glyph so the meaning survives without colour. */
+.sent {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  .glyph {
+    font-size: 8px;
+    line-height: 1;
+  }
+
+  /* Matched-term count. A count, never a percentage — scoreHeadline() counts
+     lexicon hits and cannot support a confidence figure. */
+  .net {
+    font-family: var(--font-mono);
+    font-size: 9.5px;
+    font-weight: 600;
+    opacity: 0.75;
+    letter-spacing: 0;
+  }
+}
+.sent-pos {
+  border-color: rgba(47, 208, 122, 0.45);
+  background: rgba(47, 208, 122, 0.12);
+  color: #4ade9a;
+}
+.sent-neu {
+  border-color: var(--border-strong);
   background: var(--panel-3);
   color: var(--text-2);
+}
+.sent-neg {
+  border-color: rgba(255, 122, 110, 0.45);
+  background: rgba(255, 122, 110, 0.12);
+  color: #ff9a90;
 }
 
 .tag {
@@ -244,294 +333,26 @@ select {
   text-transform: uppercase;
 }
 
-.side {
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 0.06em;
-  white-space: nowrap;
-
-  &.buy {
-    color: var(--up);
-  }
-  &.sell {
-    color: var(--down);
-  }
-}
-
-/* ---- Buttons -------------------------------------------------------------- */
-
-.btn {
+/* Traceability chips — every screen names the stories it implements, per the
+   CLAUDE.md requirement that delivery maps visibly to the specification. */
+.trace {
   display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 34px;
-  padding: 0 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  color: var(--text);
-  font-size: 13px;
-  font-weight: 620;
-  white-space: nowrap;
-  transition: background 0.13s ease, border-color 0.13s ease, opacity 0.13s ease;
-
-  &:hover:not(:disabled) {
-    background: var(--panel-3);
-    border-color: var(--border-strong);
-  }
-
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
+  gap: 4px;
+  flex-wrap: wrap;
 }
-.btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: #fff;
-
-  &:hover:not(:disabled) {
-    background: #3b7cf0;
-    border-color: #3b7cf0;
-  }
-}
-.btn-buy {
-  background: var(--up);
-  border-color: var(--up);
-  color: #00210a;
-
-  &:hover:not(:disabled) {
-    background: #00b305;
-    border-color: #00b305;
-  }
-}
-.btn-sell {
-  background: var(--down);
-  border-color: var(--down);
-  color: #2a0503;
-
-  &:hover:not(:disabled) {
-    background: #ef4b43;
-    border-color: #ef4b43;
-  }
-}
-.btn-ghost {
-  background: transparent;
-  border-color: transparent;
-  color: var(--text-2);
-
-  &:hover:not(:disabled) {
-    background: var(--panel-2);
-    border-color: var(--border-soft);
-    color: var(--text);
-  }
-}
-.btn-sm {
-  height: 28px;
-  padding: 0 10px;
-  font-size: 12px;
-}
-
-/* ---- Form fields ---------------------------------------------------------- */
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 0;
-
-  > label,
-  > .label {
-    font-size: 11px;
-    font-weight: 650;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-3);
-  }
-
-  .hint {
-    font-size: 12px;
-    color: var(--text-3);
-  }
-
-  .error-text {
-    font-size: 12px;
-    color: var(--down);
-  }
-}
-
-.input,
-.select {
-  height: 36px;
-  width: 100%;
-  padding: 0 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  color: var(--text);
-  outline: none;
-  transition: border-color 0.13s ease;
-
-  &:hover {
-    border-color: var(--border-strong);
-  }
-
-  &:focus {
-    border-color: var(--accent);
-  }
-
-  &.invalid {
-    border-color: var(--down);
-  }
-
-  &::placeholder {
-    color: var(--text-3);
-  }
-}
-
-.select {
-  appearance: none;
-  padding-right: 30px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239dabbb' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 11px center;
-  cursor: pointer;
-}
-
-/* Segmented control: a row of mutually exclusive buttons (filters, BUY/SELL). */
-.segmented {
-  display: inline-flex;
-  padding: 3px;
-  gap: 2px;
-  border-radius: var(--radius-sm);
+.trace code {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
   background: var(--panel-2);
   border: 1px solid var(--border-soft);
-
-  button {
-    height: 28px;
-    padding: 0 12px;
-    border-radius: 4px;
-    font-size: 12.5px;
-    font-weight: 600;
-    color: var(--text-2);
-    white-space: nowrap;
-    transition: background 0.13s ease, color 0.13s ease;
-
-    &:hover {
-      color: var(--text);
-    }
-
-    &.on {
-      background: var(--panel-3);
-      color: var(--text);
-      box-shadow: inset 0 0 0 1px var(--border-strong);
-    }
-
-    .count {
-      margin-left: 6px;
-      color: var(--text-3);
-      font-weight: 500;
-    }
-  }
+  color: var(--text-3);
 }
 
-/* ---- Tables --------------------------------------------------------------- */
-
-.table-wrap {
-  overflow-x: auto;
-}
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
+.empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-3);
   font-size: 13px;
-
-  th {
-    padding: 10px 18px;
-    font-size: 11px;
-    font-weight: 650;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-3);
-    text-align: left;
-    border-bottom: 1px solid var(--border-soft);
-    white-space: nowrap;
-  }
-
-  td {
-    padding: 12px 18px;
-    border-bottom: 1px solid var(--border-soft);
-    vertical-align: middle;
-  }
-
-  tbody tr:last-child td {
-    border-bottom: none;
-  }
-
-  tbody tr.clickable {
-    cursor: pointer;
-    transition: background 0.1s ease;
-
-    &:hover {
-      background: var(--panel-hover);
-    }
-  }
-
-  .r {
-    text-align: right;
-  }
-
-  .strong {
-    font-weight: 650;
-  }
-}
-
-/* Instrument identity cell: logo + symbol + name. */
-.ident {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  min-width: 0;
-
-  .ident-text {
-    min-width: 0;
-  }
-
-  .sym {
-    font-weight: 700;
-    letter-spacing: 0.01em;
-    white-space: nowrap;
-  }
-
-  .name {
-    font-size: 12px;
-    color: var(--text-3);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-}
-
-/* ---- Layout helpers ------------------------------------------------------- */
-
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
-.link {
-  color: var(--accent);
-
-  &:hover {
-    text-decoration: underline;
-  }
 }
