@@ -1,0 +1,103 @@
+<div class="layout">
+  <section class="main">
+    <div class="hero" [class.hero-up]="portfolio.hasPnl() && rising()" [class.hero-down]="portfolio.hasPnl() && !rising()">
+      <div class="hero-top">
+        <div class="titled">
+          <leap-page-mascot name="portfolio" [size]="64" />
+          <div>
+            <p class="hero-label">Portfolio value</p>
+            <h1 class="hero-value num">
+              {{ headlineParts().major }}<span class="minor">{{ headlineParts().minor }}</span>
+            </h1>
+            @if (portfolio.hasPnl()) {
+              <div class="hero-change num" [class.up]="rising()" [class.down]="!rising()">
+                <span>{{ pnlText() }}</span>
+                <span class="sep">·</span>
+                <span>{{ returnText() }}</span>
+                <span class="range-label">Unrealised</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        @if (portfolio.account.active(); as acc) {
+          <div class="acct">
+            <span class="acct-label">Account</span>
+            <span class="acct-name">{{ acc.name }}</span>
+            <span class="acct-meta faint">#{{ acc.accountId }} · {{ acc.email }}</span>
+          </div>
+        }
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <p class="metric-label">Cash available</p>
+          <p class="metric-value num">{{ cashText() }}</p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Total return</p>
+          <p class="metric-value num" [class.up]="portfolio.hasPnl() && rising()" [class.down]="portfolio.hasPnl() && !rising()">
+            {{ portfolio.hasPnl() ? returnText() : '—' }}
+          </p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Unrealized gain</p>
+          <p class="metric-value num" [class.up]="portfolio.hasPnl() && rising()" [class.down]="portfolio.hasPnl() && !rising()">
+            {{ portfolio.hasPnl() ? pnlText() : '—' }}
+          </p>
+        </div>
+        <div class="metric">
+          <p class="metric-label">Holdings</p>
+          <p class="metric-value num">{{ portfolio.positions().length }}</p>
+        </div>
+      </div>
+
+      <p class="disclosure">{{ priceNote() }} Average cost comes from this account's filled buy orders.</p>
+    </div>
+
+    <leap-value-chart-panel />
+
+    <leap-cash-panel />
+
+    <leap-holdings-table />
+
+    <leap-performance-panel />
+
+    <div class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Recent activity</h2>
+        <a class="link" routerLink="/orders">All orders →</a>
+      </div>
+      @if (recentOrders().length === 0) {
+        <div class="empty-state">
+          <p class="empty-title">No orders yet</p>
+          <p class="empty-body faint">Pick an instrument, review the ticket, and confirm. Orders are stored in the database.</p>
+          <a class="empty-cta" routerLink="/markets">Browse markets →</a>
+        </div>
+      } @else {
+        <ul class="activity">
+          @for (order of recentOrders(); track order.orderId) {
+            <li>
+              <a [routerLink]="['/instrument', order.instrumentId]">
+                <leap-instrument-logo [symbol]="order.symbol" [size]="26" />
+                <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
+                  {{ order.side }}
+                </span>
+                <span class="sym">{{ order.symbol }}</span>
+                <span class="qty num dim">{{ order.qtyText }}</span>
+                <span class="state">
+                  <span [class]="'pill pill-' + tone(order.status)">{{ label(order.status) }}</span>
+                </span>
+                <span class="when num faint">{{ order.when }}</span>
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </section>
+
+  <aside class="rail">
+    <leap-watchlist-rail />
+  </aside>
+</div>

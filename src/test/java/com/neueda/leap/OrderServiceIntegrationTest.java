@@ -118,7 +118,7 @@ class OrderServiceIntegrationTest {
         // Assert - holding was updated in database
         Holding afterHolding = holdingsMapper.findByAccountIdAndInstrumentId(accountId, instrumentId);
         assertNotNull(afterHolding, "Holding should exist in database after BUY");
-        assertEquals(beforeQuantity.add(quantity), afterHolding.getQuantity(),
+        assertEquals(0, beforeQuantity.add(quantity).compareTo(afterHolding.getQuantity()),
                 "Holding quantity should increase by order quantity");
     }
 
