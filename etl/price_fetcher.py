@@ -46,7 +46,7 @@ MINOR_UNITS = {"GBp": ("GBP", Decimal(100)), "GBX": ("GBP", Decimal(100)), "ZAc"
 # Without history older than this, an instrument is backfilled.
 BACKFILL_IF_NEWER_THAN = timedelta(days=2)
 
-# A database created before markets-and-price-history.sql has no instrument_price table.
+# A database created from an older schema has no instrument_price table.
 HISTORY_TABLE_EXISTS = """
     SELECT to_regclass('public.instrument_price') IS NOT NULL
 """

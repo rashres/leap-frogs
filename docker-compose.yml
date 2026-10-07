@@ -12,11 +12,10 @@ services:
       - "8100:5432"
     volumes:
       - leap_frogs_postgres_data:/var/lib/postgresql/data
-      # First boot only (empty volume). Filenames 1- to 4- set run order.
+      # First boot only (empty volume). Filenames 1- to 3- set run order.
       - ./database/create-analytics-database.sql:/docker-entrypoint-initdb.d/1-create-analytics-database.sql:ro
       - ./database/capstone-mvp-schema.sql:/docker-entrypoint-initdb.d/2-load-operational-schema.sql:ro
       - ./database/load-analytics-schema.sh:/docker-entrypoint-initdb.d/3-load-analytics-schema.sh:ro
-      - ./database/markets-and-price-history.sql:/docker-entrypoint-initdb.d/4-markets-and-price-history.sql:ro
       - ./database/capstone-analytics-schema.sql:/analytics-schema.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
