@@ -26,8 +26,8 @@ Production build: `npm run build` (output in `ui/dist/leap-ui`).
 ### Prices and charts
 
 Prices come from `etl/price_fetcher.py` (yfinance), which writes
-`instrument.last_price` in USD and records history in `instrument_price`
-(`database/markets-and-price-history.sql`). The UI re-reads `GET /api/instruments`
+`instrument.last_price` in USD and records history in `instrument_price`. The
+UI re-reads `GET /api/instruments`
 every 10 seconds and draws charts from `GET /api/instruments/{id}/prices`.
 Until the fetcher has run, prices show "—" and the header pill says **No prices**.
 
@@ -99,10 +99,6 @@ the API has no data for them.
 - **Backfilled history uses today's exchange rate.** UK and India history
   loaded on the first fetch is converted to USD at the current rate, not the
   rate on each day.
-- **Sample orders make big jumps in the value chart.** The seed orders are
-  dated across the last month at made-up prices (for example BTC at $307) and
-  never took cash out, so the value chart jumps when they happen. Orders placed
-  through the API do not do this.
 - **Account types.** The three user types are not modelled yet; the account
   view will change once the database supports them.
 - **`GET /api` redirects.** It answers 302 to `/api/`. The UI calls `/api/`

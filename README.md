@@ -109,6 +109,16 @@ The API prices orders from this column, so **run this before placing orders** �
 an instrument with no price yet is rejected rather than traded at a fake price.
 Re-run it (or schedule it) to keep prices current.
 
+The first run also loads a year of price history into `instrument_price`. Once
+it has, give the sample accounts (2–6) a few months of orders at those real
+prices:
+```bash
+docker compose run --rm price-fetcher python seed_orders.py
+```
+It does nothing if they already have orders. `--reset` wipes the orders and
+holdings of accounts 1–6, puts their cash back to the starting amounts, and
+seeds again. Account 1 is never seeded, because the integration tests trade on it.
+
 ### 5. Run ETL Pipeline
 ```bash
 docker compose run --rm etl
