@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Single PostgreSQL Instance with both Operational and Analytics Databases
   postgres:
@@ -24,6 +22,47 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # yfinance price fetcher. Run on demand:
+  #   docker compose run --rm price-fetcher
+  # Not started by `docker compose up` - it is a task, not a service.
+  price-fetcher:
+    build:
+      context: .
+      dockerfile: etl/Dockerfile
+    image: leap-frogs-etl
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_OPERATIONAL_NAME: leapfrogsdb
+      DB_ANALYTICS_NAME: leap_analytics
+    command: ["python", "price_fetcher.py"]
+
+  # Full ETL run, same image:
+  #   docker compose run --rm etl
+  etl:
+    build:
+      context: .
+      dockerfile: etl/Dockerfile
+    image: leap-frogs-etl
+    profiles: ["tools"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_OPERATIONAL_NAME: leapfrogsdb
+      DB_ANALYTICS_NAME: leap_analytics
+    command: ["python", "main.py"]
 
 volumes:
   leap_frogs_postgres_data:
