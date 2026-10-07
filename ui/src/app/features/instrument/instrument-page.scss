@@ -124,6 +124,39 @@
   }
 }
 
+.ranges {
+  display: flex;
+  gap: 4px;
+  border-top: 1px solid var(--border-soft);
+  padding-top: 13px;
+
+  button {
+    padding: 5px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12.5px;
+    font-weight: 650;
+    color: var(--text-3);
+    transition: all 0.13s ease;
+
+    &:hover {
+      color: var(--text);
+      background: var(--panel-2);
+    }
+
+    &.on {
+      color: var(--up);
+      background: var(--up-soft);
+    }
+  }
+}
+
+.chart-empty {
+  display: grid;
+  place-items: center;
+  height: 300px;
+  font-size: 12.5px;
+}
+
 /* ---- Stats and rules ----------------------------------------------------- */
 
 .stats {

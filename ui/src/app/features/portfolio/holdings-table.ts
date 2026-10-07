@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { PortfolioStore } from '../../core/state/portfolio.store';
-import { formatQty, formatSignedPct, formatSignedUsd, formatUsd } from '../../shared/format';
+import { formatQty, formatSignedPct, formatPrice, formatSignedUsd, formatUsd } from '../../shared/format';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { LivePrice } from '../../shared/live-price';
 
@@ -173,7 +173,7 @@ export class HoldingsTable {
     this.portfolio.positions().map((p) => ({
       ...p,
       qty: formatQty(p.quantity),
-      avg: formatUsd(p.averageCost),
+      avg: formatPrice(p.averageCost),
       value: formatUsd(p.marketValue),
       pnl: formatSignedUsd(p.unrealisedPnl),
       pct: formatSignedPct(p.unrealisedPnlPercent),

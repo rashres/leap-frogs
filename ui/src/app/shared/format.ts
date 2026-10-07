@@ -18,6 +18,24 @@ export function formatUsd(value: number | null | undefined): string {
   return value == null ? '—' : usdFormat.format(value);
 }
 
+const smallPriceFormat = new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+  minimumFractionDigits: 4,
+  maximumFractionDigits: 4,
+});
+
+/**
+ * A unit price: four decimals below $10 (FX pairs, penny stocks), otherwise cents.
+ * Pass `reference` to format a price change at the precision of the price it changed from.
+ */
+export function formatPrice(value: number | null | undefined, reference: number | null = value ?? null): string {
+  if (value == null) {
+    return '—';
+  }
+  return Math.abs(reference ?? value) < 10 ? smallPriceFormat.format(value) : usdFormat.format(value);
+}
+
 /** "+$1,234.50" / "−$12.00", with a true minus sign. */
 export function formatSignedUsd(value: number | null | undefined): string {
   if (value == null) {

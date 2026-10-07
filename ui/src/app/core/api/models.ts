@@ -29,7 +29,7 @@ export interface Account {
   cashBalance: number;
 }
 
-/** InstrumentResponse. Price fields only exist once feature/yfinance is merged. */
+/** InstrumentResponse. lastPrice is in USD, or null until the price fetcher has run. */
 export interface Instrument {
   instrumentId: number;
   symbol: string;
@@ -38,6 +38,15 @@ export interface Instrument {
   country: string;
   lastPrice?: number | null;
   priceUpdatedAt?: string | null;
+}
+
+/** GET /api/instruments/{id}/prices?range=… */
+export type PriceRange = '1D' | '1W' | '1M' | '3M' | '1Y';
+
+/** PricePointResponse */
+export interface PricePointDto {
+  observedAt: string;
+  price: number;
 }
 
 /** HoldingResponse */
