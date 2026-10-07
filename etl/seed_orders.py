@@ -44,6 +44,16 @@ STARTING_CASH = {
     "carol.white@example.com": Decimal("12000.00"),
     "david.green@example.com": Decimal("20000.00"),
     "emma.harris@example.com": Decimal("8000.00"),
+    "alice.johnson@example.com": Decimal("50000.00"),
+    "bob.smith@example.com": Decimal("75000.00"),
+    "carol.martinez@example.com": Decimal("100000.00"),
+    "david.chen@example.com": Decimal("60000.00"),
+    "emma.wilson@example.com": Decimal("80000.00"),
+    "frank.thompson@example.com": Decimal("95000.00"),
+    "grace.lee@example.com": Decimal("55000.00"),
+    "henry.rodriguez@example.com": Decimal("120000.00"),
+    "iris.anderson@example.com": Decimal("70000.00"),
+    "jack.williams@example.com": Decimal("85000.00"),
 }
 
 # What each sample account likes to buy.
@@ -53,10 +63,20 @@ STYLES = {
     "carol.white@example.com": ["SHEL.L", "HSBA.L", "VOD.L", "RELIANCE.NS", "INFY.NS"],
     "david.green@example.com": ["AAPL", "MSFT", "SHEL.L", "TCS.NS", "BTC-USD", "EURUSD=X"],
     "emma.harris@example.com": ["ETH-USD", "BTC-USD", "AMZN", "INFY.NS"],
+    "alice.johnson@example.com": ["AAPL", "MSFT", "AMZN", "GBPUSD=X"],
+    "bob.smith@example.com": ["BTC-USD", "ETH-USD", "MSFT", "TSLA"],
+    "carol.martinez@example.com": ["SHEL.L", "HSBA.L", "VOD.L", "INFY.NS", "TCS.NS"],
+    "david.chen@example.com": ["AAPL", "BTC-USD", "ETH-USD", "SHEL.L", "EURUSD=X"],
+    "emma.wilson@example.com": ["MSFT", "AMZN", "TSLA", "RELIANCE.NS", "GBPUSD=X"],
+    "frank.thompson@example.com": ["BTC-USD", "ETH-USD", "AAPL", "MSFT", "SHEL.L"],
+    "grace.lee@example.com": ["AAPL", "AMZN", "HSBA.L", "INFY.NS", "TCS.NS"],
+    "henry.rodriguez@example.com": ["BTC-USD", "ETH-USD", "MSFT", "TSLA", "VOD.L"],
+    "iris.anderson@example.com": ["AAPL", "MSFT", "AMZN", "RELIANCE.NS", "EURUSD=X"],
+    "jack.williams@example.com": ["ETH-USD", "BTC-USD", "TSLA", "SHEL.L", "GBPUSD=X"],
 }
 
 # These accounts also get one order rejected for insufficient cash.
-WITH_REJECTED_ORDER = {"bob.dylan@example.com", "emma.harris@example.com"}
+WITH_REJECTED_ORDER = {"bob.dylan@example.com", "emma.harris@example.com", "grace.lee@example.com", "henry.rodriguez@example.com"}
 
 HISTORY_DAYS = 90
 ORDERS_PER_ACCOUNT = (7, 10)

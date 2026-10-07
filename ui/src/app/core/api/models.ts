@@ -41,7 +41,7 @@ export interface Instrument {
 }
 
 /** GET /api/instruments/{id}/prices?range=… */
-export type PriceRange = '1D' | '1W' | '1M' | '3M' | '1Y';
+export type PriceRange = '1D' | '1W' | '1M' | '3M' | '1Y' | 'All';
 
 /** PricePointResponse */
 export interface PricePointDto {
