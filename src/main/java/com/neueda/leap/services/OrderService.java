@@ -1,6 +1,8 @@
 package com.neueda.leap.services;
 
+import com.neueda.leap.kafka.OrderCompletedEvent;
 import com.neueda.leap.services.domain.*;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -9,7 +11,14 @@ import java.util.Map;
 @Service
 public class OrderService {
 
+    private final ApplicationEventPublisher eventPublisher;
+
     public OrderService() {
+        this(event -> { });
+    }
+
+    public OrderService(ApplicationEventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
     }
 
     public boolean submitOrder(Account account, Instrument instrument, String side, BigDecimal quantity) {
@@ -34,6 +43,8 @@ public class OrderService {
 
         order.setStatus("COMPLETE");
         System.out.println("Order Processed");
+
+        eventPublisher.publishEvent(new OrderCompletedEvent(order));
 
         return true;
     }

@@ -59,6 +59,7 @@ public class OrderController {
             
             // For now, store in memory
             int orderId = orderIdCounter++;
+            order.setOrderId(orderId);
             orderRepository.put(orderId, order);
 
             response.put("status", "SUCCESS");
