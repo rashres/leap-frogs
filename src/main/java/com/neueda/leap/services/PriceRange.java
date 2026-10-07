@@ -5,25 +5,25 @@ import java.util.Arrays;
 import java.util.Optional;
 
 /**
- * Chart ranges for GET /api/instruments/{id}/prices. Each range is read at a
- * bucket size that keeps a chart to a few hundred points at most.
+ * Chart ranges for GET /api/instruments/{id}/prices and
+ * GET /api/accounts/{id}/value-history. Each range is read at a step size that
+ * keeps a chart to a few hundred points at most.
  */
 public enum PriceRange {
-    ONE_DAY("1D", Duration.ofDays(1), "5 minutes"),
-    ONE_WEEK("1W", Duration.ofDays(7), "30 minutes"),
-    ONE_MONTH("1M", Duration.ofDays(30), "4 hours"),
-    THREE_MONTHS("3M", Duration.ofDays(90), "1 day"),
-    ONE_YEAR("1Y", Duration.ofDays(365), "1 day");
+    ONE_DAY("1D", Duration.ofDays(1), Duration.ofMinutes(5)),
+    ONE_WEEK("1W", Duration.ofDays(7), Duration.ofMinutes(30)),
+    ONE_MONTH("1M", Duration.ofDays(30), Duration.ofHours(4)),
+    THREE_MONTHS("3M", Duration.ofDays(90), Duration.ofDays(1)),
+    ONE_YEAR("1Y", Duration.ofDays(365), Duration.ofDays(1));
 
     private final String code;
     private final Duration span;
-    /** A PostgreSQL interval literal, passed to date_bin(). */
-    private final String bucket;
+    private final Duration step;
 
-    PriceRange(String code, Duration span, String bucket) {
+    PriceRange(String code, Duration span, Duration step) {
         this.code = code;
         this.span = span;
-        this.bucket = bucket;
+        this.step = step;
     }
 
     public String code() {
@@ -34,8 +34,13 @@ public enum PriceRange {
         return span;
     }
 
+    public Duration step() {
+        return step;
+    }
+
+    /** The step as a PostgreSQL interval literal, passed to date_bin(). */
     public String bucket() {
-        return bucket;
+        return step.toMinutes() + " minutes";
     }
 
     public static Optional<PriceRange> fromCode(String code) {

@@ -3,15 +3,12 @@ package com.neueda.leap.controllers;
 import com.neueda.leap.controllers.dto.InstrumentResponse;
 import com.neueda.leap.controllers.dto.PricePointResponse;
 import com.neueda.leap.services.InstrumentService;
-import com.neueda.leap.services.PriceRange;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -72,9 +69,7 @@ public class InstrumentController {
     public List<PricePointResponse> getPriceHistory(
             @PathVariable @Parameter(description = "The unique identifier of the instrument") int id,
             @RequestParam(defaultValue = "1M") @Parameter(description = "One of 1D, 1W, 1M, 3M, 1Y") String range) {
-        PriceRange priceRange = PriceRange.fromCode(range).orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.BAD_REQUEST, "'" + range + "' is not a valid range; use one of " + PriceRange.codes()));
-        return instrumentService.priceHistory(id, priceRange).stream()
+        return instrumentService.priceHistory(id, ChartRanges.parse(range)).stream()
                 .map(PricePointResponse::from)
                 .toList();
     }
