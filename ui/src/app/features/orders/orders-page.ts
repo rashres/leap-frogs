@@ -1,163 +1,131 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { createLoader } from '../../core/api/loader';
-import type { OrderSide } from '../../core/api/models';
-import { OrdersService } from '../../core/api/orders.service';
-import { ActiveAccountService } from '../../core/state/active-account.service';
-import { AsyncState } from '../../shared/async-state';
-import { formatUsd } from '../../shared/format';
-import { PageHeader } from '../../shared/page-header';
-import { StatCard } from '../../shared/stat-card';
-import { OrdersTable } from '../trading/orders-table';
+import type { Order } from '../../core/api/models';
+import { MarketStore } from '../../core/state/market.store';
+import { PortfolioStore } from '../../core/state/portfolio.store';
+import { formatQty, formatStamp, formatUsd } from '../../shared/format';
+import { InstrumentLogo } from '../../shared/instrument-logo';
+import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
+import { PageMascot } from '../../shared/page-mascot';
 
-type StatusFilter = 'All' | 'Completed' | 'Rejected';
-type SideFilter = 'All' | OrderSide;
+type Filter = 'ALL' | 'FILLED' | 'REJECTED';
 
+interface Step {
+  readonly state: string;
+  readonly at: string;
+  readonly detail: string;
+}
+
+interface Row {
+  readonly id: number;
+  readonly instrumentId: number;
+  readonly symbol: string;
+  readonly instrumentName: string;
+  readonly side: Order['side'];
+  readonly status: Order['status'];
+  readonly label: string;
+  readonly tone: string;
+  readonly submitted: string;
+  readonly quantity: string;
+  readonly price: string;
+  readonly value: string;
+  readonly fulfilled: string;
+  readonly steps: readonly Step[];
+}
+
+/**
+ * Order history for the active account, from GET /api/accounts/{id}/orders.
+ * Layout adapted from fe/21-page-mascots (features/orders).
+ */
 @Component({
   selector: 'leap-orders-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PageHeader, StatCard, AsyncState, OrdersTable],
-  template: `
-    <leap-page-header
-      title="Orders"
-      [subtitle]="
-        'Order history for ' + (active.active()?.name ?? '…') + ', newest first. Completed and rejected orders are both kept.'
-      "
-      mascot="orders"
-    >
-      <input
-        class="input search"
-        type="search"
-        placeholder="Filter by symbol"
-        aria-label="Filter orders by symbol"
-        [value]="query()"
-        (input)="query.set($any($event.target).value)"
-      />
-      <button type="button" class="btn" (click)="orders.reload()" [disabled]="active.activeId() == null">Refresh</button>
-    </leap-page-header>
-
-    @if (active.activeId() == null) {
-      <section class="panel">
-        <leap-async-state
-          [loading]="!active.loaded()"
-          [error]="active.error()"
-          [empty]="true"
-          emptyText="No account selected."
-          (retry)="active.refresh()"
-        />
-      </section>
-    } @else {
-      <div class="stats">
-        <leap-stat-card label="Orders" [value]="all().length" [sub]="completedCount() + ' completed · ' + rejectedCount() + ' rejected'" />
-        <leap-stat-card label="Bought" [value]="boughtText()" sub="Completed BUY value" />
-        <leap-stat-card label="Sold" [value]="soldText()" sub="Completed SELL value" />
-      </div>
-
-      <div class="toolbar filters">
-        <div class="segmented" role="group" aria-label="Filter by status">
-          @for (f of statusFilters; track f) {
-            <button type="button" [class.on]="status() === f" (click)="status.set(f)">
-              {{ f }}<span class="count num">{{ statusCounts()[f] }}</span>
-            </button>
-          }
-        </div>
-        <div class="segmented" role="group" aria-label="Filter by side">
-          @for (f of sideFilters; track f) {
-            <button type="button" [class.on]="side() === f" (click)="side.set(f)">{{ f === 'All' ? 'Both sides' : f }}</button>
-          }
-        </div>
-      </div>
-
-      <section class="panel">
-        <leap-async-state
-          [loading]="orders.initialLoading()"
-          [error]="orders.error()"
-          [empty]="rows().length === 0"
-          [emptyText]="all().length === 0 ? 'No orders yet for this account.' : 'No orders match these filters.'"
-          (retry)="orders.reload()"
-        >
-          <a empty class="btn btn-sm" routerLink="/instruments">Browse instruments</a>
-          <leap-orders-table [orders]="rows()" />
-        </leap-async-state>
-      </section>
-    }
-  `,
-  styles: [
-    `
-      .search {
-        width: 200px;
-      }
-      .stats {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 14px;
-        margin-bottom: 18px;
-      }
-      .filters {
-        margin-bottom: 14px;
-      }
-      @media (max-width: 760px) {
-        .stats {
-          grid-template-columns: minmax(0, 1fr);
-        }
-        .search {
-          width: 100%;
-        }
-      }
-    `,
-  ],
+  imports: [RouterLink, InstrumentLogo, PageMascot],
+  templateUrl: './orders-page.html',
+  styleUrl: './orders-page.scss',
 })
 export class OrdersPage {
-  private readonly ordersApi = inject(OrdersService);
-  protected readonly active = inject(ActiveAccountService);
+  protected readonly portfolio = inject(PortfolioStore);
+  private readonly market = inject(MarketStore);
 
-  readonly orders = createLoader(() => this.ordersApi.list(this.active.activeId()!));
+  readonly filters: readonly Filter[] = ['ALL', 'FILLED', 'REJECTED'];
+  readonly filter = signal<Filter>('ALL');
+  readonly expanded = signal<number | null>(null);
 
-  readonly statusFilters: StatusFilter[] = ['All', 'Completed', 'Rejected'];
-  readonly sideFilters: SideFilter[] = ['All', 'BUY', 'SELL'];
-
-  readonly status = signal<StatusFilter>('All');
-  readonly side = signal<SideFilter>('All');
-  readonly query = signal('');
-
-  readonly all = computed(() => this.orders.data() ?? []);
-  readonly completedCount = computed(() => this.all().filter((o) => o.status === 'COMPLETE').length);
-  readonly rejectedCount = computed(() => this.all().filter((o) => o.status === 'FAILED').length);
-
-  readonly statusCounts = computed<Record<StatusFilter, number>>(() => ({
-    All: this.all().length,
-    Completed: this.completedCount(),
-    Rejected: this.rejectedCount(),
-  }));
-
-  readonly boughtText = computed(() => formatUsd(this.sumValue('BUY')));
-  readonly soldText = computed(() => formatUsd(this.sumValue('SELL')));
+  private readonly all = computed<Row[]>(() =>
+    this.portfolio.orderList().map((o) => {
+      const filled = o.status === 'COMPLETE';
+      const steps: Step[] = [
+        {
+          state: 'Submitted',
+          at: formatStamp(o.placedTime),
+          detail: `${o.side} ${formatQty(o.quantity)} ${o.symbol} received by POST /api/accounts/${o.accountId}/orders.`,
+        },
+      ];
+      if (filled) {
+        steps.push({
+          state: 'Submitted → Filled',
+          at: formatStamp(o.fulfilledTime),
+          detail: `Executed at ${formatUsd(o.price)}; cash and holdings updated.`,
+        });
+      } else if (o.status === 'FAILED') {
+        steps.push({
+          state: 'Submitted → Rejected',
+          at: formatStamp(o.placedTime),
+          detail: 'Failed validation. The API returns the reason on the POST response only; it is not stored.',
+        });
+      }
+      return {
+        id: o.orderId,
+        instrumentId: o.instrumentId,
+        symbol: o.symbol,
+        instrumentName: this.market.instrument(o.instrumentId)?.name ?? o.symbol,
+        side: o.side,
+        status: o.status,
+        label: ORDER_STATUS_LABELS[o.status],
+        tone: statusTone(o.status),
+        submitted: formatStamp(o.placedTime),
+        quantity: formatQty(o.quantity),
+        price: formatUsd(o.price),
+        value: formatUsd(o.value),
+        fulfilled: o.fulfilledTime ? formatStamp(o.fulfilledTime) : '—',
+        steps,
+      };
+    }),
+  );
 
   readonly rows = computed(() => {
-    const q = this.query().trim().toLowerCase();
-    return this.all().filter(
-      (o) =>
-        (this.status() === 'All' ||
-          (this.status() === 'Completed' && o.status === 'COMPLETE') ||
-          (this.status() === 'Rejected' && o.status === 'FAILED')) &&
-        (this.side() === 'All' || o.side === this.side()) &&
-        (!q || o.symbol.toLowerCase().includes(q)),
-    );
+    const all = this.all();
+    switch (this.filter()) {
+      case 'FILLED':
+        return all.filter((o) => o.status === 'COMPLETE');
+      case 'REJECTED':
+        return all.filter((o) => o.status === 'FAILED');
+      default:
+        return all;
+    }
   });
 
-  constructor() {
-    effect(() => {
-      const id = this.active.activeId();
-      this.ordersApi.changes();
-      if (id != null) {
-        untracked(() => this.orders.reload());
-      }
-    });
+  readonly counts = computed<Record<Filter, number>>(() => {
+    const all = this.all();
+    return {
+      ALL: all.length,
+      FILLED: all.filter((o) => o.status === 'COMPLETE').length,
+      REJECTED: all.filter((o) => o.status === 'FAILED').length,
+    };
+  });
+
+  setFilter(filter: Filter): void {
+    this.filter.set(filter);
   }
 
-  private sumValue(side: OrderSide): number {
-    return this.all()
-      .filter((o) => o.side === side && o.status === 'COMPLETE')
-      .reduce((sum, o) => sum + o.value, 0);
+  toggle(orderId: number): void {
+    this.expanded.update((current) => (current === orderId ? null : orderId));
+  }
+
+  /** From the disclosure button, which sits inside the clickable row. */
+  toggleFromButton(event: Event, orderId: number): void {
+    event.stopPropagation();
+    this.toggle(orderId);
   }
 }
