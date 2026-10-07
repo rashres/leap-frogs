@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Integration tests for portfolio value history with a real database.
  *
- * Needs the instrument_price table from database/markets-and-price-history.sql.
+ * Needs the instrument_price table from database/capstone-mvp-schema.sql.
  */
 @SpringBootTest
 @DisplayName("Portfolio value history Database Integration Tests")
