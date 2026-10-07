@@ -31,6 +31,11 @@ Prices come from `etl/price_fetcher.py` (yfinance), which writes
 every 10 seconds and draws charts from `GET /api/instruments/{id}/prices`.
 Until the fetcher has run, prices show "—" and the header pill says **No prices**.
 
+The Portfolio page's "Value over time" chart comes from
+`GET /api/accounts/{id}/value-history?range=1D…1Y`. Nothing extra is stored: the
+API starts from today's cash and holdings, undoes the filled orders in the range,
+and values each holding at the price recorded at each point.
+
 ### News (optional)
 
 Headlines come from NewsAPI.org when a key is set, and from Yahoo Finance search
@@ -46,7 +51,7 @@ The dev proxy attaches the key server-side, so it never reaches the browser.
 
 | Page | Route | Data |
 | --- | --- | --- |
-| Portfolio | `/portfolio` | Active account: `GET /accounts/{id}`, `/holdings`, `/orders`; valued at `lastPrice` |
+| Portfolio | `/portfolio` | Active account: `GET /accounts/{id}`, `/holdings`, `/orders`; valued at `lastPrice`; value chart (`/value-history?range=1D…1Y`) |
 | Markets | `/markets` | `GET /instruments`, grouped by market (US, UK, India, FX, Crypto), with a watchlist star |
 | Instrument | `/instrument/:id` | `GET /instruments/{id}`, chart (`/prices?range=1D…1Y`), news, your orders, and the order ticket (`POST /accounts/{id}/orders`) |
 | Orders | `/orders` | `GET /accounts/{id}/orders`, filter Filled / Rejected, expandable rows |
@@ -94,6 +99,10 @@ the API has no data for them.
 - **Backfilled history uses today's exchange rate.** UK and India history
   loaded on the first fetch is converted to USD at the current rate, not the
   rate on each day.
+- **Sample orders make big jumps in the value chart.** The seed orders are
+  dated across the last month at made-up prices (for example BTC at $307) and
+  never took cash out, so the value chart jumps when they happen. Orders placed
+  through the API do not do this.
 - **Account types.** The three user types are not modelled yet; the account
   view will change once the database supports them.
 - **`GET /api` redirects.** It answers 302 to `/api/`. The UI calls `/api/`
