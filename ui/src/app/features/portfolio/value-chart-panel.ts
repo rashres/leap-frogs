@@ -117,16 +117,27 @@ export class ValueChartPanel {
   private readonly orders = inject(OrdersService);
   private readonly portfolio = inject(PortfolioStore);
 
-  readonly ranges: readonly PriceRange[] = ['1D', '1W', '1M', '3M', '1Y'];
+  readonly ranges: readonly PriceRange[] = ['1D', '1W', '1M', '3M', '1Y', 'All'];
   readonly range = signal<PriceRange>('1M');
   readonly history = createLoader(() => this.api.valueHistory(this.account.activeId()!, this.range()));
   readonly scrubbed = signal<PricePoint | null>(null);
 
-  /** Value per point, ending at the live total from the hero. */
+  /** Value per point, ending at the live total from the hero. Filter out flat lines (duplicate prices). */
   readonly series = computed<readonly PricePoint[]>(() => {
-    const points = (this.history.data() ?? []).map((p) => ({ at: new Date(p.at), price: p.totalValue }));
+    const rawPoints = (this.history.data() ?? []).map((p) => ({ at: new Date(p.at), price: p.totalValue }));
+    
+    // Filter consecutive duplicates while keeping the first and last
+    const points: PricePoint[] = [];
+    for (let i = 0; i < rawPoints.length; i++) {
+      if (i === 0 || rawPoints[i].price !== rawPoints[i - 1].price) {
+        points.push(rawPoints[i]);
+      }
+    }
+    
     const live = this.portfolio.totalValue();
-    if (live != null && points.length) points.push({ at: new Date(), price: live });
+    if (live != null && points.length && points[points.length - 1].price !== live) {
+      points.push({ at: new Date(), price: live });
+    }
     return points;
   });
 

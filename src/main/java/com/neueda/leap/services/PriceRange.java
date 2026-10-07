@@ -14,7 +14,8 @@ public enum PriceRange {
     ONE_WEEK("1W", Duration.ofDays(7), Duration.ofMinutes(30)),
     ONE_MONTH("1M", Duration.ofDays(30), Duration.ofHours(4)),
     THREE_MONTHS("3M", Duration.ofDays(90), Duration.ofDays(1)),
-    ONE_YEAR("1Y", Duration.ofDays(365), Duration.ofDays(1));
+    ONE_YEAR("1Y", Duration.ofDays(365), Duration.ofDays(1)),
+    ALL("All", Duration.ofDays(10950), Duration.ofDays(1));
 
     private final String code;
     private final Duration span;

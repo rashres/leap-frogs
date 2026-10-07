@@ -104,12 +104,22 @@ INSERT INTO instrument (symbol, name, exchange_id) VALUES
 -- Account 1 is kept free of sample orders: the integration tests trade on it
 -- and need its full $10,000.
 INSERT INTO account (name, email, cash_balance) VALUES
-  ('Jane Doe',     'jane@example.com',          10000.00),
-  ('Alice Cooper', 'alice.cooper@example.com',  10000.00),
-  ('Bob Dylan',    'bob.dylan@example.com',     15000.00),
-  ('Carol White',  'carol.white@example.com',   12000.00),
-  ('David Green',  'david.green@example.com',   20000.00),
-  ('Emma Harris',  'emma.harris@example.com',    8000.00);
+  ('Jane Doe',           'jane@example.com',               10000.00),
+  ('Alice Cooper',       'alice.cooper@example.com',       10000.00),
+  ('Bob Dylan',          'bob.dylan@example.com',          15000.00),
+  ('Carol White',        'carol.white@example.com',        12000.00),
+  ('David Green',        'david.green@example.com',        20000.00),
+  ('Emma Harris',        'emma.harris@example.com',         8000.00),
+  ('Alice Johnson',      'alice.johnson@example.com',      50000.00),
+  ('Bob Smith',          'bob.smith@example.com',          75000.00),
+  ('Carol Martinez',     'carol.martinez@example.com',    100000.00),
+  ('David Chen',         'david.chen@example.com',         60000.00),
+  ('Emma Wilson',        'emma.wilson@example.com',        80000.00),
+  ('Frank Thompson',     'frank.thompson@example.com',     95000.00),
+  ('Grace Lee',          'grace.lee@example.com',          55000.00),
+  ('Henry Rodriguez',    'henry.rodriguez@example.com',   120000.00),
+  ('Iris Anderson',      'iris.anderson@example.com',      70000.00),
+  ('Jack Williams',      'jack.williams@example.com',      85000.00);
 
 -- No sample orders here: prices do not exist until the price fetcher has run.
 -- After its first run, `docker compose run --rm price-fetcher python seed_orders.py`
