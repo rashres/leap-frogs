@@ -6,10 +6,13 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.neueda.leap.controllers.dto.AccountResponse;
+import com.neueda.leap.controllers.dto.PortfolioValuePointResponse;
 import com.neueda.leap.services.AccountService;
+import com.neueda.leap.services.PortfolioHistoryService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -31,9 +34,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 public class AccountController {
 
     private final AccountService accountService;
+    private final PortfolioHistoryService portfolioHistoryService;
 
-    public AccountController(AccountService accountService) {
+    public AccountController(AccountService accountService, PortfolioHistoryService portfolioHistoryService) {
         this.accountService = accountService;
+        this.portfolioHistoryService = portfolioHistoryService;
     }
 
     /**
@@ -77,5 +82,25 @@ public class AccountController {
     })
     public AccountResponse getAccount(@PathVariable @Parameter(description = "The unique identifier of the account", example = "1001") int id) {
         return AccountResponse.from(accountService.findById(id));
+    }
+
+    /**
+     * GET /api/accounts/{id}/value-history?range=1M
+     */
+    @GetMapping("/{id}/value-history")
+    @Operation(summary = "Get portfolio value history",
+            description = "The account's value (cash plus holdings at recorded prices) over a range, oldest first, "
+                    + "worked out from filled orders and recorded prices. In USD.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Value history retrieved"),
+        @ApiResponse(responseCode = "400", description = "Unknown range"),
+        @ApiResponse(responseCode = "404", description = "Account not found")
+    })
+    public List<PortfolioValuePointResponse> getValueHistory(
+            @PathVariable @Parameter(description = "The unique identifier of the account", example = "1001") int id,
+            @RequestParam(defaultValue = "1M") @Parameter(description = "One of 1D, 1W, 1M, 3M, 1Y") String range) {
+        return portfolioHistoryService.valueHistory(id, ChartRanges.parse(range)).stream()
+                .map(PortfolioValuePointResponse::from)
+                .toList();
     }
 }

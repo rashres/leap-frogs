@@ -1,0 +1,18 @@
+# Compiled output
+/dist
+/tmp
+/out-tsc
+
+# Node
+/node_modules
+npm-debug.log
+
+# Angular
+/.angular/cache
+
+# Local secrets (news API key)
+.env.local
+
+# System files
+.DS_Store
+Thumbs.db

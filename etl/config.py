@@ -30,8 +30,10 @@ ANALYTICS_SCHEMA_PATH = PROJECT_ROOT / "database" / "capstone-analytics-schema.s
 
 
 def _url(database: str) -> str:
+    # Name the driver: SQLAlchemy 2.1 defaults postgresql:// to psycopg 3, which
+    # requirements-etl.txt does not install.
     return (
-        f"postgresql://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}"
+        f"postgresql+psycopg2://{quote_plus(DB_USER)}:{quote_plus(DB_PASSWORD)}"
         f"@{DB_HOST}:{DB_PORT}/{database}"
     )
 

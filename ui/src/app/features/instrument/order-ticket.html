@@ -1,0 +1,206 @@
+<div class="panel ticket">
+  <div class="sides" role="group" aria-label="Order side">
+    <button type="button" class="side-btn buy" [class.on]="side() === 'BUY'" [attr.aria-pressed]="side() === 'BUY'" (click)="setSide('BUY')">
+      Buy
+    </button>
+    <button type="button" class="side-btn sell" [class.on]="side() === 'SELL'" [attr.aria-pressed]="side() === 'SELL'" (click)="setSide('SELL')">
+      Sell
+    </button>
+  </div>
+
+  <div class="body">
+    @if (step() === 'edit') {
+      <div class="row">
+        <span class="label">Indicative price</span>
+        <span class="value">
+          @if (price() != null) {
+            <leap-live-price [value]="price()" />
+            <span class="faint ccy">USD</span>
+          } @else {
+            <span class="faint">—</span>
+          }
+        </span>
+      </div>
+      <p class="note faint">
+        Latest price from the price feed. The API fills your order at the price it holds when the order arrives,
+        which may differ.
+      </p>
+
+      <label class="field">
+        <span class="label">Quantity</span>
+        <div class="input-wrap" [class.bad]="quantityInvalid()">
+          <input
+            type="text"
+            inputmode="decimal"
+            placeholder="0"
+            [value]="quantityText()"
+            (input)="onQuantity($event)"
+            autocomplete="off"
+            [attr.aria-label]="'Quantity of ' + instrument().symbol + ' to ' + side().toLowerCase()"
+            [attr.aria-invalid]="quantityInvalid()"
+          />
+          <button type="button" class="max" (click)="useMax()" aria-label="Use maximum quantity">MAX</button>
+        </div>
+      </label>
+
+      <div class="meta faint">
+        @if (side() === 'BUY') {
+          <span>{{ cashText() }} USD available</span>
+        } @else {
+          <span>{{ heldText() }} {{ instrument().symbol }} held</span>
+        }
+        <span class="dot">·</span>
+        <span>Up to 6dp</span>
+      </div>
+
+      <div class="row total">
+        <span class="label">Estimated {{ side() === 'BUY' ? 'cost' : 'proceeds' }}</span>
+        <span class="value num strong">{{ consideration() != null ? considerationText() : '—' }}</span>
+      </div>
+
+      @if (rejection(); as reason) {
+        <div class="reject" role="status">
+          <div class="reject-head">
+            <span class="pill pill-down">Would be rejected</span>
+          </div>
+          <p>{{ reason }}</p>
+          <p class="reject-note faint">Submitting anyway sends it to the API, which records the rejection in your order history.</p>
+        </div>
+      }
+
+      @if (quantityInvalid()) {
+        <div class="reject" role="status">
+          <div class="reject-head"><span class="pill pill-warn">Invalid</span></div>
+          <p>Enter a positive number with at most 6 decimal places, for example 10 or 0.25.</p>
+        </div>
+      }
+
+      @if (account.activeId() == null) {
+        <p class="note faint">Pick an account from the avatar in the header to trade.</p>
+      }
+
+      <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="!canSubmit()" (click)="review()">
+        Review {{ side() === 'BUY' ? 'buy' : 'sell' }} order
+      </button>
+    } @else {
+      @let r = reviewed()!;
+
+      <div class="review-head">
+        <span class="pill pill-accent">Confirm</span>
+        <span class="faint">Check this before it is sent</span>
+      </div>
+
+      <dl class="summary">
+        <div>
+          <dt>Account</dt>
+          <dd>{{ account.active()?.name }}</dd>
+        </div>
+        <div>
+          <dt>Action</dt>
+          <dd [class.up]="side() === 'BUY'" [class.down]="side() === 'SELL'">
+            {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ instrument().symbol }}
+          </dd>
+        </div>
+        <div>
+          <dt>Quantity</dt>
+          <dd class="num">{{ r.quantity }}</dd>
+        </div>
+        <div>
+          <dt>Price reviewed</dt>
+          <dd class="num">{{ r.priceText }}</dd>
+        </div>
+        <div>
+          <dt>Settles in</dt>
+          <dd>USD</dd>
+        </div>
+        <div class="grand">
+          <dt>{{ side() === 'BUY' ? 'Total cost' : 'Total proceeds' }}</dt>
+          <dd class="num">{{ r.consideration }}</dd>
+        </div>
+      </dl>
+
+      @if (drift(); as d) {
+        <p class="drift" role="status">
+          Price has moved
+          <strong class="num" [class.up]="!d.negative" [class.down]="d.negative">{{ d.text }}</strong>
+          since you opened this review. The fill uses the API's latest price, not the one above.
+        </p>
+      }
+
+      @if (rejection(); as reason) {
+        <div class="reject">
+          <div class="reject-head">
+            <span class="pill pill-down">Will be rejected</span>
+          </div>
+          <p>{{ reason }}</p>
+          <p class="reject-note faint">Confirming records the rejection in your order history.</p>
+        </div>
+      } @else {
+        <p class="passed faint">Passes the cash, holdings and price checks the API runs.</p>
+      }
+
+      <div class="actions">
+        <button type="button" class="back" (click)="back()">Back</button>
+        <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="submitting()" (click)="confirm()">
+          {{ submitting() ? 'Sending…' : 'Confirm ' + (side() === 'BUY' ? 'buy' : 'sell') }}
+        </button>
+      </div>
+      <p class="escape faint">Press Esc to go back without sending.</p>
+    }
+
+    @if (error(); as e) {
+      <div class="placed">
+        <div class="reject" role="alert">
+          <div class="reject-head">
+            <span class="pill pill-down">{{ e.unreachable ? 'API unreachable' : 'HTTP ' + e.status }}</span>
+            <code>{{ e.title }}</code>
+            <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss">×</button>
+          </div>
+          <p>{{ e.message }}</p>
+          @for (field of e.fieldErrors | keyvalue; track field.key) {
+            <p class="reject-note faint">{{ field.key }}: {{ field.value }}</p>
+          }
+        </div>
+      </div>
+    }
+
+    @if (placedView(); as p) {
+      <div class="placed">
+        <div class="placed-head">
+          <span [class]="'pill pill-' + p.tone">{{ p.label }}</span>
+          <span class="ref num faint">Order {{ p.ref }}</span>
+          <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss order status">×</button>
+        </div>
+
+        <ol class="timeline">
+          @for (step of p.steps; track $index) {
+            <li>
+              <span class="step-state">{{ step.state }}</span>
+              <span class="step-time num faint">{{ step.at }}</span>
+              <p class="step-detail faint">{{ step.detail }}</p>
+            </li>
+          }
+        </ol>
+
+        @if (p.quotes; as q) {
+          <div class="quotes">
+            <div>
+              <span class="label faint">You confirmed</span>
+              <span class="num">{{ q.confirmed }}</span>
+            </div>
+            <div>
+              <span class="label faint">Filled at</span>
+              <span class="num">{{ q.filled }}</span>
+            </div>
+            @if (q.slippage; as slip) {
+              <div>
+                <span class="label faint">Slippage</span>
+                <span class="num" [class.up]="!slip.negative" [class.down]="slip.negative">{{ slip.text }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

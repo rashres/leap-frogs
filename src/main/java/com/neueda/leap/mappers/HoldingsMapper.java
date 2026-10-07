@@ -22,10 +22,10 @@ public interface HoldingsMapper {
     /**
      * Insert or update a holding (upsert)
      */
-    @Insert("INSERT INTO holdings (account_id, instrument_id, quantity, updated_at) " +
-            "VALUES (#{accountId}, #{instrument.instrumentId}, #{quantity}, #{updatedAt}) " +
+    @Insert("INSERT INTO holdings (account_id, instrument_id, symbol, quantity, updated_at) " +
+            "VALUES (#{accountId}, #{instrument.instrumentId}, #{instrument.symbol}, #{quantity}, #{updatedAt}) " +
             "ON CONFLICT (account_id, instrument_id) DO UPDATE SET " +
-            "quantity = EXCLUDED.quantity, updated_at = EXCLUDED.updated_at")
+            "symbol = EXCLUDED.symbol, quantity = EXCLUDED.quantity, updated_at = EXCLUDED.updated_at")
     void upsertHolding(Holding holding);
 
     // Every market in one list: zero-quantity rows are positions that were fully sold.
