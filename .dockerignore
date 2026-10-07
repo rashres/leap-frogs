@@ -1,0 +1,15 @@
+# Build context is the repo root, so keep heavy and irrelevant paths out of it.
+.git/
+target/
+bin/
+**/__pycache__/
+**/*.pyc
+.venv/
+venv/
+node_modules/
+**/*.log
+.env
+.env.local
+visualizations/
+src/
+.github/

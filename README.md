@@ -36,8 +36,11 @@ We use **Gitflow** to keep things organized:
 - **Order** - Buy/sell order model
 - **OrderValidator** - Validates trades (sufficient funds, etc.)
 - **OrderExecutor** - Executes trades and updates holdings
-- **MarketService** - Simulates market data
 - **Main** - Interactive demo showing trading workflow
+
+Market prices are **not** simulated in Java. `etl/price_fetcher.py` pulls them
+from Yahoo Finance into `instrument.last_price`, and orders are priced from
+that column at the moment they are created.
 
 ### Database Layer (`database/`)
 - **leapfrogsdb** - Source database (accounts, transactions, instruments)
@@ -96,20 +99,38 @@ docker-compose up -d
 # Wait ~10-30 seconds for Postgres to be healthy
 ```
 
-### 4. Run ETL Pipeline
+### 4. Fetch Market Prices
 ```bash
-python etl/main.py
+docker compose run --rm price-fetcher
+```
+Pulls live prices from Yahoo Finance (yfinance) into `instrument.last_price`.
+Runs in a container, so yfinance does not need to be installed on the host.
+The API prices orders from this column, so **run this before placing orders** —
+an instrument with no price yet is rejected rather than traded at a fake price.
+Re-run it (or schedule it) to keep prices current.
+
+### 5. Run ETL Pipeline
+```bash
+docker compose run --rm etl
 ```
 This extracts from `leapfrogsdb`, transforms, and loads into `leap_analytics`.
+Only `status = 'COMPLETE'` transactions are extracted, so rejected orders never
+count toward analytics volume.
 
-### 5. Run Trading Demo
+Both commands use the same image (`etl/Dockerfile`) and are under the `tools`
+profile, so `docker compose up` does not start them. To run either on the host
+instead, `pip install -r etl/requirements-etl.txt` and use
+`python etl/price_fetcher.py` / `python etl/main.py` — on the host, `.env` must
+set `DB_PORT=8100`, since that is the published port.
+
+### 6. Run Trading Demo
 ```bash
 # Compile and run Java
 mvn compile
 mvn exec:java -Dexec.mainClass="com.neueda.leap.Main"
 ```
 
-### 6. Generate Analytics
+### 7. Generate Analytics
 ```bash
 python visualizations/insights-viz.py
 ```
