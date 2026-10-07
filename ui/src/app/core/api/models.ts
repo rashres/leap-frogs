@@ -49,6 +49,14 @@ export interface PricePointDto {
   price: number;
 }
 
+/** PortfolioValuePointResponse */
+export interface PortfolioValuePointDto {
+  at: string;
+  totalValue: number;
+  cash: number;
+  holdingsValue: number;
+}
+
 /** HoldingResponse */
 export interface Holding {
   instrumentId: number;

@@ -10,6 +10,7 @@ import { PageMascot } from '../../shared/page-mascot';
 import { CashPanel } from './cash-panel';
 import { HoldingsTable } from './holdings-table';
 import { PerformancePanel } from './performance-panel';
+import { ValueChartPanel } from './value-chart-panel';
 import { WatchlistRail } from './watchlist-rail';
 
 /**
@@ -21,7 +22,7 @@ import { WatchlistRail } from './watchlist-rail';
 @Component({
   selector: 'leap-portfolio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, HoldingsTable, PerformancePanel, CashPanel, WatchlistRail, PageMascot],
+  imports: [RouterLink, InstrumentLogo, ValueChartPanel, HoldingsTable, PerformancePanel, CashPanel, WatchlistRail, PageMascot],
   templateUrl: './portfolio-page.html',
   styleUrl: './portfolio-page.scss',
 })
