@@ -23,12 +23,13 @@ LEAP_API_URL=http://<host>:8081 npm start
 
 Production build: `npm run build` (output in `ui/dist/leap-ui`).
 
-### Prices
+### Prices and charts
 
-Prices come from `feature/yfinance` (`instrument.last_price`, filled by
-`etl/price_fetcher.py`). The UI re-reads `GET /api/instruments` every 10 seconds.
-Against `main`, which has no prices yet, every price shows "—" and the header
-pill says **No prices**.
+Prices come from `etl/price_fetcher.py` (yfinance), which writes
+`instrument.last_price` in USD and records history in `instrument_price`
+(`database/markets-and-price-history.sql`). The UI re-reads `GET /api/instruments`
+every 10 seconds and draws charts from `GET /api/instruments/{id}/prices`.
+Until the fetcher has run, prices show "—" and the header pill says **No prices**.
 
 ### News (optional)
 
@@ -46,8 +47,8 @@ The dev proxy attaches the key server-side, so it never reaches the browser.
 | Page | Route | Data |
 | --- | --- | --- |
 | Portfolio | `/portfolio` | Active account: `GET /accounts/{id}`, `/holdings`, `/orders`; valued at `lastPrice` |
-| Markets | `/markets` | `GET /instruments`, grouped by market, with a watchlist star |
-| Instrument | `/instrument/:id` | `GET /instruments/{id}`, news, your orders, and the order ticket (`POST /accounts/{id}/orders`) |
+| Markets | `/markets` | `GET /instruments`, grouped by market (US, UK, India, FX, Crypto), with a watchlist star |
+| Instrument | `/instrument/:id` | `GET /instruments/{id}`, chart (`/prices?range=1D…1Y`), news, your orders, and the order ticket (`POST /accounts/{id}/orders`) |
 | Orders | `/orders` | `GET /accounts/{id}/orders`, filter Filled / Rejected, expandable rows |
 | News | `/news` | Headlines for the database equities, with a word-list sentiment read |
 
@@ -80,20 +81,19 @@ src/app/
 ## Credits
 
 Styles, page layouts, the order ticket flow, the news/sentiment code, instrument
-logos and mascot images are adapted from the team's `fe/21-page-mascots` branch.
-They were copied file by file, not merged. Charts, day change, multi-currency
-and order cancel from that branch were left out because the API has no data
-for them.
+logos, mascot images and the price chart are adapted from the team's
+`fe/21-page-mascots` branch. They were copied file by file, not merged.
+Multi-currency balances and order cancel from that branch were left out because
+the API has no data for them.
 
 ## Known issues / out of scope (backend, not changed here)
 
-- **Needs `feature/yfinance` for prices.** Until it is merged, `main` fills
-  every order at a placeholder price of 1.
 - **Rejection reason only on POST.** `message` is returned only by the POST
   response. Rejected orders in `GET /orders` have `message: null`, because the
   reason is not stored.
-- **No price history.** The API stores only the latest price, so there are no
-  charts or day-change figures.
+- **Backfilled history uses today's exchange rate.** UK and India history
+  loaded on the first fetch is converted to USD at the current rate, not the
+  rate on each day.
 - **Account types.** The three user types are not modelled yet; the account
   view will change once the database supports them.
 - **`GET /api` redirects.** It answers 302 to `/api/`. The UI calls `/api/`
