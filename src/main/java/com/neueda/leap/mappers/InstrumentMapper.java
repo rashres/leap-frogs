@@ -15,6 +15,7 @@ public interface InstrumentMapper {
     // Instruments are rows in the "instrument" table, joined with their exchange (market).
     String SELECT_WITH_EXCHANGE = """
             SELECT i.instrument_id, i.symbol, i.name, i.exchange_id,
+                   i.last_price, i.price_updated_at,
                    e.name AS exchange_name, e.country AS exchange_country
             FROM instrument i
             JOIN exchange e ON e.exchange_id = i.exchange_id
@@ -24,6 +25,8 @@ public interface InstrumentMapper {
     @Results(id = "instrumentWithExchange", value = {
         @Result(property = "instrumentId", column = "instrument_id", id = true),
         @Result(property = "exchangeId", column = "exchange_id"),
+        @Result(property = "lastPrice", column = "last_price"),
+        @Result(property = "priceUpdatedAt", column = "price_updated_at"),
         @Result(property = "exchange.exchangeId", column = "exchange_id"),
         @Result(property = "exchange.name", column = "exchange_name"),
         @Result(property = "exchange.country", column = "exchange_country")
