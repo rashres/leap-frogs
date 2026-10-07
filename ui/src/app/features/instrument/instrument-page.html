@@ -1,0 +1,151 @@
+@if (instrument(); as inst) {
+  @let pol = policy();
+
+  <a class="back faint" routerLink="/markets">← Markets</a>
+
+  <div class="layout">
+    <section class="main">
+      <header class="ident">
+        <leap-instrument-logo [symbol]="inst.symbol" [size]="50" />
+        <div class="ident-left">
+          <div class="title-row">
+            <h1>{{ inst.symbol }}</h1>
+            @if (pol) {
+              <span class="tag">{{ pol.label }}</span>
+              <span class="pill" [class.pill-up]="marketOpen()" [class.pill-muted]="!marketOpen()">
+                {{ marketOpen() ? 'Open' : 'Closed' }}
+              </span>
+            }
+          </div>
+          <p class="name dim">{{ inst.name }} · {{ inst.exchange }}</p>
+        </div>
+        <button type="button" class="star" [class.on]="watched()" (click)="toggleWatch()">
+          ★ {{ watched() ? 'Watching' : 'Watch' }}
+        </button>
+      </header>
+
+      <div class="price-block">
+        <p class="price num">
+          {{ inst.lastPrice != null ? priceText() : '—' }}
+          <span class="ccy faint">USD</span>
+        </p>
+        <p class="chg faint">
+          @if (updatedText(); as at) {
+            Updated {{ at }}
+          } @else {
+            No price yet. The price feed has not written one for this instrument.
+          }
+        </p>
+      </div>
+
+      <div class="panel stats">
+        <div>
+          <span class="k">Last price</span>
+          <span class="v num">{{ inst.lastPrice != null ? priceText() : '—' }}</span>
+        </div>
+        <div>
+          <span class="k">Price updated</span>
+          <span class="v num">{{ updatedStamp() }}</span>
+        </div>
+        <div>
+          <span class="k">Exchange</span>
+          <span class="v">{{ inst.exchange }}</span>
+        </div>
+        <div>
+          <span class="k">Country</span>
+          <span class="v">{{ inst.country }}</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">{{ pol?.label ?? inst.exchange }} rules</h2>
+        </div>
+        <div class="rules">
+          <div>
+            <span class="k">Settles in</span>
+            <span class="v">USD</span>
+          </div>
+          <div>
+            <span class="k">Quantity precision</span>
+            <span class="v">Up to 6 decimal places</span>
+          </div>
+          <div>
+            <span class="k">Fractional units</span>
+            <span class="v">Permitted</span>
+          </div>
+          <div class="wide">
+            <span class="k">Trading hours</span>
+            <span class="v">{{ pol?.sessionLabel ?? 'Not listed' }} · informational, the API does not enforce hours</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <h2 class="panel-title">News · {{ inst.symbol }}</h2>
+        </div>
+        <leap-news-feed [items]="headlines()" [state]="news.state()" [error]="news.error()" />
+      </div>
+
+      @if (orders().length > 0) {
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Your orders · {{ inst.symbol }}</h2>
+            <a class="lnk" routerLink="/orders">All orders</a>
+          </div>
+          <ul class="orders">
+            @for (order of orders(); track order.id) {
+              <li>
+                <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
+                  {{ order.side }}
+                </span>
+                <span class="num qty">{{ order.quantity }}</span>
+                <span [class]="'pill pill-' + order.tone">{{ order.label }}</span>
+                <span class="num fill dim">{{ order.fill }}</span>
+                <span class="num when faint">{{ order.when }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+      }
+    </section>
+
+    <aside class="rail">
+      <leap-order-ticket [instrument]="inst" />
+
+      @if (position(); as pos) {
+        <div class="panel">
+          <div class="panel-head">
+            <h2 class="panel-title">Your position</h2>
+          </div>
+          <div class="pos">
+            <div>
+              <span class="k">Quantity</span>
+              <span class="v num">{{ pos.quantity }}</span>
+            </div>
+            <div>
+              <span class="k">Average cost</span>
+              <span class="v num">{{ pos.averageCost }}</span>
+            </div>
+            <div>
+              <span class="k">Market value</span>
+              <span class="v num">{{ pos.marketValue }}</span>
+            </div>
+            <div>
+              <span class="k">Unrealised P/L</span>
+              <span class="v num" [class.up]="!pos.negative" [class.down]="pos.negative">{{ pos.pnl }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </aside>
+  </div>
+} @else if (notFound()) {
+  <p class="empty">
+    {{ detail.error()?.status === 404 ? 'Instrument not found.' : detail.error()?.message }}
+    <a class="lnk" routerLink="/markets">Browse markets</a>
+  </p>
+} @else {
+  <p class="empty faint">Loading instrument…</p>
+}
