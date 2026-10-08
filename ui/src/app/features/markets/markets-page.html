@@ -1,0 +1,127 @@
+<div class="head">
+  <div class="title-row">
+    <div class="titled">
+      <leap-page-mascot name="markets" />
+      <h1>Markets</h1>
+    </div>
+    <input class="search" type="search" placeholder="Search symbol or name…" [value]="query()" (input)="onSearch($event)" />
+  </div>
+  <p class="sub dim">
+    {{ resultCount() }} instruments from the database, grouped by market. Every instrument trades and settles in
+    USD; prices refresh from the price feed.
+  </p>
+</div>
+
+<div class="filters">
+  <select class="filter" [value]="marketFilter()" (change)="onMarket($event)" aria-label="Filter by market">
+    <option value="">All markets</option>
+    @for (m of marketOptions(); track m.code) {
+      <option [value]="m.code">{{ m.label }}</option>
+    }
+  </select>
+  <select class="filter" [value]="exchange()" (change)="onExchange($event)" aria-label="Filter by exchange">
+    <option value="">All exchanges</option>
+    @for (x of exchanges(); track x) {
+      <option [value]="x">{{ x }}</option>
+    }
+  </select>
+  @if (hasActiveFilters()) {
+    <button type="button" class="clear-filters" (click)="clearFilters()">Clear filters</button>
+  }
+</div>
+
+@if (market.error(); as e) {
+  <div class="panel">
+    <p class="empty">{{ e.message }}</p>
+  </div>
+} @else if (!market.loaded()) {
+  <div class="panel">
+    <p class="empty">Loading instruments…</p>
+  </div>
+} @else if (groups().length === 0) {
+  <p class="empty">Nothing matches “{{ query() }}”.</p>
+
+  @if (liveSearchState() === 'loading') {
+    <p class="empty faint">Searching Yahoo Finance…</p>
+  } @else if (liveSearchState() === 'error') {
+    <p class="empty faint">Yahoo Finance search is unavailable right now.</p>
+  } @else if (liveResults().length > 0) {
+    <section class="panel group">
+      <div class="group-head">
+        <div class="group-title">
+          <h2>Live results from Yahoo Finance</h2>
+        </div>
+        <div class="rules faint">
+          <span>Not in the database — informational only, not tradeable here</span>
+        </div>
+      </div>
+      <ul>
+        @for (result of liveResults(); track result.symbol) {
+          <li>
+            <div class="live-row">
+              <div class="ident">
+                <div class="sym">{{ result.symbol }}</div>
+                <div class="name faint">{{ result.name }} · {{ result.exchange }}</div>
+              </div>
+              <span class="pill pill-muted">{{ result.type }}</span>
+            </div>
+          </li>
+        }
+      </ul>
+    </section>
+  }
+}
+
+@for (group of groups(); track group.code) {
+  <section class="panel group">
+    <div class="group-head">
+      <div class="group-title">
+        <h2>{{ group.label }}</h2>
+        @if (group.open !== null) {
+          <span class="pill" [class.pill-up]="group.open" [class.pill-muted]="!group.open">
+            {{ group.open ? 'Open' : 'Closed' }}
+          </span>
+        }
+      </div>
+      <div class="rules faint">
+        <span>Settles USD</span>
+        <span class="dot">·</span>
+        <span>{{ group.exchanges }}</span>
+        <span class="dot">·</span>
+        <span>{{ group.hours }}</span>
+      </div>
+    </div>
+
+    <ul>
+      @for (row of group.rows; track row.id) {
+        <li>
+          <a [routerLink]="['/instrument', row.id]">
+            <button
+              type="button"
+              class="star"
+              [class.on]="row.watched"
+              (click)="toggleWatch($event, row.id)"
+              [attr.aria-label]="row.watched ? 'Remove from watchlist' : 'Add to watchlist'"
+            >
+              ★
+            </button>
+            <leap-instrument-logo [symbol]="row.symbol" [size]="36" />
+            <div class="ident">
+              <div class="sym">{{ row.symbol }}</div>
+              <div class="name faint">{{ row.name }} · {{ row.exchange }}</div>
+            </div>
+            <div class="quote">
+              @if (row.price != null) {
+                <leap-live-price class="price" [value]="row.price" />
+                <div class="chg num faint">{{ row.updated ?? '' }}</div>
+              } @else {
+                <span class="price faint">—</span>
+                <div class="chg faint">No price yet</div>
+              }
+            </div>
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+}
