@@ -13,7 +13,7 @@ import { PageMascot, type MascotName } from './page-mascot';
   template: `
     <div class="lead">
       @if (mascot(); as name) {
-        <span class="tile"><leap-page-mascot [name]="name" [size]="44" /></span>
+        <span class="tile"><leap-page-mascot [name]="name" [size]="38" /></span>
       }
       <div class="text">
         <h1>{{ heading() }}</h1>
@@ -30,7 +30,7 @@ import { PageMascot, type MascotName } from './page-mascot';
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 16px 24px;
-        margin-bottom: 24px;
+        margin-bottom: 20px;
       }
       .lead {
         display: flex;
@@ -41,9 +41,9 @@ import { PageMascot, type MascotName } from './page-mascot';
       .tile {
         display: grid;
         place-items: center;
-        width: 56px;
-        height: 56px;
-        border-radius: 14px;
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
         background: var(--panel);
         border: 1px solid var(--border-soft);
         box-shadow: var(--shadow-1);
@@ -54,14 +54,14 @@ import { PageMascot, type MascotName } from './page-mascot';
       }
       h1 {
         margin: 0;
-        font-size: 26px;
-        line-height: 1.2;
+        font-size: 24px;
+        line-height: 1.25;
         font-weight: 700;
         letter-spacing: -0.02em;
       }
       .desc {
-        margin: 4px 0 0;
-        font-size: 14px;
+        margin: 2px 0 0;
+        font-size: 13.5px;
         color: var(--text-3);
       }
       .desc:empty {
