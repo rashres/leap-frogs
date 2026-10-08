@@ -5,25 +5,27 @@ import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { DayChangeStore } from './day-change.store';
 
+const SHOWN = 3;
+
 type Tab = 'all' | 'gainers' | 'losers';
 
 /**
- * Compact instrument list with Buy / Sell shortcuts. The buttons open the
- * existing order ticket on the instrument page with that side selected; no
- * order is sent from here.
+ * Instruments with Buy / Sell shortcuts. The buttons open the existing order
+ * ticket on the instrument page with that side selected; no order is sent from here.
  */
 @Component({
   selector: 'leap-exchange-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, InstrumentLogo, Icon],
   template: `
-    <section class="panel card">
+    <section class="card">
       <div class="head">
-        <h2 class="panel-title">Exchange stock</h2>
-        <a class="icon-btn more" routerLink="/markets" aria-label="Open Markets" title="Open Markets">
-          <leap-icon name="chevron-right" [size]="18" />
+        <h2 class="title">Exchange stock</h2>
+        <a class="more" routerLink="/markets" aria-label="Open Markets" title="Open Markets">
+          <leap-icon name="chevron-right" [size]="16" />
         </a>
       </div>
+
       <div class="segmented tabs" role="group" aria-label="Filter instruments">
         @for (t of tabs; track t.key) {
           <button type="button" [class.on]="tab() === t.key" [attr.aria-pressed]="tab() === t.key" (click)="tab.set(t.key)">
@@ -36,7 +38,7 @@ type Tab = 'all' | 'gainers' | 'losers';
         @for (row of rows(); track row.id) {
           <li>
             <div class="line">
-              <leap-instrument-logo [symbol]="row.symbol" [size]="36" />
+              <leap-instrument-logo [symbol]="row.symbol" [size]="32" />
               <a class="ident" [routerLink]="['/instrument', row.id]">
                 <span class="name">{{ row.name }}</span>
                 <span class="sym">{{ row.symbol }} · {{ row.market }}</span>
@@ -44,9 +46,9 @@ type Tab = 'all' | 'gainers' | 'losers';
               <span class="quote">
                 <span class="price num">{{ row.price }}</span>
                 @if (row.pct; as pct) {
-                  <span class="chg num" [class.up]="!row.negative" [class.down]="row.negative">
-                    <leap-icon [name]="row.negative ? 'trending-down' : 'trending-up'" [size]="13" />{{ pct }}
-                  </span>
+                  <span class="chg num" [class.up]="!row.negative" [class.down]="row.negative">{{ row.negative ? '↓' : '↑' }} {{ pct }}</span>
+                } @else {
+                  <span class="chg faint">—</span>
                 }
               </span>
             </div>
@@ -59,8 +61,10 @@ type Tab = 'all' | 'gainers' | 'losers';
           <li class="empty">
             @if (!store.loaded()) {
               Loading prices…
+            } @else if (tab() === 'all') {
+              No priced instruments yet.
             } @else {
-              {{ tab() === 'all' ? 'No priced instruments yet.' : 'No instruments ' + (tab() === 'gainers' ? 'up' : 'down') + ' over the last day.' }}
+              No instruments {{ tab() === 'gainers' ? 'up' : 'down' }} over the last day.
             }
           </li>
         }
@@ -77,36 +81,55 @@ type Tab = 'all' | 'gainers' | 'losers';
         display: flex;
         flex-direction: column;
         height: 100%;
+        padding: 20px;
+        background: var(--panel);
+        border: 1px solid var(--border-soft);
+        border-radius: var(--radius-lg);
       }
       .head {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 12px 10px 20px;
+        min-height: 34px;
+        margin-bottom: 12px;
+      }
+      .title {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+        letter-spacing: -0.005em;
       }
       .more {
-        width: 32px;
-        height: 32px;
+        display: grid;
+        place-items: center;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        color: var(--text-3);
+      }
+      .more:hover {
+        background: var(--panel-hover);
+        color: var(--text);
       }
       .tabs {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        margin: 0 20px 6px;
+        margin-bottom: 6px;
       }
-      /* Basis 0 so the neighbouring overview sets the row height; the list scrolls. */
+      .tabs button {
+        height: 28px;
+      }
+      /* Room for three instruments whichever tab is open, so the card never jumps. */
       .list {
-        flex: 1 1 0;
-        min-height: 0;
-        overflow-y: auto;
-        list-style: none;
+        display: flex;
+        flex-direction: column;
+        min-height: calc(3 * 96px);
         margin: 0;
-        padding: 0 20px 8px;
+        padding: 0;
+        list-style: none;
       }
       li {
-        padding: 12px 0;
-      }
-      li + li {
-        border-top: 1px solid var(--border-soft);
+        padding: 12px 0 8px;
       }
       .line {
         display: grid;
@@ -118,13 +141,13 @@ type Tab = 'all' | 'gainers' | 'losers';
         display: flex;
         flex-direction: column;
         min-width: 0;
-        border-radius: 4px;
+        line-height: 1.35;
       }
       .ident:hover .name {
         color: var(--accent);
       }
       .name {
-        font-size: 14px;
+        font-size: 13.5px;
         font-weight: 600;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -133,67 +156,69 @@ type Tab = 'all' | 'gainers' | 'losers';
       .sym {
         font-size: 12px;
         color: var(--text-3);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .quote {
         display: flex;
         flex-direction: column;
         align-items: flex-end;
+        line-height: 1.35;
       }
       .price {
         font-size: 14px;
         font-weight: 600;
       }
       .chg {
-        display: inline-flex;
-        align-items: center;
-        gap: 3px;
-        font-size: 12px;
-        font-weight: 600;
+        font-size: 12.5px;
+        font-weight: 500;
       }
       .actions {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 8px;
+        gap: 10px;
         margin-top: 10px;
       }
       .actions .btn {
         height: 32px;
       }
       .empty {
-        padding: 28px 0;
+        margin: auto 0;
+        padding: 0;
         text-align: center;
         font-size: 13px;
         color: var(--text-3);
-      }
-      @media (max-width: 1100px) {
-        .list {
-          flex: none;
-          max-height: 420px;
-        }
       }
     `,
   ],
 })
 export class ExchangePanel {
   protected readonly store = inject(DayChangeStore);
+  readonly tab = signal<Tab>('all');
+
+  private readonly priced = computed(() => this.store.rows().filter((r) => r.price != null));
+  private readonly gainers = computed(() =>
+    this.priced()
+      .filter((r) => (r.changePct ?? 0) > 0)
+      .sort((a, b) => b.changePct! - a.changePct!),
+  );
+  private readonly losers = computed(() =>
+    this.priced()
+      .filter((r) => (r.changePct ?? 0) < 0)
+      .sort((a, b) => a.changePct! - b.changePct!),
+  );
 
   readonly tabs: readonly { key: Tab; label: string }[] = [
     { key: 'all', label: 'All' },
     { key: 'gainers', label: 'Gainers' },
     { key: 'losers', label: 'Losers' },
   ];
-  readonly tab = signal<Tab>('all');
 
   readonly rows = computed(() => {
-    const priced = this.store.rows().filter((r) => r.price != null);
     const tab = this.tab();
-    const chosen =
-      tab === 'gainers'
-        ? priced.filter((r) => (r.changePct ?? 0) > 0).sort((a, b) => b.changePct! - a.changePct!)
-        : tab === 'losers'
-          ? priced.filter((r) => (r.changePct ?? 0) < 0).sort((a, b) => a.changePct! - b.changePct!)
-          : priced;
-    return chosen.map((r) => ({
+    const list = tab === 'gainers' ? this.gainers() : tab === 'losers' ? this.losers() : this.priced();
+    return list.slice(0, SHOWN).map((r) => ({
       id: r.id,
       symbol: r.symbol,
       name: r.name,

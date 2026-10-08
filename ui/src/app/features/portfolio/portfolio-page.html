@@ -21,10 +21,28 @@
         <p class="m-sub faint">Cash plus priced holdings</p>
       }
     </div>
-    <div class="metric">
+    <div class="metric cash-metric">
       <h2 class="m-label">Cash available</h2>
       <p class="m-value num">{{ cashText() }}</p>
-      <p class="m-sub faint">USD buying power</p>
+      <button
+        type="button"
+        class="m-more"
+        aria-controls="cash-breakdown"
+        [attr.aria-expanded]="cashOpen()"
+        (click)="cashOpen.set(!cashOpen())"
+      >
+        USD buying power <leap-icon name="chevron-down" [size]="14" />
+      </button>
+      @if (cashOpen()) {
+        <div class="cash-pop" id="cash-breakdown" role="region" aria-label="Cash breakdown">
+          <dl>
+            <div><dt>Cash</dt><dd class="num">{{ cashText() }}</dd></div>
+            <div><dt>Invested in holdings</dt><dd class="num">{{ investedText() }}</dd></div>
+            <div class="total"><dt>Total value</dt><dd class="num">{{ totalText() }}</dd></div>
+          </dl>
+          <p>Settled in USD only. Buys {{ buyableMarkets() }}.</p>
+        </div>
+      }
     </div>
     <div class="metric">
       <h2 class="m-label">Unrealized P/L</h2>
@@ -57,45 +75,9 @@
 
   <leap-holdings-table />
 
-  <div class="row row-secondary">
-    <section class="panel activity-card">
-      <div class="panel-head">
-        <div>
-          <h2 class="panel-title">Recent activity</h2>
-          <p class="panel-sub">The last five orders on this account</p>
-        </div>
-        <a class="btn btn-secondary btn-sm" routerLink="/orders">All orders <leap-icon name="chevron-right" [size]="16" /></a>
-      </div>
-      @if (recentOrders().length === 0) {
-        <div class="empty">
-          <span class="empty-title">No orders yet</span>
-          <p class="empty-body">Pick an instrument, review the ticket, and confirm. Orders are stored in the database.</p>
-          <a class="btn btn-primary btn-sm" routerLink="/markets">Browse markets</a>
-        </div>
-      } @else {
-        <ul class="activity">
-          @for (order of recentOrders(); track order.orderId) {
-            <li>
-              <a [routerLink]="['/instrument', order.instrumentId]">
-                <leap-instrument-logo [symbol]="order.symbol" [size]="32" />
-                <span class="act-main">
-                  <span class="act-title">
-                    <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">{{ order.side }}</span>
-                    <span class="sym">{{ order.symbol }}</span>
-                  </span>
-                  <span class="act-sub num">Qty {{ order.qtyText }} · {{ order.when }}</span>
-                </span>
-                <span [class]="'pill pill-' + tone(order.status)">{{ label(order.status) }}</span>
-              </a>
-            </li>
-          }
-        </ul>
-      }
-    </section>
-
-    <leap-performance-panel />
-
-    <leap-cash-panel />
+  <div class="row row-bottom">
+    <leap-last-transactions />
+    <leap-market-news />
   </div>
 
   <p class="disclosure">

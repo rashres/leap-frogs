@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { marketFor } from '../../core/markets/sessions';
+import { ActiveAccountService } from '../../core/state/active-account.service';
 import { MarketStore } from '../../core/state/market.store';
 import { WatchlistService } from '../../core/state/watchlist.service';
 import { InstrumentLogo } from '../../shared/instrument-logo';
@@ -440,6 +441,7 @@ export class WatchlistRail {
   protected readonly watchlist = inject(WatchlistService);
   private readonly market = inject(MarketStore);
   private readonly day = inject(DayChangeStore, { optional: true });
+  private readonly account = inject(ActiveAccountService);
 
   readonly query = signal('');
   readonly undo = signal<{ id: number; symbol: string; index: number } | null>(null);
@@ -447,6 +449,14 @@ export class WatchlistRail {
 
   constructor() {
     inject(DestroyRef).onDestroy(() => clearTimeout(this.undoTimer));
+    // An undo belongs to the account it was removed from.
+    effect(() => {
+      this.account.activeId();
+      untracked(() => {
+        clearTimeout(this.undoTimer);
+        this.undo.set(null);
+      });
+    });
   }
 
   readonly rows = computed(() => {

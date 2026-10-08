@@ -65,6 +65,88 @@
   font-weight: 500;
 }
 
+/* Cash breakdown: a small popover off the Cash available figure. */
+.cash-metric {
+  position: relative;
+}
+
+.m-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  align-self: flex-start;
+  margin: 2px 0 0 -4px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-3);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text);
+    background: var(--panel-hover);
+  }
+
+  leap-icon {
+    transition: transform 0.15s ease;
+  }
+
+  &[aria-expanded='true'] leap-icon {
+    transform: rotate(180deg);
+  }
+}
+
+.cash-pop {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% - 6px);
+  left: 12px;
+  width: 260px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow-2);
+
+  dl {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+  }
+
+  dl > div {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  dt {
+    color: var(--text-3);
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .total {
+    padding-top: 6px;
+    border-top: 1px solid var(--border-soft);
+  }
+
+  p {
+    margin: 10px 0 0;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--text-3);
+  }
+}
+
 /* ---- Dashboard rows ------------------------------------------------------- */
 
 .row {
@@ -81,90 +163,8 @@
   grid-template-columns: minmax(300px, 3fr) minmax(0, 7fr);
 }
 
-.row-secondary {
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
-  align-items: start;
-
-  /* The performance panel renders nothing without ranked holdings; drop its
-     empty host so the other cards share the row. */
-  leap-performance-panel:empty {
-    display: none;
-  }
-}
-
-/* ---- Recent activity ------------------------------------------------------ */
-
-.empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 28px 20px 32px;
-}
-
-.empty-body {
-  margin: 0 auto 14px;
-  max-width: 40ch;
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-.activity {
-  list-style: none;
-  margin: 0;
-  padding: 4px 8px 8px;
-
-  a {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-    padding: 9px 12px;
-    border-radius: var(--radius);
-    transition: background-color 0.12s ease;
-
-    &:hover {
-      background: var(--panel-hover);
-    }
-  }
-}
-
-.act-main {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.act-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.act-sub {
-  font-size: 12px;
-  color: var(--text-3);
-}
-
-.side {
-  padding: 1px 6px;
-  border-radius: 5px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-
-  &.buy {
-    color: var(--up);
-    background: var(--up-soft);
-  }
-  &.sell {
-    color: var(--down);
-    background: var(--down-soft);
-  }
-}
-
-.sym {
-  font-weight: 600;
-  font-size: 14px;
+.row-bottom {
+  grid-template-columns: minmax(0, 1.9fr) minmax(0, 1fr);
 }
 
 .disclosure {
@@ -186,6 +186,16 @@
 @media (max-width: 1100px) {
   .row-chart,
   .row-market {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .row-bottom {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .row-bottom {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -215,5 +225,10 @@
 
   .m-value {
     font-size: 17px;
+  }
+
+  .cash-pop {
+    left: 0;
+    width: min(260px, calc(100vw - 48px));
   }
 }
