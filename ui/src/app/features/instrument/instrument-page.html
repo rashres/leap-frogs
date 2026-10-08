@@ -1,190 +1,217 @@
 @if (instrument(); as inst) {
   @let pol = policy();
 
-  <a class="back faint" routerLink="/markets">← Markets</a>
+  <div class="page-enter">
+    <a class="back" routerLink="/markets"><leap-icon name="arrow-left" [size]="16" />Markets</a>
 
-  <div class="layout">
-    <section class="main">
-      <header class="ident">
-        <leap-instrument-logo [symbol]="inst.symbol" [size]="50" />
-        <div class="ident-left">
-          <div class="title-row">
-            <h1>{{ inst.symbol }}</h1>
-            @if (pol) {
-              <span class="tag">{{ pol.label }}</span>
-              <span class="pill" [class.pill-up]="marketOpen()" [class.pill-muted]="!marketOpen()">
-                {{ marketOpen() ? 'Open' : 'Closed' }}
-              </span>
-            }
-          </div>
-          <p class="name dim">{{ inst.name }} · {{ inst.exchange }}</p>
-        </div>
-        <button type="button" class="star" [class.on]="watched()" (click)="toggleWatch()">
-          ★ {{ watched() ? 'Watching' : 'Watch' }}
-        </button>
-      </header>
-
-      <div class="price-block">
-        <p class="price num">
-          {{ inst.lastPrice != null || scrubbed() ? priceText() : '—' }}
-          <span class="ccy faint">USD</span>
-        </p>
-        @if (rangeChange(); as change) {
-          <p class="chg num" [class.up]="rising()" [class.down]="!rising()">
-            {{ change.deltaText }}
-            <span class="sep">·</span>
-            {{ change.percentText }}
-            <span class="faint lbl">{{ scrubbed() ? 'at cursor' : range() }}</span>
-          </p>
-        } @else {
-          <p class="chg faint">
-            @if (updatedText(); as at) {
-              Updated {{ at }}
-            } @else {
-              No price yet. The price feed has not written one for this instrument.
-            }
-          </p>
-        }
-      </div>
-
-      @if (series().length >= 2) {
-        <leap-price-chart [points]="series()" [height]="300" [tone]="rising() ? 'up' : 'down'" (scrub)="scrubbed.set($event)" />
-      } @else {
-        <div class="panel chart-empty faint">
-          @if (history.initialLoading()) {
-            Loading price history…
-          } @else if (history.error(); as e) {
-            {{ e.message }}
-          } @else {
-            No price history in this range yet. The price feed records a point every run.
+    <header class="panel ident">
+      <leap-instrument-logo [symbol]="inst.symbol" [size]="56" />
+      <div class="ident-left">
+        <div class="title-row">
+          <h1>{{ inst.symbol }}</h1>
+          @if (pol) {
+            <span class="tag">{{ pol.label }}</span>
+            <span class="pill" [class.pill-up]="marketOpen()" [class.pill-muted]="!marketOpen()">
+              <i class="dot"></i>{{ marketOpen() ? 'Open' : 'Closed' }}
+            </span>
           }
         </div>
-      }
-
-      <div class="ranges">
-        @for (r of ranges; track r) {
-          <button type="button" [class.on]="range() === r" (click)="setRange(r)">{{ r }}</button>
-        }
+        <p class="name">{{ inst.name }} · {{ inst.exchange }}</p>
       </div>
+      <button type="button" class="btn btn-secondary star" [class.on]="watched()" [attr.aria-pressed]="watched()" (click)="toggleWatch()">
+        <leap-icon name="star" [size]="18" [filled]="watched()" />
+        {{ watched() ? 'Watching' : 'Watch' }}
+      </button>
+    </header>
 
-      <div class="panel stats">
-        <div>
-          <span class="k">Last price</span>
-          <span class="v num">{{ lastPriceText() }}</span>
-        </div>
-        @if (rangeBounds(); as bounds) {
-          <div>
-            <span class="k">{{ range() }} low</span>
-            <span class="v num">{{ bounds.low }}</span>
+    <div class="layout">
+      <div class="main">
+        <div class="panel chart-card">
+          <div class="chart-head">
+            <div class="price-block">
+              <p class="price num">
+                {{ inst.lastPrice != null || scrubbed() ? priceText() : '—' }}
+                <span class="ccy">USD</span>
+              </p>
+              @if (rangeChange(); as change) {
+                <p class="chg num" [class.up]="rising()" [class.down]="!rising()">
+                  <span class="chg-pill" [class.pill-up]="rising()" [class.pill-down]="!rising()">
+                    <leap-icon [name]="rising() ? 'trending-up' : 'trending-down'" [size]="14" />{{ change.percentText }}
+                  </span>
+                  {{ change.deltaText }}
+                  <span class="lbl">{{ scrubbed() ? 'at cursor' : range() }}</span>
+                </p>
+              } @else {
+                <p class="chg faint">
+                  @if (updatedText(); as at) {
+                    Updated {{ at }}
+                  } @else {
+                    No price yet. The price feed has not written one for this instrument.
+                  }
+                </p>
+              }
+            </div>
+            <div class="segmented" role="group" aria-label="Chart range">
+              @for (r of ranges; track r) {
+                <button type="button" [class.on]="range() === r" [attr.aria-pressed]="range() === r" (click)="setRange(r)">{{ r }}</button>
+              }
+            </div>
           </div>
-          <div>
-            <span class="k">{{ range() }} high</span>
-            <span class="v num">{{ bounds.high }}</span>
-          </div>
-        }
-        <div>
-          <span class="k">Price updated</span>
-          <span class="v num">{{ updatedStamp() }}</span>
-        </div>
-        <div>
-          <span class="k">Exchange</span>
-          <span class="v">{{ inst.exchange }}</span>
-        </div>
-        <div>
-          <span class="k">Country</span>
-          <span class="v">{{ inst.country }}</span>
-        </div>
-      </div>
 
-      <div class="panel">
-        <div class="panel-head">
-          <h2 class="panel-title">{{ pol?.label ?? inst.exchange }} rules</h2>
-        </div>
-        <div class="rules">
-          <div>
-            <span class="k">Settles in</span>
-            <span class="v">USD</span>
-          </div>
-          <div>
-            <span class="k">Quantity precision</span>
-            <span class="v">Up to 6 decimal places</span>
-          </div>
-          <div>
-            <span class="k">Fractional units</span>
-            <span class="v">Permitted</span>
-          </div>
-          <div class="wide">
-            <span class="k">Trading hours</span>
-            <span class="v">{{ pol?.sessionLabel ?? 'Not listed' }} · informational, the API does not enforce hours</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <div class="panel-head">
-          <h2 class="panel-title">News · {{ inst.symbol }}</h2>
-        </div>
-        <leap-news-feed [items]="headlines()" [state]="news.state()" [error]="news.error()" />
-      </div>
-
-      @if (orders().length > 0) {
-        <div class="panel">
-          <div class="panel-head">
-            <h2 class="panel-title">Your orders · {{ inst.symbol }}</h2>
-            <a class="lnk" routerLink="/orders">All orders</a>
-          </div>
-          <ul class="orders">
-            @for (order of orders(); track order.id) {
-              <li>
-                <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
-                  {{ order.side }}
-                </span>
-                <span class="num qty">{{ order.quantity }}</span>
-                <span [class]="'pill pill-' + order.tone">{{ order.label }}</span>
-                <span class="num fill dim">{{ order.fill }}</span>
-                <span class="num when faint">{{ order.when }}</span>
-              </li>
+          <div class="chart-body">
+            @if (series().length >= 2) {
+              <leap-price-chart [points]="series()" [height]="320" [axes]="true" [tone]="rising() ? 'up' : 'down'" (scrub)="scrubbed.set($event)" />
+            } @else {
+              <div class="chart-empty">
+                @if (history.initialLoading()) {
+                  <span class="skeleton" style="width: 100%; height: 100%; border-radius: 10px"></span>
+                  <span class="sr-only" role="status">Loading price history…</span>
+                } @else if (history.error(); as e) {
+                  <p class="state-error">{{ e.message }}</p>
+                } @else {
+                  <p class="faint">No price history in this range yet. The price feed records a point every run.</p>
+                }
+              </div>
             }
-          </ul>
+          </div>
+
+          <dl class="stats">
+            <div>
+              <dt>Last price</dt>
+              <dd class="num">{{ lastPriceText() }}</dd>
+            </div>
+            @if (rangeBounds(); as bounds) {
+              <div>
+                <dt>{{ range() }} low</dt>
+                <dd class="num">{{ bounds.low }}</dd>
+              </div>
+              <div>
+                <dt>{{ range() }} high</dt>
+                <dd class="num">{{ bounds.high }}</dd>
+              </div>
+            }
+            <div>
+              <dt>Price updated</dt>
+              <dd class="num">{{ updatedStamp() }}</dd>
+            </div>
+            <div>
+              <dt>Exchange</dt>
+              <dd>{{ inst.exchange }}</dd>
+            </div>
+            <div>
+              <dt>Country</dt>
+              <dd>{{ inst.country }}</dd>
+            </div>
+          </dl>
         </div>
-      }
-    </section>
 
-    <aside class="rail">
-      <leap-order-ticket [instrument]="inst" />
-
-      @if (position(); as pos) {
-        <div class="panel">
+        <section class="panel">
           <div class="panel-head">
-            <h2 class="panel-title">Your position</h2>
-          </div>
-          <div class="pos">
             <div>
-              <span class="k">Quantity</span>
-              <span class="v num">{{ pos.quantity }}</span>
-            </div>
-            <div>
-              <span class="k">Average cost</span>
-              <span class="v num">{{ pos.averageCost }}</span>
-            </div>
-            <div>
-              <span class="k">Market value</span>
-              <span class="v num">{{ pos.marketValue }}</span>
-            </div>
-            <div>
-              <span class="k">Unrealised P/L</span>
-              <span class="v num" [class.up]="!pos.negative" [class.down]="pos.negative">{{ pos.pnl }}</span>
+              <h2 class="panel-title">{{ pol?.label ?? inst.exchange }} rules</h2>
+              <p class="panel-sub">How orders on this market are handled</p>
             </div>
           </div>
-        </div>
-      }
-    </aside>
+          <dl class="rules">
+            <div>
+              <dt>Settles in</dt>
+              <dd>USD</dd>
+            </div>
+            <div>
+              <dt>Quantity precision</dt>
+              <dd>Up to 6 decimal places</dd>
+            </div>
+            <div>
+              <dt>Fractional units</dt>
+              <dd>Permitted</dd>
+            </div>
+            <div class="wide">
+              <dt>Trading hours</dt>
+              <dd>{{ pol?.sessionLabel ?? 'Not listed' }} · informational, the API does not enforce hours</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">News · {{ inst.symbol }}</h2>
+              <p class="panel-sub">Recent headlines with their wording sentiment</p>
+            </div>
+          </div>
+          <leap-news-feed [items]="headlines()" [state]="news.state()" [error]="news.error()" />
+        </section>
+
+        @if (orders().length > 0) {
+          <section class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Your orders · {{ inst.symbol }}</h2>
+              <a class="btn btn-secondary btn-sm" routerLink="/orders">All orders <leap-icon name="chevron-right" [size]="16" /></a>
+            </div>
+            <ul class="orders">
+              @for (order of orders(); track order.id) {
+                <li>
+                  <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
+                    {{ order.side }}
+                  </span>
+                  <span class="num qty">{{ order.quantity }}</span>
+                  <span [class]="'pill pill-' + order.tone">{{ order.label }}</span>
+                  <span class="num fill dim">{{ order.fill }}</span>
+                  <span class="num when faint">{{ order.when }}</span>
+                </li>
+              }
+            </ul>
+          </section>
+        }
+      </div>
+
+      <aside class="rail" aria-label="Trade">
+        <leap-order-ticket [instrument]="inst" [initialSide]="ticketSide()" />
+
+        @if (position(); as pos) {
+          <section class="panel">
+            <div class="panel-head">
+              <h2 class="panel-title">Your position</h2>
+            </div>
+            <dl class="pos">
+              <div>
+                <dt>Quantity</dt>
+                <dd class="num">{{ pos.quantity }}</dd>
+              </div>
+              <div>
+                <dt>Average cost</dt>
+                <dd class="num">{{ pos.averageCost }}</dd>
+              </div>
+              <div>
+                <dt>Market value</dt>
+                <dd class="num">{{ pos.marketValue }}</dd>
+              </div>
+              <div>
+                <dt>Unrealised P/L</dt>
+                <dd class="num" [class.up]="!pos.negative" [class.down]="pos.negative">{{ pos.pnl }}</dd>
+              </div>
+            </dl>
+          </section>
+        }
+      </aside>
+    </div>
   </div>
 } @else if (notFound()) {
-  <p class="empty">
-    {{ detail.error()?.status === 404 ? 'Instrument not found.' : detail.error()?.message }}
-    <a class="lnk" routerLink="/markets">Browse markets</a>
-  </p>
+  <div class="panel not-found">
+    <span class="nf-icon"><leap-icon name="alert" [size]="26" /></span>
+    <span class="empty-title">{{ detail.error()?.status === 404 ? 'Instrument not found.' : detail.error()?.message }}</span>
+    <a class="btn btn-primary btn-sm" routerLink="/markets">Browse markets</a>
+  </div>
 } @else {
-  <p class="empty faint">Loading instrument…</p>
+  <div class="loading" aria-hidden="true">
+    <div class="panel ident">
+      <span class="skeleton" style="width: 56px; height: 56px; border-radius: 50%"></span>
+      <div style="flex: 1">
+        <span class="skeleton" style="width: 140px; height: 22px"></span>
+        <span class="skeleton" style="width: 220px; margin-top: 10px"></span>
+      </div>
+    </div>
+    <div class="panel"><span class="skeleton" style="height: 380px; border-radius: 12px"></span></div>
+  </div>
+  <p class="sr-only" role="status">Loading instrument…</p>
 }

@@ -1,41 +1,28 @@
 .back {
-  display: inline-block;
-  font-size: 12px;
-  margin-bottom: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  border-radius: 4px;
+  transition: color 0.15s ease;
 
   &:hover {
-    color: var(--text-2);
+    color: var(--accent);
   }
 }
 
-.layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 348px;
-  gap: 22px;
-  align-items: start;
-}
-
-.main {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  min-width: 0;
-}
-
-.rail {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  position: sticky;
-  top: calc(var(--nav-height) + 18px);
-}
-
-/* ---- Header -------------------------------------------------------------- */
+/* ---- Header card ---------------------------------------------------------- */
 
 .ident {
   display: flex;
   align-items: center;
-  gap: 15px;
+  flex-wrap: wrap;
+  gap: 16px 18px;
+  padding: 20px 22px;
+  margin-bottom: 24px;
 }
 
 .ident-left {
@@ -51,144 +38,164 @@
 
   h1 {
     margin: 0;
-    font-size: 27px;
-    font-weight: 750;
-    letter-spacing: -0.017em;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 }
 
 .name {
   margin: 4px 0 0;
-  font-size: 13px;
+  font-size: 14px;
+  color: var(--text-3);
 }
 
 .star {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 7px 13px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--panel-2);
-  font-size: 12px;
-  font-weight: 620;
-  color: var(--text-3);
-  white-space: nowrap;
-  transition: all 0.13s ease;
-
-  &:hover {
-    color: var(--text-2);
-  }
-
   &.on {
     color: var(--warn);
-    border-color: rgba(255, 176, 32, 0.32);
+    border-color: var(--warn-line);
     background: var(--warn-soft);
+
+    leap-icon {
+      color: #f79009;
+    }
   }
 }
 
-/* ---- Price --------------------------------------------------------------- */
+/* ---- Layout --------------------------------------------------------------- */
 
-.price-block {
-  margin-top: -4px;
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+}
+
+.main,
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.rail {
+  position: sticky;
+  top: calc(var(--topbar-h) + 24px);
+}
+
+/* ---- Price and chart ------------------------------------------------------ */
+
+.chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  padding: 20px 22px 0;
 }
 
 .price {
   margin: 0;
-  font-size: 38px;
+  font-size: 34px;
   font-weight: 700;
-  letter-spacing: -0.021em;
+  letter-spacing: -0.025em;
   line-height: 1.1;
 }
 
 .ccy {
   font-size: 14px;
   font-weight: 600;
-  margin-left: 5px;
+  margin-left: 4px;
+  color: var(--text-3);
 }
 
 .chg {
-  margin: 6px 0 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 0;
   font-size: 14px;
-  font-weight: 650;
-
-  .sep {
-    opacity: 0.5;
-    margin: 0 3px;
-  }
+  font-weight: 600;
 
   .lbl {
     font-weight: 500;
-    margin-left: 6px;
-    font-size: 12px;
+    font-size: 13px;
+    color: var(--text-3);
   }
 }
 
-.ranges {
-  display: flex;
+.chg-pill {
+  display: inline-flex;
+  align-items: center;
   gap: 4px;
-  border-top: 1px solid var(--border-soft);
-  padding-top: 13px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12.5px;
+}
 
-  button {
-    padding: 5px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 12.5px;
-    font-weight: 650;
-    color: var(--text-3);
-    transition: all 0.13s ease;
-
-    &:hover {
-      color: var(--text);
-      background: var(--panel-2);
-    }
-
-    &.on {
-      color: var(--up);
-      background: var(--up-soft);
-    }
-  }
+.chart-body {
+  padding: 16px 22px 8px;
 }
 
 .chart-empty {
   display: grid;
   place-items: center;
-  height: 300px;
-  font-size: 12.5px;
+  height: 320px;
+  font-size: 13.5px;
+  text-align: center;
+
+  p {
+    margin: 0;
+  }
 }
 
-/* ---- Stats and rules ----------------------------------------------------- */
+/* ---- Stats and rules ------------------------------------------------------ */
 
+dl {
+  margin: 0;
+}
+
+dt {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+dd {
+  margin: 4px 0 0;
+  font-size: 14.5px;
+  font-weight: 600;
+}
+
+/* Hairlines drawn per cell, so a short last row never leaves a dangling border. */
 .stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--border-soft);
+  overflow: hidden;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 
   > div {
-    padding: 13px 16px;
-    border-right: 1px solid var(--border-soft);
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-
-    &:last-child {
-      border-right: none;
-    }
+    padding: 16px 22px;
+    box-shadow:
+      1px 0 0 var(--border-soft),
+      0 1px 0 var(--border-soft);
   }
 }
 
 .rules {
   display: grid;
-  /* Exactly three, so the row fills rather than leaving a dead cell at the end. */
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1px;
-  background: var(--border-soft);
+  gap: 12px;
+  padding: 18px 22px 22px;
 
   > div {
-    background: var(--panel);
-    padding: 13px 16px;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
   }
 
   .wide {
@@ -196,31 +203,19 @@
   }
 }
 
-.k {
-  font-size: 10.5px;
-  font-weight: 620;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-
-.v {
-  font-size: 13.5px;
-  font-weight: 620;
-}
-
-/* ---- Orders -------------------------------------------------------------- */
+/* ---- Your orders ---------------------------------------------------------- */
 
 .orders {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 6px 0;
 
   li {
     display: flex;
     align-items: center;
-    gap: 11px;
-    padding: 11px 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 12px 22px;
 
     & + li {
       border-top: 1px solid var(--border-soft);
@@ -229,63 +224,146 @@
 }
 
 .side {
-  font-size: 10.5px;
-  font-weight: 750;
-  letter-spacing: 0.06em;
-  width: 34px;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 
   &.buy {
     color: var(--up);
+    background: var(--up-soft);
   }
   &.sell {
     color: var(--down);
+    background: var(--down-soft);
   }
 }
 
 .qty {
-  font-size: 12.5px;
-  font-weight: 620;
-  min-width: 54px;
+  font-size: 14px;
+  font-weight: 600;
+  min-width: 60px;
 }
 
 .fill {
-  font-size: 11.5px;
+  font-size: 13px;
   margin-left: auto;
 }
 
 .when {
-  font-size: 11px;
+  font-size: 12.5px;
 }
 
-/* ---- Position ------------------------------------------------------------ */
+/* ---- Position ------------------------------------------------------------- */
 
 .pos {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1px;
-  background: var(--border-soft);
+  gap: 12px;
+  padding: 18px 22px 22px;
 
   > div {
-    background: var(--panel);
-    padding: 12px 16px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    background: var(--panel-2);
+    border: 1px solid var(--border-soft);
+  }
+}
+
+/* ---- Not found / loading -------------------------------------------------- */
+
+.not-found {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 48px 24px;
+  text-align: center;
+
+  .btn {
+    margin-top: 12px;
+  }
+}
+
+.nf-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 10px;
+  border-radius: 50%;
+  background: var(--down-soft);
+  color: var(--down);
+}
+
+.loading .panel + .panel {
+  padding: 22px;
+}
+
+/* Single column: the ticket follows the chart instead of sitting below the news. */
+@media (max-width: 1100px) {
+  .layout {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    align-items: stretch;
+  }
+
+  .main > *,
+  .rail {
+    min-width: 0;
+  }
+
+  .main {
+    display: contents;
+  }
+
+  .main > * {
+    order: 2;
+  }
+
+  .main > .chart-card {
+    order: 0;
+  }
+
+  .rail {
+    order: 1;
+    position: static;
   }
 }
 
-.lnk {
-  color: var(--accent);
-  &:hover {
-    text-decoration: underline;
+@media (max-width: 640px) {
+  .ident,
+  .chart-head {
+    padding-inline: 16px;
   }
-}
 
-@media (max-width: 1080px) {
-  .layout {
+  .chart-body {
+    padding-inline: 12px;
+  }
+
+  .ident .star {
+    width: 100%;
+  }
+
+  .price {
+    font-size: 28px;
+  }
+
+  .segmented {
+    width: 100%;
+
+    button {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  .rules {
     grid-template-columns: minmax(0, 1fr);
   }
-  .rail {
-    position: static;
+
+  .stats > div {
+    padding: 14px 16px;
   }
 }
