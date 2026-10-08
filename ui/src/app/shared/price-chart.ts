@@ -30,6 +30,11 @@ interface Geometry {
   readonly rising: boolean;
   readonly xs: readonly number[];
   readonly ys: readonly number[];
+  readonly plotLeft: number;
+  readonly plotWidth: number;
+  readonly plotBottom: number;
+  readonly yTicks: readonly { y: number; label: string }[];
+  readonly xTicks: readonly { x: number; label: string; anchor: string }[];
 }
 
 @Component({
@@ -56,10 +61,18 @@ interface Geometry {
             </linearGradient>
           </defs>
 
+          @for (t of geo.yTicks; track t.y) {
+            <line class="grid" [attr.x1]="geo.plotLeft" [attr.y1]="t.y" [attr.x2]="geo.width" [attr.y2]="t.y" />
+            <text class="axis" [attr.x]="geo.plotLeft - 10" [attr.y]="t.y" text-anchor="end" dominant-baseline="middle">{{ t.label }}</text>
+          }
+          @for (t of geo.xTicks; track t.x) {
+            <text class="axis" [attr.x]="t.x" [attr.y]="geo.height - 4" [attr.text-anchor]="t.anchor">{{ t.label }}</text>
+          }
+
           <!-- Opening reference, the level the day's change is measured from. -->
           <line
             class="baseline"
-            x1="0"
+            [attr.x1]="geo.plotLeft"
             [attr.y1]="geo.baselineY"
             [attr.x2]="geo.width"
             [attr.y2]="geo.baselineY"
@@ -76,7 +89,7 @@ interface Geometry {
           />
 
           @if (idx !== null) {
-            <line class="crosshair" [attr.x1]="geo.xs[idx]" y1="0" [attr.x2]="geo.xs[idx]" [attr.y2]="geo.height" />
+            <line class="crosshair" [attr.x1]="geo.xs[idx]" y1="0" [attr.x2]="geo.xs[idx]" [attr.y2]="geo.plotBottom" />
             <circle
               [attr.cx]="geo.xs[idx]"
               [attr.cy]="geo.ys[idx]"
@@ -120,6 +133,15 @@ interface Geometry {
         stroke-dasharray: 4 4;
         opacity: 0.8;
       }
+      .grid {
+        stroke: var(--border-soft);
+        stroke-width: 1;
+      }
+      .axis {
+        fill: var(--text-3);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
       .crosshair {
         stroke: var(--text-3);
         stroke-width: 1;
@@ -154,6 +176,8 @@ export class PriceChart {
   readonly height = input(300);
   /** Overrides the rising/falling colour when the parent already knows the tone. */
   readonly tone = input<'auto' | 'up' | 'down'>('auto');
+  /** Value labels on the left, time labels underneath, and horizontal gridlines. */
+  readonly axes = input(false);
 
   /** Emits the scrubbed point so the parent can retitle its headline figure. */
   readonly scrub = output<PricePoint | null>();
@@ -181,9 +205,12 @@ export class PriceChart {
 
     const width = this.width();
     const height = this.height();
+    const axes = this.axes();
     // Headroom so the line and its hover dot never clip against the edges.
     const padTop = 14;
-    const padBottom = 10;
+    const padBottom = axes ? 28 : 10;
+    const plotLeft = axes ? 62 : 0;
+    const plotWidth = Math.max(40, width - plotLeft - (axes ? 6 : 0));
 
     const values = points.map((p) => p.price);
     const min = Math.min(...values);
@@ -191,12 +218,33 @@ export class PriceChart {
     const span = max - min || Math.abs(max) * 0.01 || 1;
 
     const plot = height - padTop - padBottom;
-    const xs = values.map((_, i) => (i / (values.length - 1)) * width);
-    const ys = values.map((v) => padTop + plot - ((v - min) / span) * plot);
+    const plotBottom = height - padBottom;
+    const yOf = (v: number) => padTop + plot - ((v - min) / span) * plot;
+    const xs = values.map((_, i) => plotLeft + (i / (values.length - 1)) * plotWidth);
+    const ys = values.map(yOf);
 
     const line = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${ys[i].toFixed(2)}`).join(' ');
-    const area = `${line} L${width},${height} L0,${height} Z`;
-    const baselineY = padTop + plot - ((values[0] - min) / span) * plot;
+    const area = `${line} L${xs[xs.length - 1]},${plotBottom} L${plotLeft},${plotBottom} Z`;
+    const baselineY = yOf(values[0]);
+
+    const yTicks: { y: number; label: string }[] = [];
+    let xTicks: { x: number; label: string; anchor: string }[] = [];
+    if (axes) {
+      const step = niceStep(span / 4);
+      for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-6; v += step) {
+        yTicks.push({ y: yOf(v), label: axisPrice(v, step) });
+      }
+      const count = Math.min(6, points.length);
+      const spanMs = points[points.length - 1].at.getTime() - points[0].at.getTime();
+      xTicks = Array.from({ length: count }, (_, k) => {
+        const i = Math.round((k / (count - 1)) * (points.length - 1));
+        return {
+          x: xs[i],
+          label: axisTime(points[i].at, spanMs),
+          anchor: k === 0 ? 'start' : k === count - 1 ? 'end' : 'middle',
+        };
+      });
+    }
 
     return {
       width,
@@ -207,6 +255,11 @@ export class PriceChart {
       rising: values[values.length - 1] >= values[0],
       xs,
       ys,
+      plotLeft,
+      plotWidth,
+      plotBottom,
+      yTicks,
+      xTicks,
     };
   });
 
@@ -242,7 +295,7 @@ export class PriceChart {
     const geo = this.geometry();
     if (!geo) return;
     const bounds = (event.currentTarget as SVGElement).getBoundingClientRect();
-    const ratio = (event.clientX - bounds.left) / bounds.width;
+    const ratio = Math.min(1, Math.max(0, (event.clientX - bounds.left - geo.plotLeft) / geo.plotWidth));
     const index = Math.min(this.points().length - 1, Math.max(0, Math.round(ratio * (this.points().length - 1))));
     this.hoverIndex.set(index);
     this.scrub.emit(this.points()[index]);
@@ -264,4 +317,26 @@ export class PriceChart {
       ? at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
       : at.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
   }
+}
+
+function niceStep(raw: number): number {
+  const pow = 10 ** Math.floor(Math.log10(raw));
+  const n = raw / pow;
+  return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * pow;
+}
+
+function axisPrice(value: number, step: number): string {
+  const decimals = (x: number) => Math.min(4, Math.max(0, Math.ceil(-Math.log10(x))));
+  if (Math.abs(value) >= 10_000) {
+    const d = decimals(step / 1000);
+    return `$${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })}k`;
+  }
+  const d = decimals(step);
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })}`;
+}
+
+function axisTime(at: Date, spanMs: number): string {
+  return spanMs <= 36 * 60 * 60 * 1000
+    ? at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    : at.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
 }
