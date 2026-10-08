@@ -31,7 +31,6 @@
             <div><dt>Invested in holdings</dt><dd class="num">{{ investedText() }}</dd></div>
             <div class="total"><dt>Total value</dt><dd class="num">{{ totalText() }}</dd></div>
           </dl>
-          <p>Settled in USD only. Buys {{ buyableMarkets() }}.</p>
         </div>
       }
     </div>
@@ -43,7 +42,7 @@
       <p class="m-sub">
         @if (portfolio.hasPnl()) {
           <span class="num" [class.up]="rising()" [class.down]="!rising()">{{ returnText() }}</span>
-          <span class="faint">on cost of open positions</span>
+          <span class="faint">return</span>
         } @else {
           <span class="faint">No priced positions yet</span>
         }
