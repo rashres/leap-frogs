@@ -28,7 +28,7 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
             <p class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
               <leap-icon [name]="c.negative ? 'trending-down' : 'trending-up'" [size]="14" />
               {{ c.percentText }} <span class="delta">{{ c.deltaText }}</span>
-              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : 'vs ' + range() + ' start' }}</span>
+              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : (range() === 'All' ? 'all time' : 'vs ' + range() + ' start') }}</span>
             </p>
           } @else {
             <p class="chg lbl">Cash plus holdings, from filled orders</p>
