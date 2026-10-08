@@ -4,15 +4,19 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 public class Order {
-    private int order_id;
+    private int orderId;
     private Account account;
     private Instrument instrument;
     private String side;
     private BigDecimal quantity;
     private BigDecimal price;
     private String status;
-    private Instant placed_time;
-    private Instant fulfilled_time;
+    private Instant placedTime;
+    private Instant fulfilledTime;
+
+    // Used by MyBatis when reading orders back from the transactions table.
+    public Order() {
+    }
 
     /**
      * Creates an order
@@ -23,21 +27,24 @@ public class Order {
      * @param quantity how many instruments are being traded
      */
     public Order(Account account, Instrument instrument, String side, BigDecimal quantity) {
-        placed_time = Instant.now();
+        placedTime = Instant.now();
         this.account = account;
         this.instrument = instrument;
         this.side = side;
         this.quantity = quantity;
-        this.price = MarketService.getPrice();
+        // Price is taken from the instrument at the moment the order is created,
+        // so the order keeps the price it was agreed at even if the market moves.
+        // Null means no price has been fetched yet; OrderValidator rejects that.
+        this.price = instrument != null ? instrument.getPrice() : null;
         this.status = "CREATED";
     }
 
     public int getOrderId() {
-        return order_id;
+        return orderId;
     }
 
     public void setOrderId(int orderId) {
-        this.order_id = orderId;
+        this.orderId = orderId;
     }
 
     public Account getAccount() {
@@ -69,22 +76,24 @@ public class Order {
     }
 
     public Instant getPlacedTime() {
-        return placed_time;
+        return placedTime;
     }
 
     public Instant getFulfilledTime() {
-        return fulfilled_time;
+        return fulfilledTime;
     }
 
     public void setStatus(String status) {
         switch(status) {
             case "COMPLETE":
-                fulfilled_time = Instant.now();
+                // Orders loaded from the DB already carry their real fulfilled time.
+                if (fulfilledTime == null) {
+                    fulfilledTime = Instant.now();
+                }
             case "PENDING":
             case "FAILED":
                 this.status = status;
                 break;
         }
     }
-
 }

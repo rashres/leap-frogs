@@ -1,83 +1,89 @@
 package com.neueda.leap.services;
 
-import com.neueda.leap.kafka.OrderCompletedEvent;
+import com.neueda.leap.mappers.HoldingsMapper;
+import com.neueda.leap.mappers.OrderMapper;
 import com.neueda.leap.services.domain.*;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Map;
+import java.util.List;
 
 @Service
 public class OrderService {
 
-    private final ApplicationEventPublisher eventPublisher;
+    private final AccountService accountService;
+    private final InstrumentService instrumentService;
+    private final HoldingsMapper holdingsMapper;
+    private final OrderMapper orderMapper;
 
-    public OrderService() {
-        this(event -> { });
+    public OrderService(AccountService accountService, InstrumentService instrumentService,
+                        HoldingsMapper holdingsMapper, OrderMapper orderMapper) {
+        this.accountService = accountService;
+        this.instrumentService = instrumentService;
+        this.holdingsMapper = holdingsMapper;
+        this.orderMapper = orderMapper;
     }
 
-    public OrderService(ApplicationEventPublisher eventPublisher) {
-        this.eventPublisher = eventPublisher;
-    }
+    /**
+     * Places an order. All database changes happen together or not at all.
+     * Rejected orders (not enough cash or shares) are saved with status FAILED and change nothing else.
+     */
+    @Transactional
+    public OrderResult placeOrder(int accountId, int instrumentId, String side, BigDecimal quantity) {
+        Account account = accountService.findById(accountId);
+        Instrument instrument = instrumentService.findById(instrumentId);
 
-    public boolean submitOrder(Account account, Instrument instrument, String side, BigDecimal quantity) {
-        Order order = new Order(account, instrument, side, quantity);
-        return process_order(order);
-    }
-
-    public boolean process_order(Order order) {
-        order.setStatus("PENDING");
-
-        if (!OrderValidator.isValidOrder(order)) {
-            order.setStatus("FAILED");
-            System.out.println("Order could not be Processed");
-            return false;
+        String normalizedSide = side == null ? null : side.trim().toUpperCase();
+        if (!OrderValidator.isValidTransactionType(normalizedSide)) {
+            throw new InvalidOrderException("side must be BUY or SELL");
+        }
+        if (quantity == null || !OrderValidator.isValidQuantity(quantity)) {
+            throw new InvalidOrderException("quantity must be greater than 0");
         }
 
-        ExternalService service = new ExternalService();
-        service.executeTrade(order);
+        Order order = new Order(account, instrument, normalizedSide, quantity);
+        BigDecimal currentQuantity = currentHoldingQuantity(accountId, instrumentId);
 
-        update_holdings(order);
-        update_balance(order);
+        String rejectionReason = checkFunds(order, currentQuantity);
+        if (rejectionReason != null) {
+            order.setStatus("FAILED");
+            orderMapper.insertOrder(order);
+            return OrderResult.rejected(order, rejectionReason);
+        }
 
         order.setStatus("COMPLETE");
-        System.out.println("Order Processed");
+        orderMapper.insertOrder(order);
+        accountService.updateBalance(order.getValue(), account, normalizedSide);
 
-        eventPublisher.publishEvent(new OrderCompletedEvent(order));
+        BigDecimal newQuantity = "BUY".equals(normalizedSide)
+                ? currentQuantity.add(quantity)
+                : currentQuantity.subtract(quantity);
+        holdingsMapper.upsertHolding(new Holding(accountId, instrument, newQuantity));
 
-        return true;
+        return OrderResult.completed(order);
     }
 
-    private void update_holdings(Order order) {
+    public List<Order> findByAccountId(int accountId) {
+        accountService.findById(accountId);
+        return orderMapper.findByAccountId(accountId);
+    }
 
-        Account account = order.getAccount();
-        Instrument instrument = order.getInstrument();
-        Holding holding;
+    private BigDecimal currentHoldingQuantity(int accountId, int instrumentId) {
+        Holding holding = holdingsMapper.findByAccountIdAndInstrumentId(accountId, instrumentId);
+        return holding == null ? BigDecimal.ZERO : holding.getQuantity();
+    }
 
-        if (account.getHolding(instrument) != null) {
-            holding = account.getHolding(instrument);
-            holding.updateQuantity(order.getSide(), order.getQuantity());
-            BigDecimal zero = new BigDecimal(0.00000);
-            BigDecimal holdQuantity = holding.getQuantity();
-            if (zero.compareTo(holdQuantity) == 0) {
-                Map<Instrument, Holding> holdings = account.getHoldings();
-                holdings.remove(instrument);
+    private String checkFunds(Order order, BigDecimal currentQuantity) {
+        if ("BUY".equals(order.getSide())) {
+            if (!OrderValidator.isValidCashBalance(order.getAccount(), order.getQuantity(), order.getPrice())) {
+                return "Insufficient cash: required " + order.getValue()
+                        + ", available " + order.getAccount().getCashBalance();
             }
-        } else {
-            holding = new Holding(account.getAccountId(), instrument, order.getQuantity());
-            account.addHolding(instrument, holding);
+        } else if (currentQuantity.compareTo(order.getQuantity()) < 0) {
+            return "Insufficient shares: required " + order.getQuantity()
+                    + ", available " + currentQuantity;
         }
-
+        return null;
     }
-
-    private void update_balance(Order order) {
-
-        Account account = order.getAccount();
-        BigDecimal value = order.getValue();
-        String side = order.getSide();
-
-        account.updateCashBalance(value, side);
-    }
-
 }

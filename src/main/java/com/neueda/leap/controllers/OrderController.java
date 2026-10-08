@@ -1,164 +1,74 @@
 package com.neueda.leap.controllers;
 
-import com.neueda.leap.services.domain.Order;
+import com.neueda.leap.controllers.dto.OrderRequest;
+import com.neueda.leap.controllers.dto.OrderResponse;
+import com.neueda.leap.services.OrderResult;
 import com.neueda.leap.services.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.Map;
+
+import java.util.List;
 
 /**
- * REST API Controller for Order Management
- * Provides endpoints to submit, retrieve, and manage orders
+ * REST API Controller for an account's orders (stored in the transactions table)
  */
 @RestController
-@RequestMapping("/orders")
+@RequestMapping("/accounts/{accountId}/orders")
 @CrossOrigin(origins = "*")
 @Tag(name = "Orders", description = "Order management endpoints")
 public class OrderController {
-    
-    private static final OrderService executor = new OrderService();
-    private static final Map<Integer, Order> orderRepository = new HashMap<>();
-    private static int orderIdCounter = 1;
+
+    private final OrderService orderService;
+
+    public OrderController(OrderService orderService) {
+        this.orderService = orderService;
+    }
 
     /**
-     * Submit a new order
-     * POST /api/orders
-     * 
-     * Request Body:
-     * {
-     *   "accountId": 1001,
-     *   "instrumentId": 1,
-     *   "side": "BUY",
-     *   "quantity": "10"
-     * }
+     * POST /api/accounts/{accountId}/orders
      */
     @PostMapping
-    @Operation(summary = "Submit a new order", description = "Creates and submits a new trading order")
+    @Operation(summary = "Submit a new order",
+            description = "Places a BUY or SELL order for the account. A completed order updates cash and holdings; "
+                        + "an order rejected for insufficient cash or shares is saved with status FAILED and changes nothing else.")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Order submitted successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid order request")
+        @ApiResponse(responseCode = "201", description = "Order completed",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class))),
+        @ApiResponse(responseCode = "422", description = "Order rejected (insufficient cash or shares); saved with status FAILED",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid request (missing fields, side not BUY/SELL, quantity not positive)"),
+        @ApiResponse(responseCode = "404", description = "Account or instrument not found")
     })
-    public Map<String, Object> submitOrder(@RequestBody OrderRequest request) {
-        Map<String, Object> response = new HashMap<>();
-        
-        try {
-            // Validate input
-            if (request.getAccountId() == null || request.getInstrumentId() == null) {
-                response.put("status", "ERROR");
-                response.put("message", "accountId and instrumentId are required");
-                return response;
-            }
-
-            // Create order (will be linked to real Account/Instrument once we have DB)
-            Order order = new Order(null, null, request.getSide(), new BigDecimal(request.getQuantity()));
-            
-            // For now, store in memory
-            int orderId = orderIdCounter++;
-            order.setOrderId(orderId);
-            orderRepository.put(orderId, order);
-
-            response.put("status", "SUCCESS");
-            response.put("orderId", orderId);
-            response.put("message", "Order submitted successfully");
-            response.put("side", request.getSide());
-            response.put("quantity", request.getQuantity());
-            
-        } catch (Exception e) {
-            response.put("status", "ERROR");
-            response.put("message", "Failed to submit order: " + e.getMessage());
-        }
-
-        return response;
+    public ResponseEntity<OrderResponse> submitOrder(
+            @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
+            @Valid @RequestBody OrderRequest request) {
+        OrderResult result = orderService.placeOrder(accountId, request.instrumentId(), request.side(), request.quantity());
+        HttpStatus status = result.isRejected() ? HttpStatus.UNPROCESSABLE_ENTITY : HttpStatus.CREATED;
+        return ResponseEntity.status(status).body(OrderResponse.from(result));
     }
 
     /**
-     * Get order by ID
-     * GET /api/orders/{orderId}
-     */
-    @GetMapping("/{orderId}")
-    @Operation(summary = "Get order by ID", description = "Retrieves a specific order by its ID")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Order found"),
-        @ApiResponse(responseCode = "404", description = "Order not found")
-    })
-    public Map<String, Object> getOrder(@PathVariable Integer orderId) {
-        Map<String, Object> response = new HashMap<>();
-        
-        Order order = orderRepository.get(orderId);
-        if (order == null) {
-            response.put("status", "NOT_FOUND");
-            response.put("message", "Order " + orderId + " not found");
-            return response;
-        }
-
-        response.put("status", "SUCCESS");
-        response.put("orderId", orderId);
-        response.put("side", order.getSide());
-        response.put("quantity", order.getQuantity());
-        response.put("price", order.getPrice());
-        response.put("orderStatus", order.getStatus());
-        
-        return response;
-    }
-
-    /**
-     * List all orders
-     * GET /api/orders
+     * GET /api/accounts/{accountId}/orders
      */
     @GetMapping
-    @Operation(summary = "List all orders", description = "Retrieves a list of all orders in the system")
+    @Operation(summary = "List orders", description = "Returns the account's orders (COMPLETE and FAILED), newest first")
     @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Successfully retrieved all orders")
+        @ApiResponse(responseCode = "200", description = "Orders retrieved (empty list if none)"),
+        @ApiResponse(responseCode = "404", description = "Account not found")
     })
-    public Map<String, Object> listOrders() {
-        Map<String, Object> response = new HashMap<>();
-        response.put("status", "SUCCESS");
-        response.put("totalOrders", orderRepository.size());
-        response.put("orders", orderRepository);
-        return response;
+    public List<OrderResponse> listOrders(
+            @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId) {
+        return orderService.findByAccountId(accountId).stream()
+                .map(OrderResponse::from)
+                .toList();
     }
-
-    /**
-     * Health check endpoint
-     * GET /api/orders/health
-     */
-    @GetMapping("/health")
-    @Operation(summary = "Order service health check", description = "Verifies the health status of the order service")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Service is healthy")
-    })
-    public Map<String, String> health() {
-        Map<String, String> response = new HashMap<>();
-        response.put("status", "UP");
-        response.put("service", "OrderService");
-        return response;
-    }
-}
-
-/**
- * Request body for submitting orders
- */
-class OrderRequest {
-    private Integer accountId;
-    private Integer instrumentId;
-    private String side;
-    private String quantity;
-
-    // Getters and Setters
-    public Integer getAccountId() { return accountId; }
-    public void setAccountId(Integer accountId) { this.accountId = accountId; }
-
-    public Integer getInstrumentId() { return instrumentId; }
-    public void setInstrumentId(Integer instrumentId) { this.instrumentId = instrumentId; }
-
-    public String getSide() { return side; }
-    public void setSide(String side) { this.side = side; }
-
-    public String getQuantity() { return quantity; }
-    public void setQuantity(String quantity) { this.quantity = quantity; }
 }
