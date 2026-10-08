@@ -6,6 +6,7 @@ import { OrdersService } from '../../core/api/orders.service';
 import { ActiveAccountService } from '../../core/state/active-account.service';
 import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatSignedPct, formatSignedUsd, formatStamp, formatUsd } from '../../shared/format';
+import { Icon } from '../../shared/icon';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
 
 /**
@@ -16,22 +17,21 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
 @Component({
   selector: 'leap-value-chart-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PriceChart],
+  imports: [PriceChart, Icon],
   template: `
-    <section class="panel">
-      <div class="panel-head">
+    <section class="panel card">
+      <div class="head">
         <div class="head-text">
-          <h2 class="panel-title">Value over time</h2>
+          <h2 class="label">Portfolio performance</h2>
+          <p class="value num">{{ scrubbed() ? scrubbedText() : totalText() }}</p>
           @if (change(); as c) {
             <p class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
-              @if (scrubbed()) {
-                <span class="cursor">{{ scrubbedText() }}</span>
-              }
-              {{ c.deltaText }} · {{ c.percentText }}
-              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : range() }}</span>
+              <leap-icon [name]="c.negative ? 'trending-down' : 'trending-up'" [size]="14" />
+              {{ c.percentText }} <span class="delta">{{ c.deltaText }}</span>
+              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : 'vs ' + range() + ' start' }}</span>
             </p>
           } @else {
-            <p class="panel-sub">Cash plus holdings, from filled orders</p>
+            <p class="chg lbl">Cash plus holdings, from filled orders</p>
           }
         </div>
         <div class="segmented" role="group" aria-label="Chart range">
@@ -43,7 +43,7 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
 
       <div class="body">
         @if (series().length >= 2) {
-          <leap-price-chart [points]="series()" [height]="260" [tone]="change()?.negative ? 'down' : 'up'" (scrub)="scrubbed.set($event)" />
+          <leap-price-chart [points]="series()" [height]="300" [axes]="true" [tone]="change()?.negative ? 'down' : 'up'" (scrub)="scrubbed.set($event)" />
         } @else {
           <div class="chart-empty">
             @if (history.initialLoading()) {
@@ -56,56 +56,88 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
             }
           </div>
         }
-        <p class="note faint">
-          Cash plus each holding at the price recorded at that time, worked out from this account's filled orders.
-        </p>
       </div>
+      <p class="note faint">
+        Cash plus each holding at the price recorded at that time, worked out from this account's filled orders.
+      </p>
     </section>
   `,
   styles: [
     `
-      .body {
-        padding: 18px 22px 18px;
+      :host {
+        display: block;
+        min-width: 0;
+      }
+      .card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px 16px;
+        padding: 16px 20px 0;
       }
       .head-text {
         min-width: 0;
       }
-      .chg {
+      .label {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-2);
+        letter-spacing: 0;
+      }
+      .value {
         margin: 4px 0 0;
-        font-size: 13.5px;
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
+      }
+      .chg {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 4px 0 0;
+        font-size: 13px;
         font-weight: 600;
       }
-      .cursor {
-        color: var(--text);
-        margin-right: 8px;
+      .delta {
+        font-weight: 500;
       }
       .lbl {
         font-weight: 500;
-        margin-left: 4px;
         color: var(--text-3);
+      }
+      .body {
+        flex: 1;
+        padding: 12px 16px 4px 8px;
       }
       .chart-empty {
         display: grid;
         place-items: center;
-        height: 260px;
+        height: 300px;
         font-size: 13.5px;
       }
       .chart-empty p {
         margin: 0;
       }
       .note {
-        margin: 14px 0 0;
-        padding-top: 14px;
-        border-top: 1px solid var(--border-soft);
-        font-size: 12.5px;
+        margin: 0;
+        padding: 10px 20px 14px;
+        font-size: 12px;
       }
       @media (max-width: 560px) {
-        .body {
-          padding: 14px 16px;
+        .head {
+          padding: 14px 16px 0;
         }
         .segmented {
           width: 100%;
-          overflow-x: auto;
         }
         .segmented button {
           flex: 1;
@@ -161,6 +193,7 @@ export class ValueChartPanel {
   });
 
   readonly scrubbedText = computed(() => formatUsd(this.scrubbed()?.price));
+  readonly totalText = computed(() => formatUsd(this.portfolio.totalValue()));
 
   constructor() {
     effect(() => {

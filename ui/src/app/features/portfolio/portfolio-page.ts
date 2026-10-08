@@ -13,6 +13,10 @@ import { HoldingsTable } from './holdings-table';
 import { PerformancePanel } from './performance-panel';
 import { ValueChartPanel } from './value-chart-panel';
 import { WatchlistRail } from './watchlist-rail';
+import { DayChangeStore } from './day-change.store';
+import { ExchangePanel } from './exchange-panel';
+import { MarketOverview } from './market-overview';
+import { TickerBelt } from './ticker-belt';
 
 /**
  * Portfolio dashboard for the active account. Layout from the team's Angular
@@ -23,7 +27,8 @@ import { WatchlistRail } from './watchlist-rail';
 @Component({
   selector: 'leap-portfolio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, ValueChartPanel, HoldingsTable, PerformancePanel, CashPanel, WatchlistRail, PageHeader, Icon],
+  imports: [RouterLink, InstrumentLogo, ValueChartPanel, HoldingsTable, PerformancePanel, CashPanel, WatchlistRail, PageHeader, Icon, TickerBelt, ExchangePanel, MarketOverview],
+  providers: [DayChangeStore],
   templateUrl: './portfolio-page.html',
   styleUrl: './portfolio-page.scss',
 })
