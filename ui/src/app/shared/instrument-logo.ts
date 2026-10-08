@@ -76,7 +76,7 @@ const CURRENCY_SYMBOLS: Readonly<Record<string, string>> = {
         justify-content: center;
         border-radius: 50%;
         overflow: hidden;
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+        box-shadow: inset 0 0 0 1px rgba(16, 24, 40, 0.08);
       }
       .mono {
         font-weight: 750;

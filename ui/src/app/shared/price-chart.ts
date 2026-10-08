@@ -70,7 +70,7 @@ interface Geometry {
             [attr.d]="geo.line"
             fill="none"
             [attr.stroke]="strokeColour()"
-            stroke-width="1.9"
+            stroke-width="2.2"
             stroke-linecap="round"
             stroke-linejoin="round"
           />
@@ -82,8 +82,8 @@ interface Geometry {
               [attr.cy]="geo.ys[idx]"
               r="4.5"
               [attr.fill]="strokeColour()"
-              stroke="#000"
-              stroke-width="2"
+              stroke="var(--panel)"
+              stroke-width="2.5"
             />
           }
         </svg>
@@ -117,23 +117,25 @@ interface Geometry {
       .baseline {
         stroke: var(--border-strong);
         stroke-width: 1;
-        stroke-dasharray: 3 4;
-        opacity: 0.65;
+        stroke-dasharray: 4 4;
+        opacity: 0.8;
       }
       .crosshair {
-        stroke: var(--border-strong);
+        stroke: var(--text-3);
         stroke-width: 1;
+        stroke-dasharray: 3 3;
       }
       .scrub {
         position: absolute;
         top: -4px;
         transform: translateX(-50%);
-        background: var(--panel-3);
+        background: var(--panel);
         border: 1px solid var(--border);
-        border-radius: var(--radius-sm);
-        padding: 3px 8px;
-        font-size: 11px;
-        font-weight: 650;
+        border-radius: var(--radius);
+        box-shadow: var(--shadow-2);
+        padding: 4px 10px;
+        font-size: 12px;
+        font-weight: 600;
         white-space: nowrap;
         pointer-events: none;
       }
@@ -231,9 +233,9 @@ export class PriceChart {
 
   readonly strokeColour = computed(() => {
     const tone = this.tone();
-    if (tone === 'up') return 'var(--up)';
-    if (tone === 'down') return 'var(--down)';
-    return this.geometry()?.rising ? 'var(--up)' : 'var(--down)';
+    if (tone === 'up') return 'var(--chart-up)';
+    if (tone === 'down') return 'var(--chart-down)';
+    return this.geometry()?.rising ? 'var(--chart-up)' : 'var(--chart-down)';
   });
 
   onMove(event: PointerEvent): void {
