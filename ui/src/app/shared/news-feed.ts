@@ -39,7 +39,18 @@ import type { FeedState } from '../core/news/news.service';
 
     @switch (state()) {
       @case ('loading') {
-        <p class="empty">Loading headlines…</p>
+        <p class="sr-only" role="status">Loading headlines…</p>
+        <ul class="loading" aria-hidden="true">
+          @for (n of [1, 2, 3, 4]; track n) {
+            <li class="row">
+              <span class="skeleton" style="width: 72px; height: 20px"></span>
+              <span class="body">
+                <span class="skeleton" style="width: 85%; height: 14px"></span>
+                <span class="skeleton" style="width: 40%; margin-top: 10px"></span>
+              </span>
+            </li>
+          }
+        </ul>
       }
       @case ('unavailable') {
         <div class="unavailable">
@@ -54,7 +65,7 @@ import type { FeedState } from '../core/news/news.service';
       }
       @default {
         @if (items().length === 0) {
-          <p class="empty">No headlines for this instrument.</p>
+          <p class="empty"><span class="empty-title">No headlines yet</span>Nothing has been published for this instrument in the news window.</p>
         } @else {
           <ul>
             @for (item of items(); track item.id) {
@@ -72,10 +83,10 @@ import type { FeedState } from '../core/news/news.service';
                         }}{{ abs(item.sentiment.net) }}</span>
                     }
                   </span>
+                  <div class="body">
                   <a class="title" [href]="item.link" target="_blank" rel="noopener noreferrer">
                     {{ item.title }}
                   </a>
-                </div>
                 <div class="meta faint">
                   <span>{{ item.publisher }}</span>
                   @for (a of filedUnder(item); track a.instrumentId) {
@@ -100,6 +111,8 @@ import type { FeedState } from '../core/news/news.service';
                     </span>
                   }
                 </div>
+                  </div>
+                </div>
               </li>
             }
           </ul>
@@ -113,16 +126,19 @@ import type { FeedState } from '../core/news/news.service';
       .bar {
         display: flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 10px;
-        padding: 11px 16px;
+        padding: 14px 22px;
         border-bottom: 1px solid var(--border-soft);
+        background: var(--panel-2);
       }
       .counts {
         display: flex;
+        flex-wrap: wrap;
         gap: 6px;
       }
       .of {
-        font-size: 11px;
+        font-size: 12px;
       }
       ul {
         list-style: none;
@@ -130,7 +146,11 @@ import type { FeedState } from '../core/news/news.service';
         padding: 0;
       }
       li {
-        padding: 12px 16px;
+        padding: 16px 22px;
+        transition: background-color 0.12s ease;
+      }
+      li:not(.row):hover {
+        background: var(--panel-hover);
       }
       li + li {
         border-top: 1px solid var(--border-soft);
@@ -138,34 +158,41 @@ import type { FeedState } from '../core/news/news.service';
       .row {
         display: flex;
         align-items: flex-start;
-        gap: 10px;
+        gap: 14px;
+      }
+      .body {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
       }
       .sent {
         flex-shrink: 0;
         margin-top: 1px;
+        min-width: 86px;
+        justify-content: center;
       }
       .title {
-        font-size: 13.5px;
+        font-size: 14.5px;
         font-weight: 600;
         line-height: 1.45;
         color: var(--text);
+        border-radius: 4px;
 
         &:hover {
           color: var(--accent);
-          text-decoration: underline;
         }
       }
       .meta {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
         margin-top: 6px;
-        margin-left: 78px;
-        font-size: 11px;
+        font-size: 12px;
       }
       .dot {
-        opacity: 0.4;
+        opacity: 0.5;
       }
       .terms {
         display: inline-flex;
@@ -173,24 +200,22 @@ import type { FeedState } from '../core/news/news.service';
         gap: 4px;
         align-items: center;
       }
-      .term {
+      .term,
+      .filed {
         font-family: var(--font-mono);
-        font-size: 10px;
-        padding: 1px 5px;
+        font-size: 11px;
+        padding: 1px 6px;
         border-radius: 4px;
         background: var(--panel-3);
+        color: var(--text-2);
+      }
+      .filed {
+        cursor: help;
+        font-weight: 600;
       }
       .term.pos {
         color: var(--up);
         background: var(--up-soft);
-      }
-      .filed {
-        font-family: var(--font-mono);
-        font-size: 10px;
-        padding: 1px 5px;
-        border-radius: 4px;
-        background: var(--panel-3);
-        cursor: help;
       }
       .term.neg {
         color: var(--down);
@@ -198,39 +223,48 @@ import type { FeedState } from '../core/news/news.service';
       }
       .disclaimer {
         margin: 0;
-        padding: 11px 16px;
+        padding: 14px 22px;
         border-top: 1px solid var(--border-soft);
-        font-size: 10.5px;
-        line-height: 1.5;
+        background: var(--panel-2);
+        font-size: 12px;
+        line-height: 1.55;
+        border-radius: 0 0 var(--radius-lg) var(--radius-lg);
       }
       .unavailable {
-        padding: 22px 18px;
+        padding: 28px 22px;
 
         .head {
-          margin: 0 0 5px;
-          font-size: 13px;
-          font-weight: 650;
+          margin: 0 0 6px;
+          font-size: 15px;
+          font-weight: 600;
         }
         p {
           margin: 0 0 6px;
-          font-size: 12px;
-          line-height: 1.5;
+          font-size: 13px;
+          line-height: 1.55;
         }
         .small {
-          font-size: 11px;
-          max-width: 62ch;
+          font-size: 12px;
+          max-width: 68ch;
         }
         code {
           font-family: var(--font-mono);
-          font-size: 10.5px;
-          padding: 1px 4px;
-          border-radius: 3px;
+          font-size: 11.5px;
+          padding: 1px 5px;
+          border-radius: 4px;
           background: var(--panel-3);
         }
       }
       @media (max-width: 640px) {
-        .meta {
-          margin-left: 0;
+        li {
+          padding: 14px 16px;
+        }
+        .row {
+          flex-direction: column;
+          gap: 8px;
+        }
+        .loading .row {
+          flex-direction: row;
         }
       }
     `,
