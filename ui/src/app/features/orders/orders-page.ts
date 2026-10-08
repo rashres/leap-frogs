@@ -6,7 +6,8 @@ import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatPrice, formatQty, formatStamp, formatUsd } from '../../shared/format';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
-import { PageMascot } from '../../shared/page-mascot';
+import { Icon } from '../../shared/icon';
+import { PageHeader } from '../../shared/page-header';
 
 type Filter = 'ALL' | 'FILLED' | 'REJECTED';
 
@@ -40,7 +41,7 @@ interface Row {
 @Component({
   selector: 'leap-orders-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, PageMascot],
+  imports: [RouterLink, InstrumentLogo, PageHeader, Icon],
   templateUrl: './orders-page.html',
   styleUrl: './orders-page.scss',
 })
@@ -49,6 +50,7 @@ export class OrdersPage {
   private readonly market = inject(MarketStore);
 
   readonly filters: readonly Filter[] = ['ALL', 'FILLED', 'REJECTED'];
+  readonly filterLabels: Record<Filter, string> = { ALL: 'All', FILLED: 'Filled', REJECTED: 'Rejected' };
   readonly filter = signal<Filter>('ALL');
   readonly expanded = signal<number | null>(null);
 

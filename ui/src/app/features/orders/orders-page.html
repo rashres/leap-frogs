@@ -1,155 +1,159 @@
-<div class="head">
-  <div class="titled">
-    <leap-page-mascot name="orders" />
-    <div>
-      <h1>Orders</h1>
-      <p class="sub dim">
-        Every order for {{ portfolio.account.active()?.name ?? 'this account' }}, filled or rejected, newest first.
-        Expand a row for its history.
-      </p>
+<div class="page-enter">
+  <leap-page-header heading="Orders" mascot="orders">
+    <span description>
+      Every order for {{ portfolio.account.active()?.name ?? 'this account' }}, filled or rejected, newest first. Expand a
+      row for its history.
+    </span>
+  </leap-page-header>
+
+  <section class="panel">
+    <div class="panel-head">
+      <div class="tabs" role="group" aria-label="Filter orders by state">
+        @for (f of filters; track f) {
+          <button type="button" class="tab" [class.on]="filter() === f" [attr.aria-pressed]="filter() === f" (click)="setFilter(f)">
+            {{ filterLabels[f] }}
+            <span class="count num">{{ counts()[f] }}</span>
+          </button>
+        }
+      </div>
     </div>
-  </div>
-</div>
 
-<div class="filters">
-  @for (f of filters; track f) {
-    <button type="button" [class.on]="filter() === f" (click)="setFilter(f)">
-      {{ f }}
-      <span class="count num">{{ counts()[f] }}</span>
-    </button>
-  }
-</div>
-
-@if (portfolio.account.activeId() == null) {
-  <div class="panel">
-    <p class="empty">
-      @if (portfolio.account.error(); as e) {
-        {{ e.message }}
-      } @else if (portfolio.account.loaded()) {
-        No accounts in the database yet.
-      } @else {
-        Loading accounts…
-      }
-    </p>
-  </div>
-} @else if (portfolio.orders.error(); as e) {
-  <div class="panel">
-    <p class="empty">{{ e.message }}</p>
-  </div>
-} @else if (portfolio.orders.initialLoading()) {
-  <div class="panel"><p class="empty faint">Loading orders…</p></div>
-} @else if (rows().length === 0) {
-  <div class="panel">
-    <p class="empty">
-      No orders here yet. Head to <a class="lnk" routerLink="/markets">Markets</a> and place one.
-    </p>
-  </div>
-} @else {
-  <div class="panel">
-    <div class="scroll">
-      <table>
-        <thead>
-          <tr>
-            <th class="l">Submitted</th>
-            <th class="l">Order</th>
-            <th class="r">Quantity</th>
-            <th class="r">Price</th>
-            <th class="r">Value</th>
-            <th class="l">State</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (order of rows(); track order.id) {
-            <tr class="row" [class.open]="expanded() === order.id" (click)="toggle(order.id)">
-              <td class="l num faint">{{ order.submitted }}</td>
-              <td class="l">
-                <div class="ident">
-                  <leap-instrument-logo [symbol]="order.symbol" [size]="26" />
-                  <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
-                    {{ order.side }}
-                  </span>
-                  <span class="sym">{{ order.symbol }}</span>
-                </div>
-              </td>
-              <td class="r num">{{ order.quantity }}</td>
-              <td class="r num" [class.dim]="order.status !== 'COMPLETE'">{{ order.price }}</td>
-              <td class="r num strong" [class.dim]="order.status !== 'COMPLETE'">{{ order.value }}</td>
-              <td class="l">
-                <span [class]="'pill pill-' + order.tone">{{ order.label }}</span>
-              </td>
-              <td class="r actions">
-                <button
-                  type="button"
-                  class="chev"
-                  (click)="toggleFromButton($event, order.id)"
-                  [attr.aria-expanded]="expanded() === order.id"
-                  [attr.aria-label]="(expanded() === order.id ? 'Hide' : 'Show') + ' details for order #' + order.id"
-                >
-                  {{ expanded() === order.id ? '▴' : '▾' }}
-                </button>
-              </td>
+    @if (portfolio.account.activeId() == null) {
+      <p class="empty">
+        @if (portfolio.account.error(); as e) {
+          {{ e.message }}
+        } @else if (portfolio.account.loaded()) {
+          No accounts in the database yet.
+        } @else {
+          Loading accounts…
+        }
+      </p>
+    } @else if (portfolio.orders.error(); as e) {
+      <div class="pad"><p class="state-error">{{ e.message }}</p></div>
+    } @else if (portfolio.orders.initialLoading()) {
+      <div class="pad" aria-hidden="true">
+        @for (n of [1, 2, 3, 4]; track n) {
+          <div class="sk-row">
+            <span class="skeleton" style="width: 110px"></span>
+            <span class="skeleton" style="width: 32px; height: 32px; border-radius: 50%"></span>
+            <span class="skeleton" style="width: 22%"></span>
+            <span class="skeleton" style="width: 12%; margin-left: auto"></span>
+          </div>
+        }
+      </div>
+      <p class="sr-only" role="status">Loading orders…</p>
+    } @else if (rows().length === 0) {
+      <div class="empty">
+        <span class="empty-icon"><leap-icon name="inbox" [size]="26" /></span>
+        <span class="empty-title">No orders here yet</span>
+        Head to <a class="lnk" routerLink="/markets">Markets</a> and place one.
+      </div>
+    } @else {
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Submitted</th>
+              <th>Order</th>
+              <th class="r">Quantity</th>
+              <th class="r">Price</th>
+              <th class="r">Value</th>
+              <th>State</th>
+              <th><span class="sr-only">Details</span></th>
             </tr>
-
-            @if (expanded() === order.id) {
-              <tr class="detail-row">
-                <td colspan="7">
-                  <div class="detail">
-                    <div class="detail-col">
-                      <h3>Lifecycle</h3>
-                      <ol class="timeline">
-                        @for (step of order.steps; track $index) {
-                          <li>
-                            <div class="step-top">
-                              <span class="step-state">{{ step.state }}</span>
-                              <span class="num faint">{{ step.at }}</span>
-                            </div>
-                            <p class="faint">{{ step.detail }}</p>
-                          </li>
-                        }
-                      </ol>
-                    </div>
-
-                    <div class="detail-col">
-                      <h3>Recorded facts</h3>
-                      <dl>
-                        <div>
-                          <dt>Order</dt>
-                          <dd class="num">#{{ order.id }}</dd>
-                        </div>
-                        <div>
-                          <dt>Instrument</dt>
-                          <dd>
-                            <a class="lnk" [routerLink]="['/instrument', order.instrumentId]">
-                              {{ order.symbol }} — {{ order.instrumentName }}
-                            </a>
-                          </dd>
-                        </div>
-                        <div>
-                          <dt>Price</dt>
-                          <dd class="num">{{ order.price }}</dd>
-                        </div>
-                        <div>
-                          <dt>Value</dt>
-                          <dd class="num">{{ order.value }}</dd>
-                        </div>
-                        <div>
-                          <dt>Fulfilled</dt>
-                          <dd class="num">{{ order.fulfilled }}</dd>
-                        </div>
-                        <div>
-                          <dt>Status in database</dt>
-                          <dd><code class="code">{{ order.status }}</code></dd>
-                        </div>
-                      </dl>
-                    </div>
+          </thead>
+          <tbody>
+            @for (order of rows(); track order.id) {
+              <tr class="row" [class.open]="expanded() === order.id" (click)="toggle(order.id)">
+                <td class="num faint">{{ order.submitted }}</td>
+                <td>
+                  <div class="ident">
+                    <leap-instrument-logo [symbol]="order.symbol" [size]="34" />
+                    <span class="sym">{{ order.symbol }}</span>
+                    <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
+                      {{ order.side }}
+                    </span>
                   </div>
                 </td>
+                <td class="r num">{{ order.quantity }}</td>
+                <td class="r num" [class.dim]="order.status !== 'COMPLETE'">{{ order.price }}</td>
+                <td class="r num strong" [class.dim]="order.status !== 'COMPLETE'">{{ order.value }}</td>
+                <td>
+                  <span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.label }}</span>
+                </td>
+                <td class="r">
+                  <button
+                    type="button"
+                    class="chev"
+                    (click)="toggleFromButton($event, order.id)"
+                    [attr.aria-expanded]="expanded() === order.id"
+                    [attr.aria-label]="(expanded() === order.id ? 'Hide' : 'Show') + ' details for order #' + order.id"
+                  >
+                    <leap-icon name="chevron-down" [size]="18" />
+                  </button>
+                </td>
               </tr>
+
+              @if (expanded() === order.id) {
+                <tr class="detail-row">
+                  <td colspan="7">
+                    <div class="detail">
+                      <div class="detail-card">
+                        <h3>Lifecycle</h3>
+                        <ol class="timeline">
+                          @for (step of order.steps; track $index) {
+                            <li>
+                              <div class="step-top">
+                                <span class="step-state">{{ step.state }}</span>
+                                <span class="num faint">{{ step.at }}</span>
+                              </div>
+                              <p class="faint">{{ step.detail }}</p>
+                            </li>
+                          }
+                        </ol>
+                      </div>
+
+                      <div class="detail-card">
+                        <h3>Recorded facts</h3>
+                        <dl>
+                          <div>
+                            <dt>Order</dt>
+                            <dd class="num">#{{ order.id }}</dd>
+                          </div>
+                          <div>
+                            <dt>Instrument</dt>
+                            <dd>
+                              <a class="lnk" [routerLink]="['/instrument', order.instrumentId]">
+                                {{ order.symbol }} — {{ order.instrumentName }}
+                              </a>
+                            </dd>
+                          </div>
+                          <div>
+                            <dt>Price</dt>
+                            <dd class="num">{{ order.price }}</dd>
+                          </div>
+                          <div>
+                            <dt>Value</dt>
+                            <dd class="num">{{ order.value }}</dd>
+                          </div>
+                          <div>
+                            <dt>Fulfilled</dt>
+                            <dd class="num">{{ order.fulfilled }}</dd>
+                          </div>
+                          <div>
+                            <dt>Status in database</dt>
+                            <dd><code class="code">{{ order.status }}</code></dd>
+                          </div>
+                        </dl>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              }
             }
-          }
-        </tbody>
-      </table>
-    </div>
-  </div>
-}
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
