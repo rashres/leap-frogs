@@ -41,12 +41,6 @@ export class PortfolioPage {
 
   readonly rising = computed(() => this.portfolio.totalUnrealisedPnl() >= 0);
 
-  readonly headlineParts = computed(() => {
-    const formatted = formatUsd(this.portfolio.totalValue());
-    const dot = formatted.lastIndexOf('.');
-    return dot === -1 ? { major: formatted, minor: '' } : { major: formatted.slice(0, dot), minor: formatted.slice(dot) };
-  });
-
   readonly pnlText = computed(() => formatSignedUsd(this.portfolio.totalUnrealisedPnl()));
   readonly returnText = computed(() => formatSignedPct(this.portfolio.totalReturnPercent()));
   readonly cashText = computed(() => formatUsd(this.portfolio.cash()));

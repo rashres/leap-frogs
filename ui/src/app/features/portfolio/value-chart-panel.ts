@@ -28,7 +28,7 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
             <p class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
               <leap-icon [name]="c.negative ? 'trending-down' : 'trending-up'" [size]="14" />
               {{ c.percentText }} <span class="delta">{{ c.deltaText }}</span>
-              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : (range() === 'All' ? 'all time' : 'vs ' + range() + ' start') }}</span>
+              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : periods[range()] }}</span>
             </p>
           } @else {
             <p class="chg lbl">Cash plus holdings, from filled orders</p>
@@ -155,6 +155,15 @@ export class ValueChartPanel {
 
   readonly ranges: readonly PriceRange[] = ['1D', '1W', '1M', '3M', '1Y', 'All'];
   readonly range = signal<PriceRange>('1M');
+  /** Plain-language name for the period the change is measured over. */
+  readonly periods: Readonly<Record<PriceRange, string>> = {
+    '1D': 'Past day',
+    '1W': 'Past week',
+    '1M': 'Past month',
+    '3M': 'Past 3 months',
+    '1Y': 'Past year',
+    All: 'All time',
+  };
   readonly history = createLoader(() => this.api.valueHistory(this.account.activeId()!, this.range()));
   readonly scrubbed = signal<PricePoint | null>(null);
 
