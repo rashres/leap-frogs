@@ -144,6 +144,8 @@ export class App {
     this.theme.set(next);
     if (next === 'dark') document.documentElement.dataset['theme'] = 'dark';
     else delete document.documentElement.dataset['theme'];
+    // Keep the browser's own toolbar in step with the page; values match --bg.
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#000000' : '#f4f6fa');
     writeStored(THEME_KEY, next);
   }
 
