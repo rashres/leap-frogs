@@ -1,48 +1,123 @@
 /* LEAP — global design tokens and base styles.
-   Dark-first trading UI: black canvas, lifted panels, green/red directional
-   semantics, tabular figures everywhere a number can change. [chore] */
+   Light-first SaaS dashboard: neutral canvas, white cards, one indigo accent,
+   green/red reserved for direction and outcome. A dark theme reuses the same
+   tokens via [data-theme='dark'] on <html>. Tabular figures everywhere a
+   number can change. */
 
 :root {
-  /* Surfaces — near-black canvas with progressively lifted panels. */
-  --bg: #000000;
-  --panel: #0c1015;
-  --panel-2: #12181f;
-  --panel-3: #1a222c;
-  --panel-hover: #161d26;
-  --border: #212a34;
-  --border-soft: #161d25;
-  --border-strong: #2f3a47;
+  color-scheme: light;
 
-  /* Type. --text-3 is lifted from #5f6b79, which sat on the WCAG AA boundary
-     against a pure black canvas; this clears it with room to spare. */
-  --text: #eef3f8;
-  --text-2: #9dabbb;
-  --text-3: #717f8e;
+  /* Surfaces */
+  --bg: #f4f6fa;
+  --panel: #ffffff;
+  --panel-2: #f9fafb;
+  --panel-3: #f2f4f7;
+  --panel-hover: #f7f8fc;
+  --border: #e4e7ec;
+  --border-soft: #eceff3;
+  --border-strong: #d0d5dd;
 
-  /* Directional semantics. Green up / red down. */
-  --up: #00c805;
-  --up-soft: rgba(0, 200, 5, 0.14);
-  --up-line: rgba(0, 200, 5, 0.45);
-  --down: #ff5a52;
-  --down-soft: rgba(255, 90, 82, 0.14);
-  --down-line: rgba(255, 90, 82, 0.45);
+  /* Type — all three clear WCAG AA on both --panel and --bg. */
+  --text: #111928;
+  --text-2: #4b5563;
+  --text-3: #667085;
 
-  --accent: #4c8dff;
-  --accent-soft: rgba(76, 141, 255, 0.14);
-  --warn: #ffb020;
-  --warn-soft: rgba(255, 176, 32, 0.13);
+  /* Directional semantics. Text shades are AA on white; chart shades are
+     brighter because a 2px line needs more saturation than body copy. */
+  --up: #067647;
+  --up-soft: #ecfdf3;
+  --up-line: #abefc6;
+  --down: #b42318;
+  --down-soft: #fef3f2;
+  --down-line: #fecdca;
+  --chart-up: #12b76a;
+  --chart-down: #f04438;
 
-  --radius: 10px;
-  --radius-lg: 14px;
+  --accent: #5750f1;
+  --accent-strong: #4840d6;
+  --accent-soft: #eeedfe;
+  --accent-line: #c9c6fb;
+  --on-accent: #ffffff;
+  --warn: #b54708;
+  --warn-soft: #fffaeb;
+  --warn-line: #fedf89;
+
+  --buy: #079455;
+  --buy-strong: #067647;
+  --sell: #d92d20;
+  --sell-strong: #b42318;
+
   --radius-sm: 6px;
+  --radius: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
 
-  --shadow-lift: 0 8px 28px rgba(0, 0, 0, 0.6);
+  --shadow-1: 0 1px 2px rgba(84, 87, 118, 0.12);
+  --shadow-2: 0 1px 3px rgba(16, 24, 40, 0.06), 0 4px 12px -2px rgba(16, 24, 40, 0.06);
+  --shadow-lift: 0 16px 40px -12px rgba(16, 24, 40, 0.22), 0 4px 10px -4px rgba(16, 24, 40, 0.08);
+  --focus-ring: 0 0 0 4px rgba(87, 80, 241, 0.18);
 
-  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, system-ui, sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif;
   --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --nav-height: 58px;
-  --page-max: 1440px;
+  --sidebar-w: 264px;
+  --sidebar-w-collapsed: 76px;
+  --topbar-h: 68px;
+  --page-max: 1480px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #020d1a;
+  --panel: #122031;
+  --panel-2: #172839;
+  --panel-3: #1d3045;
+  --panel-hover: #1a2c40;
+  --border: #233449;
+  --border-soft: #1c2d40;
+  --border-strong: #2f445c;
+
+  --text: #f3f5f8;
+  --text-2: #b1bccb;
+  --text-3: #8b98aa;
+
+  --up: #47cd89;
+  --up-soft: rgba(18, 183, 106, 0.14);
+  --up-line: rgba(18, 183, 106, 0.4);
+  --down: #f97066;
+  --down-soft: rgba(240, 68, 56, 0.14);
+  --down-line: rgba(240, 68, 56, 0.4);
+  --chart-up: #32d583;
+  --chart-down: #f97066;
+
+  --accent: #8b85ff;
+  --accent-strong: #a5a0ff;
+  --accent-soft: rgba(124, 117, 255, 0.16);
+  --accent-line: rgba(124, 117, 255, 0.45);
+  --on-accent: #ffffff;
+  --warn: #fdb022;
+  --warn-soft: rgba(253, 176, 34, 0.12);
+  --warn-line: rgba(253, 176, 34, 0.4);
+
+  --buy: #079455;
+  --buy-strong: #0a8a51;
+  --sell: #d92d20;
+  --sell-strong: #c1281c;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-2: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
+  --shadow-lift: 0 16px 40px -12px rgba(0, 0, 0, 0.7), 0 4px 10px -4px rgba(0, 0, 0, 0.4);
+  --focus-ring: 0 0 0 4px rgba(139, 133, 255, 0.25);
 }
 
 * {
@@ -61,9 +136,18 @@ body {
   color: var(--text);
   font-family: var(--font);
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--text);
+  letter-spacing: -0.01em;
 }
 
 /* Any element showing a figure that can change gets fixed-width digits, so
@@ -83,12 +167,17 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+}
+
 a {
   color: inherit;
   text-decoration: none;
 }
 
-input {
+input,
+select {
   font-family: inherit;
   font-size: inherit;
   color: inherit;
@@ -98,27 +187,27 @@ input {
   background: var(--accent-soft);
 }
 
-/* Keyboard focus. There was previously no focus indicator anywhere, which made
-   the whole app unusable without a mouse. :focus-visible keeps it off mouse
-   clicks while always showing it for keyboard and assistive tech. */
+/* :focus-visible keeps rings off mouse clicks while always showing them for
+   keyboard and assistive tech. */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
 
-/* Skip link — first tab stop, so keyboard users can bypass the nav. */
+/* Skip link — first tab stop, so keyboard users can bypass the navigation. */
 .skip-link {
   position: absolute;
   left: 12px;
   top: -60px;
   z-index: 100;
   padding: 10px 16px;
-  background: var(--panel-3);
-  border: 1px solid var(--border-strong);
+  background: var(--panel);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-2);
   font-size: 13px;
-  font-weight: 650;
+  font-weight: 600;
   transition: top 0.15s ease;
 
   &:focus {
@@ -147,7 +236,6 @@ input {
   inset: 0;
 }
 
-/* Scrollbars — thin and dark, so panels do not get bright edges. */
 ::-webkit-scrollbar {
   width: 10px;
   height: 10px;
@@ -156,49 +244,47 @@ input {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--panel-3);
-  border-radius: 6px;
-  border: 2px solid var(--bg);
+  background: var(--border-strong);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--border-strong);
+  background-color: var(--text-3);
 }
 
-/* ---- Shared primitives ---------------------------------------------------- */
+/* ---- Cards ---------------------------------------------------------------- */
 
 .panel {
   position: relative;
   background: var(--panel);
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
-
-  /* Hairline highlight along the top edge — reads as a lit surface rather than
-     a flat rectangle, which keeps stacked panels distinguishable on black. */
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0 12px auto 12px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.055), transparent);
-    pointer-events: none;
-  }
+  box-shadow: var(--shadow-1);
 }
 
 .panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 18px;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  padding: 18px 22px;
   border-bottom: 1px solid var(--border-soft);
 }
 
 .panel-title {
-  font-size: 12px;
-  font-weight: 650;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-2);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  color: var(--text);
   margin: 0;
+}
+
+.panel-sub {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--text-3);
 }
 
 .up {
@@ -214,22 +300,247 @@ input {
   color: var(--text-3);
 }
 
+/* ---- Buttons and controls ------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.55;
+  }
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+
+  &:hover:not(:disabled) {
+    background: var(--accent-strong);
+  }
+}
+
+.btn-secondary {
+  background: var(--panel);
+  border-color: var(--border);
+  color: var(--text);
+  box-shadow: var(--shadow-1);
+
+  &:hover:not(:disabled) {
+    background: var(--panel-hover);
+    border-color: var(--border-strong);
+  }
+}
+
+.btn-ghost {
+  color: var(--text-2);
+
+  &:hover:not(:disabled) {
+    background: var(--panel-3);
+    color: var(--text);
+  }
+}
+
+.btn-sm {
+  height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  border: 1px solid transparent;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    background: var(--panel-3);
+    color: var(--text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.control {
+  height: 42px;
+  width: 100%;
+  padding: 0 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: var(--text-3);
+  }
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+
+  &:focus,
+  &:focus-visible {
+    border-color: var(--accent);
+    box-shadow: var(--focus-ring);
+  }
+}
+
+select.control {
+  appearance: none;
+  padding-right: 38px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+/* Segmented control — chart ranges, filters, buy/sell. The active segment
+   carries .on and aria-pressed/aria-selected from the template. */
+.segmented {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius);
+  background: var(--panel-3);
+  border: 1px solid var(--border-soft);
+
+  button {
+    min-width: 40px;
+    height: 30px;
+    padding: 0 10px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-3);
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    &:hover {
+      color: var(--text);
+    }
+
+    &.on {
+      background: var(--panel);
+      color: var(--text);
+      box-shadow: var(--shadow-1);
+    }
+
+    &:focus-visible {
+      outline: none;
+      box-shadow: var(--focus-ring);
+    }
+  }
+}
+
+/* ---- Tables --------------------------------------------------------------- */
+
+/* Positioned so absolutely placed descendants (sr-only labels, stretch links)
+   are clipped by the scroller instead of widening the page. */
+.table-wrap {
+  position: relative;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    padding: 12px 22px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-3);
+    background: var(--panel-2);
+    border-bottom: 1px solid var(--border-soft);
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--border-soft);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  tbody tr {
+    transition: background-color 0.12s ease;
+  }
+
+  tbody tr:hover {
+    background: var(--panel-hover);
+  }
+
+  .r {
+    text-align: right;
+  }
+}
+
+/* ---- Badges --------------------------------------------------------------- */
+
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 3px 8px;
+  gap: 6px;
+  padding: 3px 10px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 650;
-  letter-spacing: 0.02em;
+  font-size: 12px;
+  font-weight: 500;
   white-space: nowrap;
 }
-.pill-up {
+.pill-up,
+.pill-good {
   background: var(--up-soft);
   color: var(--up);
 }
-.pill-down {
+.pill-down,
+.pill-bad {
   background: var(--down-soft);
   color: var(--down);
 }
@@ -237,21 +548,9 @@ input {
   background: var(--panel-3);
   color: var(--text-2);
 }
-
-/* Order-state tones. These names come from stateTone() in core/domain/order.ts;
-   keep the two in step or a state renders as unstyled text. */
-.pill-good {
-  background: var(--up-soft);
-  color: var(--up);
-}
-.pill-bad {
-  background: var(--down-soft);
-  color: var(--down);
-}
-.pill-pending {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
+/* Order-state tones. These names come from statusTone() in the order-status
+   helpers; keep the two in step or a state renders as unstyled text. */
+.pill-pending,
 .pill-accent {
   background: var(--accent-soft);
   color: var(--accent);
@@ -261,21 +560,18 @@ input {
   color: var(--warn);
 }
 
-/* A page title sitting beside its mascot. The page heads are space-between
-   rows, so the two have to be grouped or the frog drifts away from its title. */
-.titled {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  /* No min-width:0 here. These sit in space-between rows next to items that
-     refuse to shrink, so allowing this one below its content width collapses
-     it and the mascot spills out under its neighbour. */
+/* A status dot inside a pill, e.g. market open/closed. */
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
 }
 
-/* Headline sentiment.
-   Deliberately its own set rather than the order-state tones above. Two reasons:
-   restyling sentiment must not silently restyle order statuses, and sentiment is
-   a reading of wording, not a price move — so it is outlined where price pills
+/* Headline sentiment. Deliberately its own set rather than the order-state
+   tones: restyling sentiment must not restyle order statuses, and sentiment is
+   a reading of wording, not a price move — so it is outlined where status pills
    are filled, and carries a glyph so the meaning survives without colour. */
 .sent {
   display: inline-flex;
@@ -284,10 +580,9 @@ input {
   padding: 2px 8px;
   border: 1px solid;
   border-radius: 999px;
-  font-size: 10.5px;
-  font-weight: 650;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 
   .glyph {
@@ -299,42 +594,39 @@ input {
      lexicon hits and cannot support a confidence figure. */
   .net {
     font-family: var(--font-mono);
-    font-size: 9.5px;
+    font-size: 10px;
     font-weight: 600;
-    opacity: 0.75;
-    letter-spacing: 0;
+    opacity: 0.8;
   }
 }
 .sent-pos {
-  border-color: rgba(47, 208, 122, 0.45);
-  background: rgba(47, 208, 122, 0.12);
-  color: #4ade9a;
+  border-color: var(--up-line);
+  background: var(--up-soft);
+  color: var(--up);
 }
 .sent-neu {
-  border-color: var(--border-strong);
-  background: var(--panel-3);
+  border-color: var(--border);
+  background: var(--panel-2);
   color: var(--text-2);
 }
 .sent-neg {
-  border-color: rgba(255, 122, 110, 0.45);
-  background: rgba(255, 122, 110, 0.12);
-  color: #ff9a90;
+  border-color: var(--down-line);
+  background: var(--down-soft);
+  color: var(--down);
 }
 
 .tag {
   display: inline-block;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: var(--radius-sm);
   background: var(--panel-3);
   color: var(--text-2);
-  font-size: 10px;
-  font-weight: 650;
-  letter-spacing: 0.06em;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 
-/* Traceability chips — every screen names the stories it implements, per the
-   CLAUDE.md requirement that delivery maps visibly to the specification. */
 .trace {
   display: inline-flex;
   gap: 4px;
@@ -350,9 +642,77 @@ input {
   color: var(--text-3);
 }
 
+/* ---- States --------------------------------------------------------------- */
+
 .empty {
-  padding: 40px 20px;
+  padding: 44px 24px;
   text-align: center;
   color: var(--text-3);
-  font-size: 13px;
+  font-size: 14px;
+}
+
+.empty-title {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.state-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--down-line);
+  background: var(--down-soft);
+  color: var(--down);
+  font-size: 14px;
+}
+
+/* Placeholder shimmer while data loads. Always paired with sr-only text. */
+.skeleton {
+  display: block;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--panel-3) 25%, var(--panel-2) 50%, var(--panel-3) 75%);
+  background-size: 200% 100%;
+  animation: leap-shimmer 1.3s ease-in-out infinite;
+}
+
+@keyframes leap-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes leap-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Page content fades up once on route entry. */
+.page-enter {
+  animation: leap-rise 0.32s var(--ease) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
