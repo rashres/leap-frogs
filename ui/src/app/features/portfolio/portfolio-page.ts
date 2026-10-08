@@ -6,7 +6,8 @@ import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatQty, formatSignedPct, formatSignedUsd, formatTime, formatUsd } from '../../shared/format';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
-import { PageMascot } from '../../shared/page-mascot';
+import { Icon } from '../../shared/icon';
+import { PageHeader } from '../../shared/page-header';
 import { CashPanel } from './cash-panel';
 import { HoldingsTable } from './holdings-table';
 import { PerformancePanel } from './performance-panel';
@@ -22,7 +23,7 @@ import { WatchlistRail } from './watchlist-rail';
 @Component({
   selector: 'leap-portfolio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, ValueChartPanel, HoldingsTable, PerformancePanel, CashPanel, WatchlistRail, PageMascot],
+  imports: [RouterLink, InstrumentLogo, ValueChartPanel, HoldingsTable, PerformancePanel, CashPanel, WatchlistRail, PageHeader, Icon],
   templateUrl: './portfolio-page.html',
   styleUrl: './portfolio-page.scss',
 })
@@ -41,6 +42,15 @@ export class PortfolioPage {
   readonly pnlText = computed(() => formatSignedUsd(this.portfolio.totalUnrealisedPnl()));
   readonly returnText = computed(() => formatSignedPct(this.portfolio.totalReturnPercent()));
   readonly cashText = computed(() => formatUsd(this.portfolio.cash()));
+
+  readonly initials = computed(() =>
+    (this.portfolio.account.active()?.name ?? '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]!.toUpperCase())
+      .join(''),
+  );
 
   readonly recentOrders = computed(() =>
     this.portfolio

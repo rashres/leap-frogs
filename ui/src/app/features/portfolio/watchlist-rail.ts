@@ -12,19 +12,25 @@ import { LivePrice } from '../../shared/live-price';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, InstrumentLogo, LivePrice],
   template: `
-    <div class="panel">
+    <section class="panel">
       <div class="panel-head">
-        <h2 class="panel-title">Watchlist</h2>
-        <span class="tag">{{ rows().length }}</span>
+        <div>
+          <h2 class="panel-title">Watchlist</h2>
+          <p class="panel-sub">Starred instruments</p>
+        </div>
+        <span class="count">{{ rows().length }}</span>
       </div>
       @if (rows().length === 0) {
-        <p class="empty">Star instruments on <a class="lnk" routerLink="/markets">Markets</a> to follow them here.</p>
+        <p class="empty">
+          <span class="star" aria-hidden="true">☆</span>
+          Star instruments on <a class="lnk" routerLink="/markets">Markets</a> to follow them here.
+        </p>
       } @else {
         <ul>
           @for (row of rows(); track row.id) {
             <li>
               <a [routerLink]="['/instrument', row.id]">
-                <leap-instrument-logo [symbol]="row.symbol" [size]="30" />
+                <leap-instrument-logo [symbol]="row.symbol" [size]="36" />
                 <div class="left">
                   <div class="sym">
                     {{ row.symbol }}
@@ -47,66 +53,84 @@ import { LivePrice } from '../../shared/live-price';
           }
         </ul>
       }
-    </div>
+    </section>
   `,
   styles: [
     `
       ul {
         list-style: none;
         margin: 0;
-        padding: 0;
-      }
-      li + li {
-        border-top: 1px solid var(--border-soft);
+        padding: 6px 0;
       }
       li a {
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto;
         align-items: center;
-        gap: 10px;
-        padding: 10px 14px;
-        transition: background 0.12s ease;
+        gap: 12px;
+        padding: 10px 22px;
+        transition: background-color 0.12s ease;
       }
       li a:hover {
         background: var(--panel-hover);
       }
+      .count {
+        display: inline-grid;
+        place-items: center;
+        min-width: 26px;
+        height: 24px;
+        padding: 0 8px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 600;
+      }
       .sym {
-        font-size: 13px;
-        font-weight: 700;
+        font-size: 14px;
+        font-weight: 600;
         display: flex;
         align-items: center;
-        gap: 5px;
+        gap: 6px;
       }
       .closed {
-        width: 5px;
-        height: 5px;
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
         background: var(--text-3);
       }
       .name {
-        font-size: 11px;
-        margin-top: 1px;
+        font-size: 12.5px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
       .right {
         text-align: right;
-        min-width: 74px;
+        min-width: 80px;
       }
       .price {
-        font-size: 13px;
-        font-weight: 650;
+        font-size: 14px;
+        font-weight: 600;
       }
       .chg {
-        font-size: 11px;
-        margin-top: 1px;
+        font-size: 12px;
       }
       .empty {
-        font-size: 12px;
+        font-size: 13.5px;
+      }
+      .star {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 26px;
+        line-height: 1;
+        color: var(--warn);
       }
       .lnk {
         color: var(--accent);
+        font-weight: 600;
+      }
+      .lnk:hover {
+        text-decoration: underline;
       }
     `,
   ],

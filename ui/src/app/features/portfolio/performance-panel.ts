@@ -13,9 +13,12 @@ const SHOWN = 3;
   imports: [RouterLink, InstrumentLogo],
   template: `
     @if (groups().length > 0) {
-      <div class="panel">
+      <section class="panel">
         <div class="panel-head">
-          <h2 class="panel-title">Performance</h2>
+          <div>
+            <h2 class="panel-title">Performance</h2>
+            <p class="panel-sub">Best and worst holdings by unrealised return</p>
+          </div>
         </div>
 
         <div class="cols">
@@ -26,7 +29,7 @@ const SHOWN = 3;
                 @for (row of group.rows; track row.instrumentId) {
                   <li>
                     <a [routerLink]="['/instrument', row.instrumentId]">
-                      <leap-instrument-logo [symbol]="row.symbol" [size]="26" />
+                      <leap-instrument-logo [symbol]="row.symbol" [size]="32" />
                       <span class="sym">{{ row.symbol }}</span>
                       <span class="money num faint">{{ row.money }}</span>
                       <span class="pct num" [class.up]="row.unrealisedPnlPercent! >= 0" [class.down]="row.unrealisedPnlPercent! < 0">
@@ -44,28 +47,28 @@ const SHOWN = 3;
           Ranked by unrealised P/L percentage: latest price against your average buy price. Holdings without a
           price or buy history are left out.
         </p>
-      </div>
+      </section>
     }
   `,
   styles: [
     `
       .cols {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+        padding: 18px 22px;
       }
       .col {
-        padding: 4px 0 8px;
-        border-right: 1px solid var(--border-soft);
-      }
-      .col:last-child {
-        border-right: none;
+        padding: 6px 0;
+        border-radius: var(--radius);
+        border: 1px solid var(--border-soft);
+        background: var(--panel-2);
       }
       h3 {
-        margin: 10px 16px 6px;
-        font-size: 10.5px;
-        font-weight: 650;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        margin: 8px 16px 6px;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0;
       }
       ul {
         list-style: none;
@@ -76,38 +79,32 @@ const SHOWN = 3;
         display: grid;
         grid-template-columns: auto minmax(0, 1fr) auto auto;
         align-items: center;
-        gap: 10px;
-        padding: 7px 16px;
-        transition: background 0.12s ease;
+        gap: 12px;
+        padding: 9px 16px;
+        transition: background-color 0.12s ease;
       }
       a:hover {
         background: var(--panel-hover);
       }
       .sym {
-        font-size: 12.5px;
-        font-weight: 700;
+        font-size: 14px;
+        font-weight: 600;
       }
       .money {
-        font-size: 11.5px;
+        font-size: 12.5px;
       }
       .pct {
-        font-size: 12.5px;
-        font-weight: 700;
-        min-width: 56px;
+        font-size: 13px;
+        font-weight: 600;
+        min-width: 64px;
         text-align: right;
       }
       .note {
         margin: 0;
-        padding: 10px 16px 12px;
+        padding: 14px 22px 16px;
         border-top: 1px solid var(--border-soft);
-        font-size: 11px;
+        font-size: 12.5px;
         line-height: 1.5;
-      }
-      @media (max-width: 640px) {
-        .col {
-          border-right: none;
-          border-bottom: 1px solid var(--border-soft);
-        }
       }
     `,
   ],

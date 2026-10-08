@@ -11,28 +11,44 @@ import { LivePrice } from '../../shared/live-price';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [RouterLink, InstrumentLogo, LivePrice],
   template: `
-    <div class="panel">
+    <section class="panel">
       <div class="panel-head">
-        <h2 class="panel-title">Holdings · {{ rows().length }}</h2>
+        <div>
+          <h2 class="panel-title">Holdings <span class="count">{{ rows().length }}</span></h2>
+          <p class="panel-sub">Positions valued at the latest price</p>
+        </div>
         @if (portfolio.hasPnl()) {
-          <span class="pnl num" [class.up]="portfolio.totalUnrealisedPnl() >= 0" [class.down]="portfolio.totalUnrealisedPnl() < 0">
+          <span
+            class="pill num"
+            [class.pill-up]="portfolio.totalUnrealisedPnl() >= 0"
+            [class.pill-down]="portfolio.totalUnrealisedPnl() < 0"
+          >
             {{ totalPnl() }} unrealised
           </span>
         }
       </div>
 
       @if (portfolio.holdings.error(); as e) {
-        <p class="empty">{{ e.message }}</p>
+        <div class="pad"><p class="state-error">{{ e.message }}</p></div>
       } @else if (portfolio.holdings.initialLoading()) {
-        <p class="empty">Loading holdings…</p>
+        <div class="pad loading" aria-hidden="true">
+          @for (n of [1, 2, 3]; track n) {
+            <div class="sk-row">
+              <span class="skeleton" style="width: 36px; height: 36px; border-radius: 50%"></span>
+              <span class="skeleton" style="width: 30%"></span>
+              <span class="skeleton" style="width: 18%; margin-left: auto"></span>
+            </div>
+          }
+        </div>
+        <p class="sr-only" role="status">Loading holdings…</p>
       } @else if (rows().length === 0) {
-        <p class="empty">No holdings yet.</p>
+        <p class="empty"><span class="empty-title">No holdings yet</span>Buy an instrument from Markets and it will appear here.</p>
       } @else {
-        <div class="scroll">
-          <table>
+        <div class="table-wrap">
+          <table class="data-table">
             <thead>
               <tr>
-                <th class="l">Instrument</th>
+                <th>Instrument</th>
                 <th class="r">Quantity</th>
                 <th class="r">Avg cost</th>
                 <th class="r">Last</th>
@@ -43,9 +59,9 @@ import { LivePrice } from '../../shared/live-price';
             <tbody>
               @for (row of rows(); track row.instrumentId) {
                 <tr>
-                  <td class="l">
+                  <td>
                     <div class="ident">
-                      <leap-instrument-logo [symbol]="row.symbol" [size]="32" />
+                      <leap-instrument-logo [symbol]="row.symbol" [size]="36" />
                       <div class="ident-text">
                         <a class="sym stretch-link" [routerLink]="['/instrument', row.instrumentId]" [attr.aria-label]="'View ' + row.symbol + ', ' + row.name">{{
                           row.symbol
@@ -70,7 +86,7 @@ import { LivePrice } from '../../shared/live-price';
                     }
                   </td>
                   <td class="r num" [class.up]="(row.unrealisedPnl ?? 0) > 0" [class.down]="(row.unrealisedPnl ?? 0) < 0">
-                    <div>{{ row.pnl }}</div>
+                    <div class="strong">{{ row.pnl }}</div>
                     @if (row.unrealisedPnlPercent != null) {
                       <div class="sub">{{ row.pct }}</div>
                     }
@@ -81,85 +97,75 @@ import { LivePrice } from '../../shared/live-price';
           </table>
         </div>
       }
-    </div>
+    </section>
   `,
   styles: [
     `
-      .scroll {
-        overflow-x: auto;
+      .count {
+        display: inline-grid;
+        place-items: center;
+        min-width: 24px;
+        height: 22px;
+        margin-left: 6px;
+        padding: 0 7px;
+        border-radius: 999px;
+        background: var(--panel-3);
+        color: var(--text-2);
+        font-size: 12px;
+        font-weight: 600;
+        vertical-align: 2px;
       }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 13px;
+      .pad {
+        padding: 18px 22px;
       }
-      th {
-        padding: 9px 14px;
-        font-size: 10.5px;
-        font-weight: 650;
-        letter-spacing: 0.07em;
-        text-transform: uppercase;
-        color: var(--text-3);
-        border-bottom: 1px solid var(--border-soft);
-        white-space: nowrap;
+      .sk-row {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 10px 0;
       }
-      td {
-        padding: 9px 14px;
-        border-bottom: 1px solid var(--border-soft);
-        white-space: nowrap;
-        vertical-align: middle;
+      .data-table {
+        font-size: 14px;
       }
       tbody tr {
         position: relative;
-        transition: background 0.12s ease;
       }
-      tbody tr:hover,
       tbody tr:focus-within {
         background: var(--panel-hover);
-      }
-      tbody tr:last-child td {
-        border-bottom: none;
-      }
-      .l {
-        text-align: left;
-      }
-      .r {
-        text-align: right;
       }
       .ident {
         display: flex;
         align-items: center;
-        gap: 11px;
+        gap: 12px;
       }
       .ident-text {
         min-width: 0;
       }
       .sym {
         display: inline-block;
-        font-weight: 700;
-        font-size: 13.5px;
+        font-weight: 600;
+        font-size: 14.5px;
+        border-radius: 4px;
+      }
+      tr:hover .sym {
+        color: var(--accent);
       }
       .name {
-        font-size: 11.5px;
-        margin-top: 1px;
-        max-width: 175px;
+        font-size: 12.5px;
+        max-width: 200px;
         overflow: hidden;
         text-overflow: ellipsis;
       }
       .strong {
-        font-weight: 650;
+        font-weight: 600;
       }
       .sub {
-        font-size: 11px;
-        opacity: 0.78;
+        font-size: 12px;
+        opacity: 0.85;
       }
       .ccy {
-        font-size: 10px;
+        font-size: 11px;
         margin-left: 3px;
-      }
-      .pnl {
-        font-size: 12.5px;
-        font-weight: 650;
       }
     `,
   ],

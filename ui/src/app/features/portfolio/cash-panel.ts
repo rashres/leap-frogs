@@ -9,77 +9,99 @@ import { formatUsd } from '../../shared/format';
   selector: 'leap-cash-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <div class="panel">
+    <section class="panel">
       <div class="panel-head">
-        <h2 class="panel-title">Cash · USD</h2>
-        <span class="total num dim">{{ total() }} total</span>
+        <div>
+          <h2 class="panel-title">Cash</h2>
+          <p class="panel-sub">Settled in USD only</p>
+        </div>
+        <span class="total num">{{ total() }} <span class="faint">total</span></span>
       </div>
 
-      <div class="grid">
+      <div class="cells">
         <div class="cell">
-          <div class="cell-head">
-            <span class="code">USD</span>
+          <span class="ic t-cash" aria-hidden="true">$</span>
+          <div class="cell-text">
+            <p class="label">USD cash</p>
+            <p class="amount num">{{ cash() }}</p>
+            <p class="hint faint">Buying power for every instrument</p>
             @if (buys()) {
               <span class="tag">{{ buys() }}</span>
             }
           </div>
-          <p class="amount num">{{ cash() }}</p>
-          <p class="converted num faint">Buying power for every instrument</p>
         </div>
         <div class="cell">
-          <div class="cell-head">
-            <span class="code">Invested</span>
+          <span class="ic t-inv" aria-hidden="true">↗</span>
+          <div class="cell-text">
+            <p class="label">Invested</p>
+            <p class="amount num">{{ invested() }}</p>
+            <p class="hint faint">Market value of priced holdings</p>
           </div>
-          <p class="amount num">{{ invested() }}</p>
-          <p class="converted num faint">Market value of priced holdings</p>
         </div>
       </div>
-    </div>
+    </section>
   `,
   styles: [
     `
-      .grid {
+      .cells {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 12px;
+        padding: 18px 22px 22px;
       }
       .cell {
-        padding: 15px 18px 17px;
-        border-right: 1px solid var(--border-soft);
-      }
-      .cell:last-child {
-        border-right: none;
-      }
-      .cell-head {
         display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 8px;
+        gap: 14px;
+        padding: 14px 16px;
+        border-radius: var(--radius);
+        background: var(--panel-2);
+        border: 1px solid var(--border-soft);
       }
-      .code {
-        font-size: 11.5px;
-        font-weight: 750;
-        letter-spacing: 0.08em;
-        color: var(--text-2);
+      .ic {
+        display: grid;
+        place-items: center;
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .t-cash {
+        background: var(--up-soft);
+        color: var(--up);
+      }
+      .t-inv {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .cell-text {
+        min-width: 0;
+      }
+      .label {
+        margin: 0;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-3);
       }
       .amount {
-        margin: 0;
-        font-size: 21px;
-        font-weight: 650;
-        letter-spacing: -0.014em;
+        margin: 2px 0 0;
+        font-size: 20px;
+        font-weight: 700;
+        letter-spacing: -0.015em;
       }
-      .converted {
-        margin: 3px 0 0;
-        font-size: 11.5px;
-        min-height: 17px;
+      .hint {
+        margin: 2px 0 0;
+        font-size: 12.5px;
+      }
+      .tag {
+        margin-top: 8px;
+        text-transform: none;
+        letter-spacing: 0;
+        background: var(--panel);
+        border: 1px solid var(--border-soft);
       }
       .total {
-        font-size: 12px;
-      }
-      @media (max-width: 640px) {
-        .cell {
-          border-right: none;
-          border-bottom: 1px solid var(--border-soft);
-        }
+        font-size: 13.5px;
+        font-weight: 600;
       }
     `,
   ],
