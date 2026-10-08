@@ -29,6 +29,8 @@ export interface NewsItem {
   readonly relatedTickers: readonly string[];
   /** One-line summary from the feed, when it provides one. */
   readonly summary?: string;
+  /** Thumbnail from the feed, when it provides one. */
+  readonly imageUrl?: string;
   readonly source?: NewsSourceId;
 }
 

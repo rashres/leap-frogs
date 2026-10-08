@@ -74,6 +74,7 @@ interface NewsApiArticle {
   readonly title?: string | null;
   readonly description?: string | null;
   readonly url?: string | null;
+  readonly urlToImage?: string | null;
   readonly publishedAt?: string | null;
 }
 
@@ -115,6 +116,7 @@ export function parseNewsApi(payload: NewsApiResponse): readonly NewsItem[] {
           publishedAt: at,
           relatedTickers: [],
           summary: article.description?.trim() || undefined,
+          ...(article.urlToImage?.trim() ? { imageUrl: article.urlToImage.trim() } : {}),
           source: 'newsapi',
         },
       ];

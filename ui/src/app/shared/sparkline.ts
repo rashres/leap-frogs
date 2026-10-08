@@ -1,6 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type { PricePoint } from './price-chart';
 
+let nextId = 0;
+
 /** Tiny trend line for table rows. Decorative: the row states the change in text. */
 @Component({
   selector: 'leap-sparkline',
@@ -8,8 +10,14 @@ import type { PricePoint } from './price-chart';
   template: `
     @if (shape(); as s) {
       <svg [attr.width]="width()" [attr.height]="height()" [attr.viewBox]="'0 0 ' + width() + ' ' + height()" aria-hidden="true">
-        <path [attr.d]="s.area" [attr.fill]="s.colour" fill-opacity="0.12" />
-        <path [attr.d]="s.line" fill="none" [attr.stroke]="s.colour" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" />
+        <defs>
+          <linearGradient [attr.id]="gradientId" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" [attr.stop-color]="s.colour" stop-opacity="0.22" />
+            <stop offset="100%" [attr.stop-color]="s.colour" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <path [attr.d]="s.area" [attr.fill]="'url(#' + gradientId + ')'" />
+        <path [attr.d]="s.line" fill="none" [attr.stroke]="s.colour" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round" />
       </svg>
     } @else {
       <span class="none" aria-hidden="true">—</span>
@@ -31,6 +39,7 @@ import type { PricePoint } from './price-chart';
   ],
 })
 export class Sparkline {
+  protected readonly gradientId = `spark-${nextId++}`;
   readonly points = input.required<readonly PricePoint[]>();
   readonly width = input(96);
   readonly height = input(30);

@@ -30,6 +30,17 @@ interface YahooNewsEntry {
   readonly link?: string;
   readonly providerPublishTime?: number;
   readonly relatedTickers?: string[];
+  readonly thumbnail?: {
+    readonly resolutions?: readonly { readonly url?: string; readonly width?: number; readonly tag?: string }[];
+  } | null;
+}
+
+/** Prefers Yahoo's square 140px crop, then the smallest image still wide enough for a thumbnail. */
+function thumbnailOf(entry: YahooNewsEntry): string | undefined {
+  const sizes = (entry.thumbnail?.resolutions ?? []).filter((r) => r.url);
+  const square = sizes.find((r) => r.tag === '140x140');
+  if (square) return square.url;
+  return [...sizes].sort((a, b) => (a.width ?? 0) - (b.width ?? 0)).find((r) => (r.width ?? 0) >= 88)?.url ?? sizes[0]?.url;
 }
 
 export interface YahooSearchResponse {
@@ -43,6 +54,7 @@ export function parseYahooNews(payload: YahooSearchResponse): readonly NewsItem[
       const title = entry.title?.trim();
       const seconds = entry.providerPublishTime;
       if (!title || typeof seconds !== 'number') return [];
+      const imageUrl = thumbnailOf(entry);
 
       return [
         {
@@ -52,6 +64,7 @@ export function parseYahooNews(payload: YahooSearchResponse): readonly NewsItem[
           link: entry.link ?? '#',
           publishedAt: new Date(seconds * 1000),
           relatedTickers: entry.relatedTickers ?? [],
+          ...(imageUrl ? { imageUrl } : {}),
           source: 'yahoo',
         },
       ];
