@@ -1,6 +1,7 @@
 package com.neueda.leap.services.domain;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.Objects;
 
 public class Instrument {
@@ -10,6 +11,10 @@ public class Instrument {
     private String name;
     private int exchangeId;
     private Exchange exchange;
+    // Latest market price, loaded from instrument.last_price. Refreshed out of
+    // band by etl/price_fetcher.py, so it is null until that has run once.
+    private BigDecimal lastPrice;
+    private Instant priceUpdatedAt;
 
     public Instrument(){
 
@@ -79,8 +84,31 @@ public class Instrument {
         return symbol + " - " + name;
     }
 
+    /**
+     * Latest known market price, or null if no price has been fetched yet.
+     * Callers that need a tradeable price should treat null as "cannot price".
+     */
     public BigDecimal getPrice() {
-        return MarketService.getPrice();
+        return lastPrice;
+    }
+
+    public BigDecimal getLastPrice() {
+        return lastPrice;
+    }
+
+    public void setLastPrice(BigDecimal lastPrice) {
+        if (lastPrice != null && lastPrice.signum() <= 0) {
+            throw new IllegalArgumentException("Price must be positive");
+        }
+        this.lastPrice = lastPrice;
+    }
+
+    public Instant getPriceUpdatedAt() {
+        return priceUpdatedAt;
+    }
+
+    public void setPriceUpdatedAt(Instant priceUpdatedAt) {
+        this.priceUpdatedAt = priceUpdatedAt;
     }
     
     @Override

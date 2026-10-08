@@ -1,0 +1,87 @@
+<a class="skip-link" href="#main">Skip to main content</a>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" routerLink="/portfolio">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="7" fill="#00c805" opacity="0.13" />
+        <path
+          d="M6 22 L13 13 L18 18 L26 8"
+          stroke="#00c805"
+          stroke-width="2.6"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+      <span class="brand-text">LEAP</span>
+    </a>
+
+    <nav class="links">
+      <a routerLink="/portfolio" routerLinkActive="active">Portfolio</a>
+      <a routerLink="/markets" routerLinkActive="active">Markets</a>
+      <a routerLink="/news" routerLinkActive="active">News</a>
+      <a routerLink="/orders" routerLinkActive="active">Orders</a>
+    </nav>
+
+    <div class="sessions">
+      @for (session of sessions(); track session.code) {
+        <span class="session" [class.on]="session.open" [title]="session.label + ' — ' + session.hours">
+          <i class="dot"></i>{{ session.label }}
+        </span>
+      }
+    </div>
+
+    <div class="nav-right">
+      <button
+        type="button"
+        class="source"
+        [class.on]="source().tone === 'on'"
+        [class.bad]="source().tone === 'bad'"
+        [attr.title]="source().title"
+        (click)="refresh()"
+      >
+        <i class="src-dot"></i>{{ source().label }}
+      </button>
+      <span class="clock num">{{ clock() }}</span>
+
+      <div class="account">
+        <button
+          type="button"
+          class="avatar"
+          [class.open]="menuOpen()"
+          (click)="menuOpen.set(!menuOpen())"
+          [attr.aria-expanded]="menuOpen()"
+          aria-haspopup="menu"
+          [attr.aria-label]="'Signed in as ' + (account.active()?.name ?? 'no account') + '. Switch account'"
+          [attr.title]="account.active()?.name ?? 'No account'"
+        >
+          {{ initials() }}
+        </button>
+
+        @if (menuOpen()) {
+          <div class="menu-backdrop" (click)="menuOpen.set(false)"></div>
+          <div class="menu" role="menu" aria-label="Switch account">
+            <p class="menu-head">Accounts</p>
+            @for (row of accountRows(); track row.id) {
+              <button type="button" role="menuitemradio" class="menu-item" [class.on]="row.active" [attr.aria-checked]="row.active" (click)="choose(row.id)">
+                <span class="mini-avatar">{{ row.initials }}</span>
+                <span class="who">
+                  <span class="who-name">{{ row.name }}</span>
+                  <span class="who-mail faint">{{ row.email }}</span>
+                </span>
+                <span class="who-cash num dim">{{ row.cash }}</span>
+              </button>
+            } @empty {
+              <p class="menu-empty faint">{{ account.error()?.message ?? 'No accounts in the database.' }}</p>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="page" id="main" tabindex="-1">
+  <router-outlet />
+</main>
