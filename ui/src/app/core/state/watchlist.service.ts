@@ -24,6 +24,30 @@ export class WatchlistService {
 
   toggle(id: number): void {
     this.ids.update((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
+    this.persist();
+  }
+
+  /** Adds an instrument, optionally at a position (used to undo a removal in place). */
+  add(id: number, at?: number): void {
+    if (this.isWatched(id)) return;
+    this.ids.update((ids) => {
+      const next = [...ids];
+      next.splice(at ?? next.length, 0, id);
+      return next;
+    });
+    this.persist();
+  }
+
+  /** Removes an instrument and returns the position it had, or -1 if it was not watched. */
+  remove(id: number): number {
+    const index = this.ids().indexOf(id);
+    if (index < 0) return -1;
+    this.ids.update((ids) => ids.filter((x) => x !== id));
+    this.persist();
+    return index;
+  }
+
+  private persist(): void {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.ids()));
     } catch {
