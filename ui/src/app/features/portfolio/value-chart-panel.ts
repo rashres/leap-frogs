@@ -18,54 +18,62 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [PriceChart],
   template: `
-    <div class="panel">
+    <section class="panel">
       <div class="panel-head">
-        <h2 class="panel-title">Value over time</h2>
-        @if (change(); as c) {
-          <span class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
-            @if (scrubbed()) {
-              <span class="cursor">{{ scrubbedText() }}</span>
-            }
-            {{ c.deltaText }} · {{ c.percentText }}
-            <span class="faint lbl">{{ scrubbed() ? 'at ' + c.at : range() }}</span>
-          </span>
-        }
+        <div class="head-text">
+          <h2 class="panel-title">Value over time</h2>
+          @if (change(); as c) {
+            <p class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
+              @if (scrubbed()) {
+                <span class="cursor">{{ scrubbedText() }}</span>
+              }
+              {{ c.deltaText }} · {{ c.percentText }}
+              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : range() }}</span>
+            </p>
+          } @else {
+            <p class="panel-sub">Cash plus holdings, from filled orders</p>
+          }
+        </div>
+        <div class="segmented" role="group" aria-label="Chart range">
+          @for (r of ranges; track r) {
+            <button type="button" [class.on]="range() === r" [attr.aria-pressed]="range() === r" (click)="range.set(r)">{{ r }}</button>
+          }
+        </div>
       </div>
 
       <div class="body">
         @if (series().length >= 2) {
-          <leap-price-chart [points]="series()" [height]="220" [tone]="change()?.negative ? 'down' : 'up'" (scrub)="scrubbed.set($event)" />
+          <leap-price-chart [points]="series()" [height]="260" [tone]="change()?.negative ? 'down' : 'up'" (scrub)="scrubbed.set($event)" />
         } @else {
-          <div class="chart-empty faint">
+          <div class="chart-empty">
             @if (history.initialLoading()) {
-              Loading value history…
+              <span class="skeleton" style="width: 100%; height: 100%; border-radius: 10px"></span>
+              <span class="sr-only" role="status">Loading value history…</span>
             } @else if (history.error(); as e) {
-              {{ e.message }}
+              <p class="state-error">{{ e.message }}</p>
             } @else {
-              No value history for this account yet.
+              <p class="faint">No value history for this account yet.</p>
             }
           </div>
         }
-
-        <div class="ranges">
-          @for (r of ranges; track r) {
-            <button type="button" [class.on]="range() === r" (click)="range.set(r)">{{ r }}</button>
-          }
-        </div>
         <p class="note faint">
           Cash plus each holding at the price recorded at that time, worked out from this account's filled orders.
         </p>
       </div>
-    </div>
+    </section>
   `,
   styles: [
     `
       .body {
-        padding: 6px 18px 14px;
+        padding: 18px 22px 18px;
+      }
+      .head-text {
+        min-width: 0;
       }
       .chg {
-        font-size: 13px;
-        font-weight: 650;
+        margin: 4px 0 0;
+        font-size: 13.5px;
+        font-weight: 600;
       }
       .cursor {
         color: var(--text);
@@ -74,39 +82,35 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
       .lbl {
         font-weight: 500;
         margin-left: 4px;
-        font-size: 11.5px;
+        color: var(--text-3);
       }
       .chart-empty {
         display: grid;
         place-items: center;
-        height: 220px;
-        font-size: 12.5px;
+        height: 260px;
+        font-size: 13.5px;
       }
-      .ranges {
-        display: flex;
-        gap: 4px;
-        border-top: 1px solid var(--border-soft);
-        padding-top: 11px;
-      }
-      .ranges button {
-        padding: 5px 14px;
-        border-radius: var(--radius-sm);
-        font-size: 12.5px;
-        font-weight: 650;
-        color: var(--text-3);
-        transition: all 0.13s ease;
-      }
-      .ranges button:hover {
-        color: var(--text);
-        background: var(--panel-2);
-      }
-      .ranges button.on {
-        color: var(--up);
-        background: var(--up-soft);
+      .chart-empty p {
+        margin: 0;
       }
       .note {
-        margin: 10px 0 0;
-        font-size: 11.5px;
+        margin: 14px 0 0;
+        padding-top: 14px;
+        border-top: 1px solid var(--border-soft);
+        font-size: 12.5px;
+      }
+      @media (max-width: 560px) {
+        .body {
+          padding: 14px 16px;
+        }
+        .segmented {
+          width: 100%;
+          overflow-x: auto;
+        }
+        .segmented button {
+          flex: 1;
+          min-width: 0;
+        }
       }
     `,
   ],
