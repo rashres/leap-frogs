@@ -47,16 +47,6 @@ export class PortfolioPage {
   readonly pnlText = computed(() => formatSignedUsd(this.portfolio.totalUnrealisedPnl()));
   readonly returnText = computed(() => formatSignedPct(this.portfolio.totalReturnPercent()));
   readonly cashText = computed(() => formatUsd(this.portfolio.cash()));
-
-  readonly initials = computed(() =>
-    (this.portfolio.account.active()?.name ?? '')
-      .split(/\s+/)
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]!.toUpperCase())
-      .join(''),
-  );
-
   readonly recentOrders = computed(() =>
     this.portfolio
       .orderList()
