@@ -12,17 +12,8 @@
   <leap-ticker-belt />
 
   <section class="metrics panel" aria-label="Key figures">
-    <div class="metric">
-      <h2 class="m-label">Portfolio value</h2>
-      <p class="m-value num">{{ headlineParts().major }}<span class="minor">{{ headlineParts().minor }}</span></p>
-      @if (portfolio.hasPnl()) {
-        <p class="m-sub num" [class.up]="rising()" [class.down]="!rising()">{{ returnText() }} <span class="faint">unrealised</span></p>
-      } @else {
-        <p class="m-sub faint">Cash plus priced holdings</p>
-      }
-    </div>
     <div class="metric cash-metric">
-      <h2 class="m-label">Cash available</h2>
+      <h2 class="m-label">Available cash</h2>
       <p class="m-value num">{{ cashText() }}</p>
       <button
         type="button"
@@ -50,10 +41,12 @@
         {{ portfolio.hasPnl() ? pnlText() : '—' }}
       </p>
       <p class="m-sub">
-        <span class="faint">Total return</span>
-        <span class="num" [class.up]="portfolio.hasPnl() && rising()" [class.down]="portfolio.hasPnl() && !rising()">
-          {{ portfolio.hasPnl() ? returnText() : '—' }}
-        </span>
+        @if (portfolio.hasPnl()) {
+          <span class="num" [class.up]="rising()" [class.down]="!rising()">{{ returnText() }}</span>
+          <span class="faint">on cost of open positions</span>
+        } @else {
+          <span class="faint">No priced positions yet</span>
+        }
       </p>
     </div>
     <div class="metric">
