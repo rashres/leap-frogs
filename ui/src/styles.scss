@@ -41,11 +41,16 @@
   --warn: #b54708;
   --warn-soft: #fffaeb;
   --warn-line: #fedf89;
+  /* Watchlist star: an icon, so it needs 3:1 against the card (#f79009 was 2.35:1). */
+  --star: #dc6803;
 
-  --buy: #079455;
-  --buy-strong: #067647;
+  /* White button text is 15px, so these need 4.5:1 (the old #079455 was 3.9:1). */
+  --buy: #067647;
+  --buy-strong: #085d3a;
   --sell: #d92d20;
   --sell-strong: #b42318;
+  /* Keeps dark brand tiles (Apple, Microsoft) from melting into the card. */
+  --logo-ring: rgba(16, 24, 40, 0.08);
 
   --radius-sm: 6px;
   --radius: 8px;
@@ -78,18 +83,21 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --bg: #020d1a;
-  --panel: #122031;
-  --panel-2: #172839;
-  --panel-3: #1d3045;
-  --panel-hover: #1a2c40;
-  --border: #233449;
-  --border-soft: #1c2d40;
-  --border-strong: #2f445c;
+  /* Neutral black, no blue tint. Shadows barely show on black, so the borders
+     carry the separation between cards (border vs panel 1.48:1). */
+  --bg: #000000;
+  --panel: #121212;
+  --panel-2: #171717;
+  --panel-3: #222222;
+  --panel-hover: #1c1c1c;
+  --border: #333333;
+  --border-soft: #2a2a2a;
+  --border-strong: #4a4a4a;
 
-  --text: #f3f5f8;
-  --text-2: #b1bccb;
-  --text-3: #8b98aa;
+  /* --text-3 stays AA on --panel-3 too (segmented controls sit on it). */
+  --text: #f2f2f2;
+  --text-2: #b3b3b3;
+  --text-3: #9e9e9e;
 
   --up: #47cd89;
   --up-soft: rgba(18, 183, 106, 0.14);
@@ -100,24 +108,28 @@
   --chart-up: #32d583;
   --chart-down: #f97066;
 
-  --accent: #8b85ff;
-  --accent-strong: #a5a0ff;
-  --accent-soft: rgba(124, 117, 255, 0.16);
-  --accent-line: rgba(124, 117, 255, 0.45);
-  --on-accent: #ffffff;
+  /* Monochrome accent: white buttons with black text, white-tinted highlights.
+     Green and red stay the only colours, so direction still stands out. */
+  --accent: #f2f2f2;
+  --accent-strong: #ffffff;
+  --accent-soft: rgba(255, 255, 255, 0.1);
+  --accent-line: rgba(255, 255, 255, 0.3);
+  --on-accent: #0a0a0a;
   --warn: #fdb022;
   --warn-soft: rgba(253, 176, 34, 0.12);
   --warn-line: rgba(253, 176, 34, 0.4);
+  --star: #fdb022;
 
-  --buy: #079455;
-  --buy-strong: #0a8a51;
+  --buy: #067647;
+  --buy-strong: #085d3a;
   --sell: #d92d20;
-  --sell-strong: #c1281c;
+  --sell-strong: #b42318;
+  --logo-ring: var(--border-strong);
 
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
   --shadow-2: 0 1px 3px rgba(0, 0, 0, 0.3), 0 4px 12px -2px rgba(0, 0, 0, 0.3);
   --shadow-lift: 0 16px 40px -12px rgba(0, 0, 0, 0.7), 0 4px 10px -4px rgba(0, 0, 0, 0.4);
-  --focus-ring: 0 0 0 4px rgba(139, 133, 255, 0.25);
+  --focus-ring: 0 0 0 4px rgba(255, 255, 255, 0.25);
 }
 
 * {
@@ -425,6 +437,11 @@ select.control {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23667085' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
+}
+
+/* Same chevron, lighter stroke (#9e9e9e), so it shows on dark panels. */
+:root[data-theme='dark'] select.control {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%239e9e9e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 .field-label {

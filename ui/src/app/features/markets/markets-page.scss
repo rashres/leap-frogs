@@ -170,7 +170,7 @@ ul {
   }
 
   &.on {
-    color: #f79009;
+    color: var(--star);
   }
 
   &:focus-visible {
