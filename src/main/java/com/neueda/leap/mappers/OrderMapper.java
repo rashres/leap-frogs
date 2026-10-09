@@ -61,7 +61,6 @@ public interface OrderMapper {
             @Result(property = "quantity", column = "quantity"),
             @Result(property = "price", column = "price"),
             @Result(property = "placedTime", column = "transaction_time"),
-            // Must come before "status": setStatus("COMPLETE") only fills fulfilledTime when it is still empty.
             @Result(property = "fulfilledTime", column = "fulfilled_time"),
             @Result(property = "status", column = "status")
     })
