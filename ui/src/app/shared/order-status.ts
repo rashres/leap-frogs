@@ -3,9 +3,11 @@ import type { OrderStatus } from '../core/api/models';
 /** Order states as the API stores them, labelled the way the fe/21 screens show them. */
 export const ORDER_STATUS_LABELS: Readonly<Record<OrderStatus, string>> = {
   CREATED: 'Submitted',
-  PENDING: 'Working',
+  PENDING: 'Pending',
   COMPLETE: 'Filled',
   FAILED: 'Rejected',
+  CANCELLED: 'Cancelled',
+  EXPIRED: 'Expired',
 };
 
 /** Pill tone class suffix: pill-up, pill-down, pill-accent, pill-muted. */
