@@ -2,6 +2,7 @@ package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.ErrorResponse;
 import com.neueda.leap.services.InvalidOrderException;
+import com.neueda.leap.services.InvalidWatchlistException;
 import com.neueda.leap.services.OrderNotCancellableException;
 import com.neueda.leap.services.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -37,6 +38,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(InvalidOrderException.class)
     public ResponseEntity<ErrorResponse> handleInvalidOrder(InvalidOrderException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(InvalidWatchlistException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidWatchlist(InvalidWatchlistException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
     }
 

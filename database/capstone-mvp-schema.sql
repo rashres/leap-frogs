@@ -68,6 +68,15 @@ CREATE TABLE holdings (
     UNIQUE (account_id, instrument_id)
 );
 
+-- Instruments an account has starred, in the order it shows them (position 0 first).
+CREATE TABLE IF NOT EXISTS watchlist (
+    account_id     INT NOT NULL REFERENCES account(account_id),
+    instrument_id  INT NOT NULL REFERENCES instrument(instrument_id),
+    position       INT NOT NULL CHECK (position >= 0),
+    added_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (account_id, instrument_id)
+);
+
 -- One row per instrument per minute, in USD, written by etl/price_fetcher.py.
 -- instrument.last_price stays the price orders fill at; this table only feeds
 -- charts (GET /api/instruments/{id}/prices, GET /api/accounts/{id}/value-history).
