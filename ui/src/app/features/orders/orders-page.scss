@@ -120,6 +120,13 @@
   gap: 12px;
 }
 
+/* Status pill, plus a Cancel button while the order is pending. */
+.state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .sym {
   font-weight: 600;
   font-size: 14.5px;

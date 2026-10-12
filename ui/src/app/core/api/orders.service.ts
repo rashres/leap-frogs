@@ -4,16 +4,17 @@ import { catchError, map, of, tap, throwError, type Observable } from 'rxjs';
 import { ApiError } from './api-error';
 import type { Order, OrderRequest } from './models';
 
-/** Outcome of POST /orders: 201 completed or 422 rejected (saved as FAILED). */
+/** Outcome of POST /orders: 201 completed, 202 pending (waiting to fill) or 422 rejected (saved as FAILED). */
 export type PlaceOrderResult =
   | { kind: 'completed'; order: Order }
+  | { kind: 'pending'; order: Order }
   | { kind: 'rejected'; order: Order; reason: string };
 
 @Injectable({ providedIn: 'root' })
 export class OrdersService {
   private readonly http = inject(HttpClient);
 
-  /** Bumped after every submitted order so views showing cash, holdings or orders can refresh. */
+  /** Bumped after every submitted or cancelled order so views showing cash, holdings or orders can refresh. */
   readonly changes = signal(0);
 
   list(accountId: number): Observable<Order[]> {
@@ -27,7 +28,7 @@ export class OrdersService {
    */
   place(accountId: number, request: OrderRequest): Observable<PlaceOrderResult> {
     return this.http.post<Order>(`/api/accounts/${accountId}/orders`, request).pipe(
-      map((order): PlaceOrderResult => ({ kind: 'completed', order })),
+      map((order): PlaceOrderResult => (order.status === 'PENDING' ? { kind: 'pending', order } : { kind: 'completed', order })),
       catchError((error: unknown) => {
         if (error instanceof ApiError && error.status === 422 && isOrder(error.body)) {
           const order = error.body;
@@ -37,6 +38,18 @@ export class OrdersService {
       }),
       tap(() => this.changes.update((n) => n + 1)),
     );
+  }
+
+  /** Cancels a pending order. 409 if it has already filled, failed, expired or been cancelled. */
+  cancel(accountId: number, orderId: number): Observable<Order> {
+    return this.http
+      .post<Order>(`/api/accounts/${accountId}/orders/${orderId}/cancel`, null)
+      .pipe(tap(() => this.changes.update((n) => n + 1)));
+  }
+
+  /** Tells views to reload after something outside this tab changed orders, e.g. a pending order filling. */
+  notifyChanged(): void {
+    this.changes.update((n) => n + 1);
   }
 }
 
