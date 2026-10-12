@@ -207,7 +207,8 @@ class PendingOrderIntegrationTest {
 
         Order filled = orderMapper.findById(order.getOrderId());
         assertEquals(MONDAY_OPEN, filled.getFulfilledTime());
-        assertEquals(0, cashBefore.subtract(price).compareTo(cash()));
+        BigDecimal expectedCash = cashBefore.subtract(price).setScale(2, RoundingMode.HALF_UP);
+        assertEquals(0, expectedCash.compareTo(cash()));
         assertEquals(0, heldBefore.add(BigDecimal.ONE).compareTo(held()));
     }
 
