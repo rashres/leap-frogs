@@ -36,12 +36,19 @@ export interface NewsItem {
 
 export type SentimentLabel = 'positive' | 'neutral' | 'negative';
 
-/** A lexicon term found in a headline, and whether a negator flipped it. */
+/** A lexicon term or phrase found in a headline, and whether a negator flipped it. */
 export interface MatchedTerm {
+  /** The words as they matched, e.g. "beats" or "price target hike". */
   readonly term: string;
-  /** Polarity after negation is applied — what actually counted. */
+  /** Polarity after negation is applied — what it counts as. */
   readonly polarity: 'positive' | 'negative';
   readonly negated: boolean;
+  /** Where it was found. The summary is only read when the headline itself matched nothing that counts. */
+  readonly from: 'headline' | 'summary';
+  /** False when the term was found but not counted; `note` says why. */
+  readonly counted: boolean;
+  /** Extra working shown to the reader, e.g. "$350 → $400" or "in a question". */
+  readonly note?: string;
 }
 
 /**
@@ -56,6 +63,7 @@ export interface SentimentScore {
   readonly net: number;
   readonly positives: number;
   readonly negatives: number;
+  /** Every term found, counted or not, in reading order. */
   readonly matched: readonly MatchedTerm[];
 }
 
