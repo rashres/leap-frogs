@@ -26,7 +26,7 @@ import java.util.TreeMap;
  * cash and holdings, filled orders (transactions) and recorded prices
  * (instrument_price). Nothing is written.
  *
- * Starting from today's cash and holdings, every filled order placed after the
+ * Starting from today's cash and holdings, every order filled after the
  * start of the range is undone, then replayed forwards point by point. So the
  * last point always matches the account's current cash and holdings.
  */
@@ -60,8 +60,8 @@ public class PortfolioHistoryService {
         Instant start = end.minus(range.span());
 
         List<Order> inRange = orderMapper.findByAccountId(accountId).stream()
-                .filter(o -> "COMPLETE".equals(o.getStatus()) && o.getPlacedTime().isAfter(start))
-                .sorted(Comparator.comparing(Order::getPlacedTime).thenComparing(Order::getOrderId))
+                .filter(o -> "COMPLETE".equals(o.getStatus()) && o.getEffectiveTime().isAfter(start))
+                .sorted(Comparator.comparing(Order::getEffectiveTime).thenComparing(Order::getOrderId))
                 .toList();
         for (Order order : inRange) {
             cash = cash.subtract(cashChange(order));
@@ -82,7 +82,7 @@ public class PortfolioHistoryService {
         for (Instant at = start; !at.isAfter(end); at = at.plus(range.step())) {
             // The last point takes every order, including ones placed since `end` was rounded down.
             boolean last = at.equals(end);
-            while (next < inRange.size() && (last || !inRange.get(next).getPlacedTime().isAfter(at))) {
+            while (next < inRange.size() && (last || !inRange.get(next).getEffectiveTime().isAfter(at))) {
                 Order order = inRange.get(next++);
                 cash = cash.add(cashChange(order));
                 quantities.merge(instrumentId(order), quantityChange(order), BigDecimal::add);
