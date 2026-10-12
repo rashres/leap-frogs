@@ -1,4 +1,5 @@
 import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { EMPTY, Subject, catchError, concatMap } from 'rxjs';
 import { AccountsService } from '../api/accounts.service';
 import type { Instrument } from '../api/models';
@@ -23,6 +24,10 @@ export class WatchlistService {
 
   private readonly ids = signal<number[]>([]);
   private readonly saves = new Subject<{ accountId: number; ids: number[] }>();
+  /** Accounts whose backend does not expose /watchlist; use browser storage for them. */
+  private readonly localOnlyAccounts = new Set<number>();
+  /** Bumps on each local edit so stale async loads cannot overwrite recent clicks. */
+  private mutationVersion = 0;
 
   /** Watched instruments that still exist in the database, in the order they were starred. */
   readonly instruments = computed<Instrument[]>(() => {
@@ -42,8 +47,14 @@ export class WatchlistService {
       .pipe(
         concatMap(({ accountId, ids }) =>
           this.api.saveWatchlist(accountId, ids).pipe(
-            // The save did not land: show what the API actually holds.
-            catchError(() => {
+            // If /watchlist is unavailable on this backend, keep working locally.
+            catchError((error: unknown) => {
+              if (isMissingWatchlistEndpoint(error)) {
+                this.localOnlyAccounts.add(accountId);
+                writeStored(accountId, ids);
+                return EMPTY;
+              }
+              // The save did not land: show what the API actually holds.
               this.load(accountId);
               return EMPTY;
             }),
@@ -59,6 +70,7 @@ export class WatchlistService {
 
   toggle(id: number): void {
     if (this.account.activeId() == null) return;
+    this.mutationVersion++;
     this.ids.update((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
     this.persist();
   }
@@ -66,6 +78,7 @@ export class WatchlistService {
   /** Adds an instrument, optionally at a position (used to undo a removal in place). */
   add(id: number, at?: number): void {
     if (this.account.activeId() == null || this.isWatched(id)) return;
+    this.mutationVersion++;
     this.ids.update((ids) => {
       const next = [...ids];
       next.splice(at ?? next.length, 0, id);
@@ -78,6 +91,7 @@ export class WatchlistService {
   remove(id: number): number {
     const index = this.ids().indexOf(id);
     if (index < 0) return -1;
+    this.mutationVersion++;
     this.ids.update((ids) => ids.filter((x) => x !== id));
     this.persist();
     return index;
@@ -86,8 +100,17 @@ export class WatchlistService {
   private load(accountId: number | null): void {
     this.ids.set([]);
     if (accountId == null) return;
+    const versionAtStart = this.mutationVersion;
+
+    if (this.localOnlyAccounts.has(accountId)) {
+      this.ids.set(readStored(accountId));
+      return;
+    }
+
     this.api.watchlist(accountId).subscribe({
       next: ({ instrumentIds }) => {
+        if (this.mutationVersion !== versionAtStart) return;
+        this.localOnlyAccounts.delete(accountId);
         // The user may have switched account while this was in flight.
         if (this.account.activeId() !== accountId) return;
         const local = readStored(accountId);
@@ -105,13 +128,24 @@ export class WatchlistService {
           this.ids.set(instrumentIds);
         }
       },
-      error: () => undefined,
+      error: (error: unknown) => {
+        if (this.mutationVersion !== versionAtStart) return;
+        if (!isMissingWatchlistEndpoint(error)) return;
+        this.localOnlyAccounts.add(accountId);
+        // The user may have switched account while this was in flight.
+        if (this.account.activeId() !== accountId) return;
+        this.ids.set(readStored(accountId));
+      },
     });
   }
 
   private persist(): void {
     const accountId = this.account.activeId();
     if (accountId == null) return;
+    if (this.localOnlyAccounts.has(accountId)) {
+      writeStored(accountId, this.ids());
+      return;
+    }
     this.saves.next({ accountId, ids: this.ids() });
   }
 }
@@ -134,4 +168,16 @@ function clearStored(accountId: number): void {
   } catch {
     /* storage unavailable: nothing to clear */
   }
+}
+
+function writeStored(accountId: number, ids: readonly number[]): void {
+  try {
+    localStorage.setItem(STORAGE_PREFIX + accountId, JSON.stringify(ids));
+  } catch {
+    /* storage unavailable: best effort only */
+  }
+}
+
+function isMissingWatchlistEndpoint(error: unknown): boolean {
+  return error instanceof HttpErrorResponse && error.status === 404;
 }
