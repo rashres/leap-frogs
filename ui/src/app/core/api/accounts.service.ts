@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { Account, Holding, PortfolioValuePointDto, PriceRange } from './models';
+import type { Account, Holding, PortfolioValuePointDto, PriceRange, Watchlist } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class AccountsService {
@@ -21,5 +21,14 @@ export class AccountsService {
 
   valueHistory(accountId: number, range: PriceRange): Observable<PortfolioValuePointDto[]> {
     return this.http.get<PortfolioValuePointDto[]>(`/api/accounts/${accountId}/value-history`, { params: { range } });
+  }
+
+  watchlist(accountId: number): Observable<Watchlist> {
+    return this.http.get<Watchlist>(`/api/accounts/${accountId}/watchlist`);
+  }
+
+  /** Saves the whole watchlist in this order; the response is what the API stored. */
+  saveWatchlist(accountId: number, instrumentIds: readonly number[]): Observable<Watchlist> {
+    return this.http.put<Watchlist>(`/api/accounts/${accountId}/watchlist`, { instrumentIds });
   }
 }

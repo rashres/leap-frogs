@@ -1,23 +1,28 @@
-import { Injectable, computed, inject, linkedSignal } from '@angular/core';
+import { Injectable, computed, effect, inject, signal, untracked } from '@angular/core';
+import { EMPTY, Subject, catchError, concatMap } from 'rxjs';
+import { AccountsService } from '../api/accounts.service';
 import type { Instrument } from '../api/models';
 import { ActiveAccountService } from './active-account.service';
 import { MarketStore } from './market.store';
 
+/** Where the watchlist lived before the API stored it; copied up once, then removed. */
 const STORAGE_PREFIX = 'leap.watchlist.';
-/** Pre-per-account key: one list shared by every account. Handed to the first account that loads. */
 const LEGACY_KEY = 'leap.watchlist';
 
-/** Starred instrument ids for the active account, kept in this browser's localStorage. */
+/**
+ * Starred instrument ids for the active account, stored by the API
+ * (GET / PUT /api/accounts/{id}/watchlist). Changes show at once and are saved
+ * in the background, one save at a time and in order, so a quick star then
+ * unstar cannot land the wrong way round.
+ */
 @Injectable({ providedIn: 'root' })
 export class WatchlistService {
+  private readonly api = inject(AccountsService);
   private readonly market = inject(MarketStore);
   private readonly account = inject(ActiveAccountService);
 
-  /** Reloads from storage whenever the active account changes. */
-  private readonly ids = linkedSignal<number | null, number[]>({
-    source: this.account.activeId,
-    computation: (accountId) => (accountId == null ? [] : readStored(accountId)),
-  });
+  private readonly ids = signal<number[]>([]);
+  private readonly saves = new Subject<{ accountId: number; ids: number[] }>();
 
   /** Watched instruments that still exist in the database, in the order they were starred. */
   readonly instruments = computed<Instrument[]>(() => {
@@ -26,6 +31,27 @@ export class WatchlistService {
       .map((id) => byId.get(id))
       .filter((i): i is Instrument => i !== undefined);
   });
+
+  constructor() {
+    effect(() => {
+      const accountId = this.account.activeId();
+      untracked(() => this.load(accountId));
+    });
+
+    this.saves
+      .pipe(
+        concatMap(({ accountId, ids }) =>
+          this.api.saveWatchlist(accountId, ids).pipe(
+            // The save did not land: show what the API actually holds.
+            catchError(() => {
+              this.load(accountId);
+              return EMPTY;
+            }),
+          ),
+        ),
+      )
+      .subscribe();
+  }
 
   isWatched(id: number): boolean {
     return this.ids().includes(id);
@@ -57,32 +83,55 @@ export class WatchlistService {
     return index;
   }
 
+  private load(accountId: number | null): void {
+    this.ids.set([]);
+    if (accountId == null) return;
+    this.api.watchlist(accountId).subscribe({
+      next: ({ instrumentIds }) => {
+        // The user may have switched account while this was in flight.
+        if (this.account.activeId() !== accountId) return;
+        const local = readStored(accountId);
+        if (instrumentIds.length === 0 && local.length > 0) {
+          this.ids.set(local);
+          this.api.saveWatchlist(accountId, local).subscribe({
+            next: (saved) => {
+              clearStored(accountId);
+              if (this.account.activeId() === accountId) this.ids.set(saved.instrumentIds);
+            },
+            // Keep the browser copy so the next load can try again.
+            error: () => undefined,
+          });
+        } else {
+          this.ids.set(instrumentIds);
+        }
+      },
+      error: () => undefined,
+    });
+  }
+
   private persist(): void {
     const accountId = this.account.activeId();
     if (accountId == null) return;
-    try {
-      localStorage.setItem(STORAGE_PREFIX + accountId, JSON.stringify(this.ids()));
-    } catch {
-      /* storage unavailable: the watchlist lasts for this session only */
-    }
+    this.saves.next({ accountId, ids: this.ids() });
   }
 }
 
+/** A watchlist this browser kept before the API stored them, or []. */
 function readStored(accountId: number): number[] {
   try {
-    const key = STORAGE_PREFIX + accountId;
-    let raw = localStorage.getItem(key);
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy != null) {
-      if (raw == null) {
-        localStorage.setItem(key, legacy);
-        raw = legacy;
-      }
-      localStorage.removeItem(LEGACY_KEY);
-    }
+    const raw = localStorage.getItem(STORAGE_PREFIX + accountId) ?? localStorage.getItem(LEGACY_KEY);
     const parsed: unknown = JSON.parse(raw ?? '[]');
-    return Array.isArray(parsed) ? parsed.filter((x): x is number => typeof x === 'number') : [];
+    return Array.isArray(parsed) ? [...new Set(parsed.filter((x): x is number => typeof x === 'number'))] : [];
   } catch {
     return [];
+  }
+}
+
+function clearStored(accountId: number): void {
+  try {
+    localStorage.removeItem(STORAGE_PREFIX + accountId);
+    localStorage.removeItem(LEGACY_KEY);
+  } catch {
+    /* storage unavailable: nothing to clear */
   }
 }

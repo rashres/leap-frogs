@@ -67,6 +67,12 @@ export interface Holding {
   quantity: number;
 }
 
+/** WatchlistResponse: starred instrument ids, in display order. */
+export interface Watchlist {
+  accountId: number;
+  instrumentIds: number[];
+}
+
 export type OrderSide = 'BUY' | 'SELL';
 export type OrderStatus = 'CREATED' | 'PENDING' | 'COMPLETE' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
 /** MARKET fills at the market price; LIMIT only at limitPrice or better. */
