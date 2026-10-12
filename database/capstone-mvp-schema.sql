@@ -34,12 +34,27 @@ CREATE TABLE transactions (
     instrument_id           INT NOT NULL REFERENCES instrument(instrument_id),
     transaction_type   VARCHAR(4) NOT NULL CHECK (transaction_type IN ('BUY', 'SELL')),
     quantity           NUMERIC(18,6) NOT NULL CHECK (quantity > 0),
+    -- The fill price once COMPLETE. While PENDING, the market price when the
+    -- order was placed (the fill price is not known yet).
     price              NUMERIC(18,6) NOT NULL CHECK (price > 0),
     -- Outcome of the order. Mirrors Order.setStatus() in the Java domain:
-    -- COMPLETE = executed successfully, FAILED = rejected by validation.
+    -- PENDING = waiting for the market to open or the limit price to be reached,
+    -- COMPLETE = executed, FAILED = rejected by validation,
+    -- CANCELLED = cancelled by the user, EXPIRED = a DAY order that did not fill in its session.
     status             VARCHAR(10) NOT NULL DEFAULT 'COMPLETE'
-                       CHECK (status IN ('PENDING', 'COMPLETE', 'FAILED')),
-    transaction_time   TIMESTAMPTZ NOT NULL DEFAULT now()
+                       CHECK (status IN ('PENDING', 'COMPLETE', 'FAILED', 'CANCELLED', 'EXPIRED')),
+    -- When the order was placed.
+    transaction_time   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- MARKET fills at the market price; LIMIT only at limit_price or better.
+    order_type         VARCHAR(6) NOT NULL DEFAULT 'MARKET' CHECK (order_type IN ('MARKET', 'LIMIT')),
+    limit_price        NUMERIC(18,6) CHECK (limit_price > 0),
+    -- DAY expires at the close of its trading session; GTC stays until filled or cancelled.
+    time_in_force      VARCHAR(3) NOT NULL DEFAULT 'DAY' CHECK (time_in_force IN ('DAY', 'GTC')),
+    -- When a PENDING DAY order expires. NULL for GTC and for orders that never waited.
+    expires_at         TIMESTAMPTZ,
+    -- When the order filled. NULL on older rows, which filled at transaction_time.
+    filled_at          TIMESTAMPTZ,
+    CHECK ((order_type = 'LIMIT') = (limit_price IS NOT NULL))
 );
 
 CREATE TABLE holdings (
@@ -67,6 +82,7 @@ CREATE TABLE instrument_price (
 CREATE INDEX idx_transactions_account ON transactions(account_id);
 CREATE INDEX idx_transactions_instrument ON transactions(instrument_id);
 CREATE INDEX idx_transactions_time ON transactions(transaction_time);
+CREATE INDEX idx_transactions_pending ON transactions(transaction_id) WHERE status = 'PENDING';
 CREATE INDEX idx_instrument_exchange ON instrument(exchange_id);
 CREATE INDEX idx_holdings_account ON holdings(account_id);
 
