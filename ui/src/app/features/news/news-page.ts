@@ -72,12 +72,16 @@ import { PageHeader } from '../../shared/page-header';
             @default {
               <leap-stock-sentiment-board [rows]="news.board()" [selected]="selected()" (pick)="selected.set($event)" />
               <p class="method faint">
-                {{ swept() }} headlines filed by company name, from the most recent hundred published in the last seven
-                days by a fixed list of financial publishers. "No headlines" means none in that window, which is not the
-                same as nothing to report — the window is one request wide because the news plan allows a hundred a day.
-                A stock with no headlines is shown as such rather than as neutral. Rows are ordered by how much was
-                written, not by how positive it was: an ordering by score would be a ranking of instruments, which this
-                is not.
+                {{ filed() }} of {{ swept() }} headlines filed by company name,
+                @if (news.servedBy() === 'newsapi') {
+                  from the most recent hundred published in the last seven days by a fixed list of financial publishers.
+                  The window is one request wide because the news plan allows a hundred a day.
+                } @else {
+                  from Yahoo Finance search and headline feeds, up to fifty per stock, with repeats merged.
+                }
+                "No headlines" means none in that window, which is not the same as nothing to report. A stock with no
+                headlines is shown as such rather than as neutral. Rows are ordered by how much was written, not by how
+                positive it was: an ordering by score would be a ranking of instruments, which this is not.
               </p>
             }
           }
@@ -172,6 +176,7 @@ export class NewsPage {
   readonly loading = computed(() => this.news.state() === 'loading');
 
   readonly swept = computed(() => this.news.sweepHeadlines().length);
+  readonly filed = computed(() => this.news.sweepHeadlines().filter((i) => i.attributions.length > 0).length);
 
   readonly selectedSymbol = computed(
     () => this.news.board().find((row) => row.instrumentId === this.selected())?.symbol ?? null,
