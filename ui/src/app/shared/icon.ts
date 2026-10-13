@@ -35,6 +35,8 @@ const ICONS = {
     'M15 18h-5',
     'M10 6h8v4h-8V6Z',
   ],
+  analytics: ['M3 3v16a2 2 0 0 0 2 2h16', 'M8 17v-4', 'M13 17V9', 'M18 17V5'],
+  download: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'm7 10 5 5 5-5', 'M12 15V3'],
   menu: ['M4 6h16', 'M4 12h16', 'M4 18h16'],
   sidebar: [rect(3, 3, 18, 18, 2), 'M9 3v18'],
   'chevron-down': ['m6 9 6 6 6-6'],
