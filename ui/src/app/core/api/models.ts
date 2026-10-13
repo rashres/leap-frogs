@@ -94,6 +94,25 @@ export interface OrderRequest {
   quantity: number;
 }
 
+/** GET /api/audit/orders */
+export interface AuditOrderPage {
+  orders: Order[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasPrevious: boolean;
+  hasNext: boolean;
+}
+
+export interface AuditOrderQuery {
+  accountId?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  page?: number;
+  size?: number;
+}
+
 /** ErrorResponse, returned by every endpoint on failure. */
 export interface ErrorResponse {
   timestamp: string;
