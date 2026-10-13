@@ -4,8 +4,8 @@
  * The keyless fallback. It was the original source here and is kept because it
  * needs no credential and no plan: when the news key is missing or its daily
  * allowance is spent, this still answers, and a reader sees headlines instead
- * of an apology. Like the quote adapter it sends no CORS headers, so it goes
- * through the dev-server proxy at /api/yahoo.
+ * of an apology. Yahoo sends no CORS headers, so requests go through the
+ * LEAP API at /api/yahoo, which fetches and caches them server-side.
  *
  * It carries `relatedTickers`, which the app does not use for the stock board.
  * The field is the feed's own claim about what a story is about, and it is
@@ -106,7 +106,7 @@ export class YahooNewsProvider implements NewsProvider {
       response = await fetch(url);
     } catch {
       throw new NewsUnavailable(
-        'The fallback news feed could not be reached. Live headlines are proxied through the dev server, so they need `npm start` rather than a static build.',
+        'The fallback news feed could not be reached. Headlines come through the LEAP API, so check that it is running.',
       );
     }
 
@@ -114,7 +114,9 @@ export class YahooNewsProvider implements NewsProvider {
       throw new NewsUnavailable(
         response.status === 429
           ? 'Yahoo is rate-limiting this IP (429). Fallback headlines are temporarily unavailable.'
-          : `Fallback news request failed (HTTP ${response.status}).`,
+          : response.status === 502 || response.status === 504
+            ? 'Yahoo Finance is not answering right now. Fallback headlines are temporarily unavailable.'
+            : `Fallback news request failed (HTTP ${response.status}).`,
       );
     }
     return parseYahooNews((await response.json()) as YahooSearchResponse);

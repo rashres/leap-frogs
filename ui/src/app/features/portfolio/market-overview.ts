@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { VolumeService, type Volume } from '../../core/markets/volume.service';
 import { formatPrice, formatSignedPct, formatTime } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
@@ -7,6 +8,13 @@ import { Sparkline } from '../../shared/sparkline';
 import { DayChangeStore } from './day-change.store';
 
 const SHOWN = 5;
+
+const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+
+function formatVolume(v: Volume | null): string {
+  if (!v) return '—';
+  return v.isValue ? `$${compact.format(v.value)}` : compact.format(v.value);
+}
 
 /** Live prices and the recorded 24-hour move, linking to Markets for the rest. */
 @Component({
@@ -28,7 +36,7 @@ const SHOWN = 5;
               <th>24H trend</th>
               <th class="r">Price</th>
               <th class="r">24H%</th>
-              <th class="opt">Market</th>
+              <th class="r opt">Volume</th>
               <th class="r opt">Updated</th>
             </tr>
           </thead>
@@ -54,7 +62,7 @@ const SHOWN = 5;
                   }
                 </td>
                 <td class="r num pct" [class.up]="row.dir > 0" [class.down]="row.dir < 0">{{ row.pct ?? '—' }}</td>
-                <td class="market opt">{{ row.market }}</td>
+                <td class="r num vol opt" [attr.title]="row.volumeTitle">{{ row.volume }}</td>
                 <td class="r num when opt">{{ row.updated }}</td>
               </tr>
             }
@@ -177,7 +185,9 @@ const SHOWN = 5;
       .pct {
         font-weight: 500;
       }
-      .market,
+      .vol {
+        font-size: 12.5px;
+      }
       .when {
         color: var(--text-3);
         font-size: 12.5px;
@@ -220,17 +230,25 @@ const SHOWN = 5;
 })
 export class MarketOverview {
   protected readonly store = inject(DayChangeStore);
+  private readonly volumes = inject(VolumeService);
+  private readonly shown = computed(() => this.store.rows().slice(0, SHOWN));
+
+  constructor() {
+    effect(() => this.volumes.load(this.shown().map((r) => r.symbol)));
+  }
+
   readonly rows = computed(() =>
-    this.store.rows().slice(0, SHOWN).map((r) => ({
+    this.shown().map((r) => ({
       id: r.id,
       symbol: r.symbol,
       name: r.name,
-      market: r.market,
       points: r.points,
       price: formatPrice(r.price),
       pct: r.changePct != null ? formatSignedPct(r.changePct) : null,
       delta: r.change != null ? `${r.change < 0 ? '−' : '+'}${formatPrice(Math.abs(r.change), r.price)}` : '',
       dir: Math.sign(r.change ?? 0),
+      volume: formatVolume(this.volumes.get(r.symbol)),
+      volumeTitle: this.volumes.get(r.symbol)?.isValue ? 'Value traded today (Yahoo Finance)' : 'Units traded today (Yahoo Finance)',
       updated: r.updatedAt ? formatTime(r.updatedAt) : '—',
     })),
   );
