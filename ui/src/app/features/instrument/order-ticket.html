@@ -1,4 +1,7 @@
-<div class="panel ticket">
+<section class="panel ticket" aria-labelledby="ticket-title">
+  <div class="ticket-head">
+    <h2 class="panel-title" id="ticket-title">Trade {{ instrument().symbol }}</h2>
+  </div>
   <div class="sides" role="group" aria-label="Order side">
     <button type="button" class="side-btn buy" [class.on]="side() === 'BUY'" [attr.aria-pressed]="side() === 'BUY'" (click)="setSide('BUY')">
       Buy
@@ -140,7 +143,7 @@
       }
 
       <div class="actions">
-        <button type="button" class="back" (click)="back()">Back</button>
+        <button type="button" class="back btn btn-secondary" (click)="back()">Back</button>
         <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="submitting()" (click)="confirm()">
           {{ submitting() ? 'Sending…' : 'Confirm ' + (side() === 'BUY' ? 'buy' : 'sell') }}
         </button>
@@ -154,7 +157,7 @@
           <div class="reject-head">
             <span class="pill pill-down">{{ e.unreachable ? 'API unreachable' : 'HTTP ' + e.status }}</span>
             <code>{{ e.title }}</code>
-            <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss">×</button>
+            <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss"><leap-icon name="x" [size]="16" /></button>
           </div>
           <p>{{ e.message }}</p>
           @for (field of e.fieldErrors | keyvalue; track field.key) {
@@ -169,7 +172,7 @@
         <div class="placed-head">
           <span [class]="'pill pill-' + p.tone">{{ p.label }}</span>
           <span class="ref num faint">Order {{ p.ref }}</span>
-          <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss order status">×</button>
+          <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss order status"><leap-icon name="x" [size]="16" /></button>
         </div>
 
         <ol class="timeline">
@@ -203,4 +206,4 @@
       </div>
     }
   </div>
-</div>
+</section>
