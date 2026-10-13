@@ -13,6 +13,8 @@ import org.apache.ibatis.annotations.Update;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 // Orders are stored as rows in the "transactions" table (one row per order, whatever its status).
@@ -54,6 +56,40 @@ public interface OrderMapper {
         @Result(property = "status", column = "status")
     })
     List<Order> findByAccountId(int accountId);
+
+    @Select(SELECT_ORDER + """
+            WHERE t.transaction_time >= #{startDate}
+                AND t.transaction_time <= #{endDate}
+            ORDER BY t.transaction_time DESC, t.transaction_id DESC
+            """)
+    @ResultMap("orderRow")
+    List<Order> findByDate(LocalDate startDate, LocalDate endDate);
+
+    /** Get orders using any combination of account and date filters. */
+    @Select("""
+            <script>
+            SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
+                   t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,
+                   t.order_type, t.limit_price, t.time_in_force, t.expires_at,
+                   CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time
+            FROM transactions t
+            JOIN instrument i ON i.instrument_id = t.instrument_id
+            <where>
+                <if test='accountId != null'>
+                    t.account_id = #{accountId}
+                </if>
+                <if test='startDate != null'>
+                    AND t.transaction_time &gt;= #{startDate}
+                </if>
+                <if test='endDate != null'>
+                    AND t.transaction_time &lt;= #{endDate}
+                </if>
+            </where>
+            ORDER BY t.transaction_time DESC, t.transaction_id DESC
+            </script>
+            """)
+    @ResultMap("orderRow")
+    List<Order> findByFilters(Integer accountId, LocalDateTime startDate, LocalDateTime endDate);
 
     @Select(SELECT_ORDER + " WHERE t.transaction_id = #{orderId}")
     @ResultMap("orderRow")

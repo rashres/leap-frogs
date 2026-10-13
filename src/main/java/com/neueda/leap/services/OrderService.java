@@ -8,6 +8,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Locale;
 
@@ -186,6 +189,19 @@ public class OrderService {
     public List<Order> findByAccountId(int accountId) {
         accountService.findById(accountId);
         return orderMapper.findByAccountId(accountId);
+    }
+
+    public List<Order> findByFilters(Integer accountId, LocalDate startDate, LocalDate endDate) {
+        if (accountId != null) {
+            accountService.findById(accountId);
+        }
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new InvalidOrderException("startDate must be before or equal to endDate");
+        }
+
+        LocalDateTime startDateTime = startDate == null ? null : startDate.atStartOfDay();
+        LocalDateTime endDateTime = endDate == null ? null : endDate.atTime(LocalTime.MAX);
+        return orderMapper.findByFilters(accountId, startDateTime, endDateTime);
     }
 
     /** Moves the cash and shares of a filled order. */
