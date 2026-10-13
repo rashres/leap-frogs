@@ -225,7 +225,6 @@ public class OrderService {
     private BigDecimal availableShares(int accountId, int instrumentId) {
         return currentHoldingQuantity(accountId, instrumentId).subtract(orderMapper.reservedShares(accountId, instrumentId));
     }
-
     private BigDecimal currentHoldingQuantity(int accountId, int instrumentId) {
         Holding holding = holdingsMapper.findByAccountIdAndInstrumentId(accountId, instrumentId);
         return holding == null ? BigDecimal.ZERO : holding.getQuantity();

@@ -97,4 +97,8 @@ public class OrderController {
                 .map(OrderResponse::from)
                 .toList();
     }
+
+    public List<OrderResponse> ordersByDate() {
+        return null;
+    }
 }
