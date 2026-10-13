@@ -64,6 +64,30 @@ services:
       DB_ANALYTICS_NAME: leap_analytics
     command: ["python", "main.py"]
 
+  # Keeps leap_analytics fresh for the analytics dashboard: runs the ETL on
+  # start, then every ETL_INTERVAL_MINUTES. Started by `docker compose up -d`.
+  #   docker compose logs -f etl-scheduler
+  etl-scheduler:
+    build:
+      context: .
+      dockerfile: etl/Dockerfile
+    image: leap-frogs-etl
+    container_name: leap-frogs-etl-scheduler
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_OPERATIONAL_NAME: leapfrogsdb
+      DB_ANALYTICS_NAME: leap_analytics
+      ETL_INTERVAL_MINUTES: ${ETL_INTERVAL_MINUTES:-15}
+      PYTHONUNBUFFERED: "1"
+    command: ["python", "scheduler.py"]
+
 volumes:
   leap_frogs_postgres_data:
     driver: local
