@@ -10,6 +10,7 @@ import { MarketStore } from '../../core/state/market.store';
 import { PortfolioStore } from '../../core/state/portfolio.store';
 import { WatchlistService } from '../../core/state/watchlist.service';
 import { formatQty, formatSignedPct, formatSignedUsd, formatStamp, formatPrice, formatTime, formatUsd } from '../../shared/format';
+import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { NewsFeed } from '../../shared/news-feed';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
@@ -25,7 +26,7 @@ import { OrderTicket } from './order-ticket';
 @Component({
   selector: 'leap-instrument-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, NewsFeed, OrderTicket, PriceChart],
+  imports: [RouterLink, InstrumentLogo, NewsFeed, OrderTicket, PriceChart, Icon],
   templateUrl: './instrument-page.html',
   styleUrl: './instrument-page.scss',
 })
@@ -38,6 +39,9 @@ export class InstrumentPage {
 
   /** Route parameter, bound by withComponentInputBinding. */
   readonly id = input.required<string>();
+  /** Optional ?side=BUY|SELL query parameter, which preselects the ticket side. */
+  readonly side = input<string>();
+  readonly ticketSide = computed(() => (this.side()?.toUpperCase() === 'SELL' ? 'SELL' : 'BUY'));
 
   readonly instrumentId = computed(() => Number(this.id()));
   readonly detail = createLoader(() => this.api.get(this.instrumentId()));

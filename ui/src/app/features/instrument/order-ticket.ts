@@ -1,11 +1,12 @@
 import { KeyValuePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { ApiError, toApiError } from '../../core/api/api-error';
 import type { Instrument, Order, OrderSide } from '../../core/api/models';
 import { OrdersService } from '../../core/api/orders.service';
 import { ActiveAccountService } from '../../core/state/active-account.service';
 import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatQty, formatSignedUsd, formatPrice, formatTime, formatUsd } from '../../shared/format';
+import { Icon } from '../../shared/icon';
 import { LivePrice } from '../../shared/live-price';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 
@@ -28,7 +29,7 @@ interface Placed {
 @Component({
   selector: 'leap-order-ticket',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LivePrice, KeyValuePipe],
+  imports: [LivePrice, KeyValuePipe, Icon],
   templateUrl: './order-ticket.html',
   styleUrl: './order-ticket.scss',
   host: { '(document:keydown.escape)': 'onEscape()' },
@@ -39,6 +40,8 @@ export class OrderTicket {
   protected readonly account = inject(ActiveAccountService);
 
   readonly instrument = input.required<Instrument>();
+  /** Side to preselect, e.g. from a Buy / Sell shortcut elsewhere. The user can still switch. */
+  readonly initialSide = input<OrderSide>('BUY');
 
   readonly side = signal<OrderSide>('BUY');
   readonly quantityText = signal('');
@@ -150,6 +153,13 @@ export class OrderTicket {
         : null,
     };
   });
+
+  constructor() {
+    effect(() => {
+      const side = this.initialSide();
+      untracked(() => this.setSide(side));
+    });
+  }
 
   setSide(side: OrderSide): void {
     this.side.set(side);

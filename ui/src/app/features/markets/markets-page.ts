@@ -5,7 +5,8 @@ import { MarketStore } from '../../core/state/market.store';
 import { WatchlistService } from '../../core/state/watchlist.service';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { LivePrice } from '../../shared/live-price';
-import { PageMascot } from '../../shared/page-mascot';
+import { Icon } from '../../shared/icon';
+import { PageHeader } from '../../shared/page-header';
 
 interface LiveSearchResult {
   readonly symbol: string;
@@ -23,7 +24,7 @@ const OTHER: string = 'OTHER';
 @Component({
   selector: 'leap-markets-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, LivePrice, PageMascot],
+  imports: [RouterLink, InstrumentLogo, LivePrice, PageHeader, Icon],
   templateUrl: './markets-page.html',
   styleUrl: './markets-page.scss',
 })

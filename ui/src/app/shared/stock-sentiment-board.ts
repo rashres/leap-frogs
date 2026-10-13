@@ -94,55 +94,74 @@ import type { StockSentiment } from '../core/news/news';
   `,
   styles: [
     `
+      :host {
+        display: block;
+        overflow-x: auto;
+      }
       table {
         width: 100%;
         border-collapse: collapse;
-        font-size: 12.5px;
+        font-size: 13.5px;
       }
       th,
       td {
         text-align: left;
-        padding: 10px 16px;
+        padding: 14px 22px;
         vertical-align: top;
       }
       thead th {
-        font-size: 10.5px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
+        font-size: 12px;
+        font-weight: 500;
         color: var(--text-3);
+        background: var(--panel-2);
         border-bottom: 1px solid var(--border-soft);
-        padding-top: 8px;
-        padding-bottom: 8px;
+        padding-top: 11px;
+        padding-bottom: 11px;
+        white-space: nowrap;
+      }
+      tbody tr {
+        transition: background-color 0.12s ease;
+      }
+      tbody tr:hover {
+        background: var(--panel-hover);
       }
       tbody tr + tr {
         border-top: 1px solid var(--border-soft);
       }
       tbody tr.selected {
         background: var(--accent-soft);
+        box-shadow: inset 3px 0 0 var(--accent);
       }
       tbody tr.silent {
-        opacity: 0.62;
+        opacity: 0.6;
       }
       .num {
         text-align: right;
-        width: 88px;
+        width: 100px;
         font-variant-numeric: tabular-nums;
+        font-weight: 600;
       }
       .sym {
         display: flex;
         flex-direction: column;
         gap: 2px;
         text-align: left;
-        padding: 0;
+        padding: 2px 4px;
+        margin: -2px -4px;
+        border-radius: 6px;
+
+        &:hover .ticker {
+          color: var(--accent);
+        }
       }
       .ticker {
-        font-weight: 680;
-        font-size: 12.5px;
+        font-weight: 700;
+        font-size: 14px;
       }
       .name {
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 400;
+        white-space: nowrap;
       }
       .counts {
         display: inline-flex;
@@ -150,39 +169,34 @@ import type { StockSentiment } from '../core/news/news';
         flex-wrap: wrap;
       }
       .latest {
-        max-width: 46ch;
+        min-width: 260px;
+        max-width: 52ch;
 
         a {
-          font-weight: 560;
+          font-weight: 500;
           color: var(--text);
-          line-height: 1.4;
+          line-height: 1.45;
 
           &:hover {
             color: var(--accent);
-            text-decoration: underline;
           }
         }
       }
       .why {
         display: block;
         margin-top: 4px;
-        font-size: 10.5px;
+        font-size: 12px;
 
         code {
           font-family: var(--font-mono);
-          font-size: 10px;
-          padding: 1px 4px;
-          border-radius: 3px;
+          font-size: 11px;
+          padding: 1px 5px;
+          border-radius: 4px;
           background: var(--panel-3);
         }
       }
       .small {
-        font-size: 11px;
-      }
-      @media (max-width: 900px) {
-        .latest {
-          max-width: none;
-        }
+        font-size: 12px;
       }
     `,
   ],
