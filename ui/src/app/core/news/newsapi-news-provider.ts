@@ -191,7 +191,7 @@ export class NewsApiProvider implements NewsProvider {
       response = await fetch(`${PROXY}/v2/everything?${params}`);
     } catch {
       throw new NewsUnavailable(
-        'The news feed could not be reached. Live headlines are proxied through the dev server, so they need `npm start` rather than a static build.',
+        'The news feed could not be reached. NewsAPI headlines are proxied through the dev server (`npm start`); other builds use the Yahoo fallback.',
       );
     }
 
