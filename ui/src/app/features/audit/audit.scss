@@ -1,0 +1,165 @@
+.toolbar {
+	display: grid;
+	grid-template-columns: minmax(220px, 1.4fr) repeat(2, minmax(150px, 0.8fr)) auto;
+	align-items: end;
+	gap: 14px;
+	padding: 18px 22px;
+}
+
+.filter-field {
+	min-width: 0;
+}
+
+.filter-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.result-summary {
+	margin: 14px 2px 0;
+	color: var(--text-3);
+	font-size: 13px;
+}
+
+.state-panel {
+	margin-top: 16px;
+	padding: 18px 22px;
+}
+
+.orders-panel {
+	margin-top: 16px;
+	overflow: hidden;
+}
+
+.data-table {
+	font-size: 14px;
+}
+
+.order-ident {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.side {
+	padding: 1px 7px;
+	border-radius: 5px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.04em;
+
+	&.buy {
+		color: var(--up);
+		background: var(--up-soft);
+	}
+
+	&.sell {
+		color: var(--down);
+		background: var(--down-soft);
+	}
+}
+
+.strong {
+	font-weight: 600;
+}
+
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	margin-top: 16px;
+	padding: 44px 22px;
+	color: var(--text-3);
+}
+
+.empty-icon {
+	display: grid;
+	place-items: center;
+	width: 56px;
+	height: 56px;
+	margin-bottom: 8px;
+	border-radius: 50%;
+	background: var(--panel-3);
+	color: var(--text-3);
+}
+
+.empty-state strong {
+	color: var(--text);
+}
+
+.pagination {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	gap: 6px;
+	padding: 16px 22px 20px;
+	border-top: 1px solid var(--border-soft);
+}
+
+.page-button {
+	display: inline-grid;
+	place-items: center;
+	min-width: 34px;
+	height: 34px;
+	padding: 0 8px;
+	border: 1px solid transparent;
+	border-radius: var(--radius);
+	color: var(--text-2);
+	font-size: 13px;
+
+	&:hover:not(:disabled) {
+		background: var(--panel-3);
+		color: var(--text);
+	}
+
+	&:focus-visible {
+		outline: none;
+		box-shadow: var(--focus-ring);
+	}
+
+	&:disabled {
+		opacity: 0.4;
+	}
+
+	&.current {
+		background: var(--accent);
+		color: var(--on-accent);
+		font-weight: 700;
+	}
+}
+
+.page-arrow {
+	border-color: var(--border);
+}
+
+@media (max-width: 900px) {
+	.data-table {
+		min-width: 760px;
+	}
+}
+
+@media (max-width: 800px) {
+	.toolbar {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.filter-field:first-child {
+		grid-column: 1 / -1;
+	}
+}
+
+@media (max-width: 480px) {
+	.toolbar {
+		grid-template-columns: 1fr;
+	}
+
+	.filter-field:first-child {
+		grid-column: auto;
+	}
+
+	.filter-actions {
+		justify-content: flex-start;
+	}
+}
