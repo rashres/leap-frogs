@@ -23,6 +23,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/orders/orders-page').then((m) => m.OrdersPage),
   },
   {
+    path: 'analytics',
+    title: 'Analytics — LEAP',
+    loadComponent: () => import('./features/analytics/analytics-page').then((m) => m.AnalyticsPage),
+  },
+  {
     path: 'instrument/:id',
     title: 'Instrument — LEAP',
     loadComponent: () => import('./features/instrument/instrument-page').then((m) => m.InstrumentPage),

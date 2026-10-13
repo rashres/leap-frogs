@@ -25,6 +25,7 @@ const NAV: readonly NavItem[] = [
   { path: '/markets', label: 'Markets', icon: 'markets' },
   { path: '/orders', label: 'Orders', icon: 'orders' },
   { path: '/news', label: 'News', icon: 'news' },
+  { path: '/analytics', label: 'Analytics', icon: 'analytics' },
 ];
 
 /** Shell layout adapted from the team's Angular app (fe/21-page-mascots, app.ts / app.html). */
