@@ -61,8 +61,7 @@ const PAGE = 25;
           <p class="head">Headlines unavailable</p>
           <p class="faint">{{ error() ?? 'The news feed could not be reached.' }}</p>
           <p class="faint small">
-            Live news is proxied through the dev server, so it needs
-            <code>npm start</code> rather than a static build. No placeholder headlines are shown
+            Headlines are fetched through the LEAP API, so it must be running. No placeholder headlines are shown
             here on purpose — invented news is the one kind of filler a reader might act on.
           </p>
         </div>

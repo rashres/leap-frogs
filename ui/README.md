@@ -21,7 +21,10 @@ somewhere else (for example the EC2 VM):
 LEAP_API_URL=http://<host>:8081 npm start
 ```
 
-Production build: `npm run build` (output in `ui/dist/leap-ui`).
+Production build: `npm run build` (output in `ui/dist/leap-ui/browser`). The UI
+calls only relative `/api/...` URLs, so serve it from a host that forwards
+`/api/*` to the Spring API on the same origin (nginx, a load balancer rule, or
+similar). Nothing else is needed: Yahoo data also comes through the API.
 
 ### Prices and charts
 
@@ -46,6 +49,19 @@ LEAP_NEWSAPI_KEY=your-key
 ```
 
 The dev proxy attaches the key server-side, so it never reaches the browser.
+NewsAPI is only available under `npm start`; other builds use Yahoo.
+
+### Yahoo Finance (search, news fallback, volume)
+
+Instrument search on Markets, the news fallback and the daily volume column call
+`/api/yahoo/...`, which the Spring API answers (`YahooController`). It fetches
+Yahoo server-side with a 5 s timeout, caches answers for 2 minutes, and serves
+the last good answer (up to an hour old) when Yahoo fails. Settings are the
+`yahoo.*` properties in `application.properties`.
+
+These are Yahoo's public web endpoints, not a supported API: they need no key,
+but Yahoo can rate-limit (429) or change them without notice. Market cap is not
+shown because Yahoo's quote endpoints require a signed-in session.
 
 ## Pages
 
