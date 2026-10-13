@@ -4,6 +4,7 @@ import com.neueda.leap.services.domain.Order;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Options;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Results;
@@ -54,18 +55,7 @@ public interface OrderMapper {
                 AND t.transaction_time <= #{endDate}
             ORDER BY t.transaction_time DESC, t.transaction_id DESC
             """)
-    @Results(id = "orderRow", value = {
-            @Result(property = "orderId", column = "transaction_id", id = true),
-            @Result(property = "account.accountId", column = "account_id"),
-            @Result(property = "instrument.instrumentId", column = "instrument_id"),
-            @Result(property = "instrument.symbol", column = "symbol"),
-            @Result(property = "side", column = "transaction_type"),
-            @Result(property = "quantity", column = "quantity"),
-            @Result(property = "price", column = "price"),
-            @Result(property = "placedTime", column = "transaction_time"),
-            @Result(property = "fulfilledTime", column = "fulfilled_time"),
-            @Result(property = "status", column = "status")
-    })
+    @ResultMap("orderRow")
     List<Order> findByDate(LocalDate startDate, LocalDate endDate);
 
         /**
@@ -94,6 +84,58 @@ public interface OrderMapper {
                         """)
         @ResultMap("orderRow")
         List<Order> findByFilters(Integer accountId, LocalDateTime startDate, LocalDateTime endDate);
+
+        @Select("""
+                        <script>
+                        SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
+                                   t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,
+                                   CASE WHEN t.status = 'COMPLETE' THEN t.transaction_time END AS fulfilled_time
+                        FROM transactions t
+                        JOIN instrument i ON i.instrument_id = t.instrument_id
+                        <where>
+                                <if test='accountId != null'>
+                                        t.account_id = #{accountId}
+                                </if>
+                                <if test='startDate != null'>
+                                        AND t.transaction_time &gt;= #{startDate}
+                                </if>
+                                <if test='endDate != null'>
+                                        AND t.transaction_time &lt;= #{endDate}
+                                </if>
+                        </where>
+                        ORDER BY t.transaction_time DESC, t.transaction_id DESC
+                        LIMIT #{limit} OFFSET #{offset}
+                        </script>
+                        """)
+        @ResultMap("orderRow")
+        List<Order> findByFiltersPage(
+                        @Param("accountId") Integer accountId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        @Param("limit") int limit,
+                        @Param("offset") long offset);
+
+        @Select("""
+                        <script>
+                        SELECT COUNT(*)
+                        FROM transactions t
+                        <where>
+                                <if test='accountId != null'>
+                                        t.account_id = #{accountId}
+                                </if>
+                                <if test='startDate != null'>
+                                        AND t.transaction_time &gt;= #{startDate}
+                                </if>
+                                <if test='endDate != null'>
+                                        AND t.transaction_time &lt;= #{endDate}
+                                </if>
+                        </where>
+                        </script>
+                        """)
+        long countByFilters(
+                        @Param("accountId") Integer accountId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
 
     /**
      * Insert a new order; the generated transaction_id is written back into order.orderId
