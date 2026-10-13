@@ -74,6 +74,7 @@ interface NewsApiArticle {
   readonly title?: string | null;
   readonly description?: string | null;
   readonly url?: string | null;
+  readonly urlToImage?: string | null;
   readonly publishedAt?: string | null;
 }
 
@@ -115,6 +116,7 @@ export function parseNewsApi(payload: NewsApiResponse): readonly NewsItem[] {
           publishedAt: at,
           relatedTickers: [],
           summary: article.description?.trim() || undefined,
+          ...(article.urlToImage?.trim() ? { imageUrl: article.urlToImage.trim() } : {}),
           source: 'newsapi',
         },
       ];
@@ -189,7 +191,7 @@ export class NewsApiProvider implements NewsProvider {
       response = await fetch(`${PROXY}/v2/everything?${params}`);
     } catch {
       throw new NewsUnavailable(
-        'The news feed could not be reached. Live headlines are proxied through the dev server, so they need `npm start` rather than a static build.',
+        'The news feed could not be reached. NewsAPI headlines are proxied through the dev server (`npm start`); other builds use the Yahoo fallback.',
       );
     }
 
