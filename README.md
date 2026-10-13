@@ -127,7 +127,19 @@ This extracts from `leapfrogsdb`, transforms, and loads into `leap_analytics`.
 Only `status = 'COMPLETE'` transactions are extracted, so rejected orders never
 count toward analytics volume.
 
-Both commands use the same image (`etl/Dockerfile`) and are under the `tools`
+To keep the analytics dashboard current, the `etl-scheduler` service runs the
+same ETL on start and then every 15 minutes. Unlike the two commands above it is
+a normal service, so `docker compose up -d` starts it:
+```bash
+docker compose up -d etl-scheduler
+docker compose logs -f etl-scheduler     # see each refresh
+```
+Change the interval with `ETL_INTERVAL_MINUTES` in `.env`. Each refresh replaces
+the analytics tables in a single transaction, so the dashboard never sees them
+empty and a failed run keeps the previous data. Without Docker:
+`python etl/scheduler.py`.
+
+`price-fetcher` and `etl` use the same image (`etl/Dockerfile`) and are under the `tools`
 profile, so `docker compose up` does not start them. To run either on the host
 instead, `pip install -r etl/requirements-etl.txt` and use
 `python etl/price_fetcher.py` / `python etl/main.py` — on the host, `.env` must
