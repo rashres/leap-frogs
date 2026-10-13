@@ -4,10 +4,18 @@
   padding: 0 22px;
 }
 
+/* Scrolls sideways on narrow screens, without showing a scrollbar. overflow-y
+   must be hidden too: overflow-x: auto alone makes y scrollable as well. */
 .tabs {
   display: flex;
   gap: 24px;
   overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 .tab {
@@ -25,7 +33,8 @@
   &::after {
     content: '';
     position: absolute;
-    inset: auto 0 -1px;
+    /* At the very bottom of the tab, not below it, so .tabs has nothing to scroll to. */
+    inset: auto 0 0;
     height: 2px;
     border-radius: 2px;
     background: var(--accent);
@@ -118,6 +127,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* Status pill, plus a Cancel button while the order is pending. */
+.state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .sym {

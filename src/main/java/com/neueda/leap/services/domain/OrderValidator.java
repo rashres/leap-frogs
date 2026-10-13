@@ -44,6 +44,16 @@ public class OrderValidator {
         return normalized.equals("BUY") || normalized.equals("SELL");
     }
     
+    // Validates order type: must be "MARKET" or "LIMIT" (already normalised to upper case)
+    public static boolean isValidOrderType(String orderType) {
+        return "MARKET".equals(orderType) || "LIMIT".equals(orderType);
+    }
+
+    // Validates time in force: must be "DAY" or "GTC" (already normalised to upper case)
+    public static boolean isValidTimeInForce(String timeInForce) {
+        return "DAY".equals(timeInForce) || "GTC".equals(timeInForce);
+    }
+
     // Validates account ID: must be positive (> 0)
     public static boolean isValidAccountId(int accountId) {
         return accountId > 0;

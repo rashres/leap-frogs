@@ -200,7 +200,17 @@ export class MarketNews {
   protected readonly news = inject(NewsService);
   readonly broken = signal<ReadonlySet<string>>(new Set());
 
-  readonly items = computed(() => this.news.sweepHeadlines().slice(0, SHOWN));
+  /**
+   * The newest headlines that have a picture. About a third of Yahoo's carry
+   * none, so taking the newest three regardless often showed no images; those
+   * only fill in when there are not enough with one. Newest first either way.
+   */
+  readonly items = computed(() => {
+    const all = this.news.sweepHeadlines();
+    const pictured = all.filter((item) => item.imageUrl && !this.broken().has(item.id));
+    const chosen = new Set([...pictured, ...all].slice(0, SHOWN));
+    return all.filter((item) => chosen.has(item));
+  });
 
   constructor() {
     // The sweep query is built from the database instruments, so wait for them.

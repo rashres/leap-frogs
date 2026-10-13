@@ -1,8 +1,9 @@
 /**
  * Trading sessions per market, keyed by the exchange names the API returns.
  * Session hours are adapted from the team's Angular app (fe/21-page-mascots,
- * core/domain/instrument.ts). They are informational: the API does not
- * enforce trading hours.
+ * core/domain/instrument.ts). The API enforces the same hours
+ * (services/MarketHours.java): while a market is closed, orders wait as
+ * PENDING. Keep the two in step.
  */
 
 export type MarketCode = 'EQUITIES_US' | 'EQUITIES_UK' | 'EQUITIES_INDIA' | 'FX' | 'CRYPTO';

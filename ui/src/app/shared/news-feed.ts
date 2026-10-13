@@ -9,16 +9,20 @@
  * [4.1]
  */
 
-import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, input, linkedSignal } from '@angular/core';
 import type {
   Attribution,
   AttributedNewsItem,
+  MatchedTerm,
   ScoredNewsItem,
   SentimentLabel,
   SentimentScore,
 } from '../core/news/news';
 import { SENTIMENT_DISCLAIMER, summarise } from '../core/news/sentiment';
 import type { FeedState } from '../core/news/news.service';
+
+/** Headlines shown at first, and added by each "Show more". */
+const PAGE = 25;
 
 @Component({
   selector: 'leap-news-feed',
@@ -67,7 +71,7 @@ import type { FeedState } from '../core/news/news.service';
           <p class="empty"><span class="empty-title">No headlines yet</span>Nothing has been published for this instrument in the news window.</p>
         } @else {
           <ul>
-            @for (item of items(); track item.id) {
+            @for (item of shown(); track item.id) {
               <li>
                 <div class="row">
                   <span
@@ -101,10 +105,13 @@ import type { FeedState } from '../core/news/news.service';
                       @for (m of item.sentiment.matched; track $index) {
                         <code
                           class="term"
-                          [class.pos]="m.polarity === 'positive'"
-                          [class.neg]="m.polarity === 'negative'"
-                          [attr.title]="m.negated ? 'Flipped by a preceding negation' : null"
-                          >{{ m.term }}{{ m.negated ? ' (negated)' : '' }}</code
+                          [class.pos]="m.counted && m.polarity === 'positive'"
+                          [class.neg]="m.counted && m.polarity === 'negative'"
+                          [class.uncounted]="!m.counted"
+                          [attr.title]="termTitle(m)"
+                          >{{ m.term }}{{ m.note ? ' ' + m.note : '' }}{{ m.negated ? ' (negated)' : '' }}{{
+                            m.from === 'summary' ? ' (summary)' : ''
+                          }}</code
                         >
                       }
                     </span>
@@ -115,6 +122,14 @@ import type { FeedState } from '../core/news/news.service';
               </li>
             }
           </ul>
+          @if (hidden() > 0) {
+            <div class="more">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="showMore()">
+                Show {{ nextBatch() }} more
+              </button>
+              <span class="faint">{{ hidden() }} not shown</span>
+            </div>
+          }
           <p class="disclaimer faint">{{ disclaimer }}</p>
         }
       }
@@ -220,6 +235,18 @@ import type { FeedState } from '../core/news/news.service';
         color: var(--down);
         background: var(--down-soft);
       }
+      .term.uncounted {
+        text-decoration: line-through;
+        opacity: 0.75;
+      }
+      .more {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 22px;
+        border-top: 1px solid var(--border-soft);
+        font-size: 12.5px;
+      }
       .disclaimer {
         margin: 0;
         padding: 14px 22px;
@@ -278,6 +305,26 @@ export class NewsFeed {
 
   readonly summary = computed(() => summarise(this.items()));
 
+  /** How many headlines are on screen. Starts over when the list changes, e.g. a different stock is picked. */
+  private readonly limit = linkedSignal({ source: this.items, computation: () => PAGE });
+  readonly shown = computed(() => this.items().slice(0, this.limit()));
+  readonly hidden = computed(() => Math.max(0, this.items().length - this.limit()));
+  readonly nextBatch = computed(() => Math.min(PAGE, this.hidden()));
+
+  showMore(): void {
+    this.limit.update((n) => n + PAGE);
+  }
+
+  /** Tooltip on one matched term: what it counted as and why. */
+  termTitle(m: MatchedTerm): string {
+    const parts = [
+      m.counted ? `Counted as ${m.polarity}` : `Not counted (${m.note})`,
+      m.negated ? 'flipped by a preceding negation' : null,
+      m.from === 'summary' ? "found in the feed's summary, read because the headline matched nothing" : null,
+    ];
+    return parts.filter(Boolean).join('; ');
+  }
+
   label(value: SentimentLabel): string {
     return value.charAt(0).toUpperCase() + value.slice(1);
   }
@@ -300,9 +347,14 @@ export class NewsFeed {
    * tally of matched words and nothing more — see SentimentScore in domain/news.
    */
   explain(score: SentimentScore): string {
-    if (score.matched.length === 0) return 'No lexicon terms matched this headline.';
+    const counted = score.positives + score.negatives;
+    if (counted === 0) {
+      return score.matched.length === 0
+        ? 'No lexicon terms matched this headline.'
+        : 'Terms matched, but none counted (the headline is a question).';
+    }
     const parts = [`${score.positives} positive`, `${score.negatives} negative`];
-    return `Matched ${parts.join(' and ')} ${score.matched.length === 1 ? 'term' : 'terms'}. Counts of matched words, not a confidence score.`;
+    return `Counted ${parts.join(' and ')} ${counted === 1 ? 'term' : 'terms'}. Counts of matched words, not a confidence score.`;
   }
 
   /**
