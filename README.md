@@ -140,6 +140,17 @@ mvn compile
 mvn exec:java -Dexec.mainClass="com.neueda.leap.Main"
 ```
 
+**How orders behave.** A market order fills straight away while its market is
+open. A limit order fills only at its limit price or better. An order that
+cannot fill yet (market closed, or limit not reached) waits as `PENDING` and
+holds back the cash or shares it needs. Every 15 seconds the API fills pending
+orders that can now fill. A Day order that has not filled by its session close
+becomes `EXPIRED`; a Good-'til-cancelled one (limit only) waits until it fills.
+Cancel a pending order with `POST /api/accounts/{id}/orders/{orderId}/cancel`
+or the Cancel button on the Orders page. Trading hours live in
+`services/MarketHours.java`; set `market.hours.enforced=false` in
+`application.properties` to let every market trade around the clock.
+
 ### 7. Generate Analytics
 ```bash
 python visualizations/insights-viz.py
@@ -152,6 +163,17 @@ Shows trading volume, most active stocks, and client trends as matplotlib charts
 ```bash
 docker-compose down -v    # Remove volume
 docker-compose up -d      # Start fresh
+```
+
+### "column ... does not exist" after pulling
+Postgres only runs `database/*.sql` when its volume is first created, so a
+schema change does not reach a database you already have. Rebuild it (this
+deletes its data), then reload prices and sample orders:
+```bash
+docker compose down -v
+docker compose up -d
+docker compose run --rm price-fetcher
+docker compose run --rm price-fetcher python seed_orders.py
 ```
 
 ### ETL fails - "Connection refused"

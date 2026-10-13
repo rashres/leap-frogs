@@ -1,8 +1,8 @@
 <div class="page-enter">
   <leap-page-header heading="Orders" mascot="orders">
     <span description>
-      Every order for {{ portfolio.account.active()?.name ?? 'this account' }}, filled or rejected, newest first. Expand a
-      row for its history.
+      Every order for {{ portfolio.account.active()?.name ?? 'this account' }}, newest first. Pending orders can be
+      cancelled until they fill. Expand a row for its history.
     </span>
   </leap-page-header>
 
@@ -17,6 +17,10 @@
         }
       </div>
     </div>
+
+    @if (cancelError(); as message) {
+      <div class="pad"><p class="state-error" role="alert">{{ message }}</p></div>
+    }
 
     @if (portfolio.account.activeId() == null) {
       <p class="empty">
@@ -79,7 +83,20 @@
                 <td class="r num" [class.dim]="order.status !== 'COMPLETE'">{{ order.price }}</td>
                 <td class="r num strong" [class.dim]="order.status !== 'COMPLETE'">{{ order.value }}</td>
                 <td>
-                  <span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.label }}</span>
+                  <div class="state">
+                    <span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.label }}</span>
+                    @if (order.status === 'PENDING') {
+                      <button
+                        type="button"
+                        class="btn btn-secondary btn-sm"
+                        [disabled]="cancelling() != null"
+                        (click)="cancel($event, order.id)"
+                        [attr.aria-label]="'Cancel order #' + order.id"
+                      >
+                        {{ cancelling() === order.id ? 'Cancelling…' : 'Cancel' }}
+                      </button>
+                    }
+                  </div>
                 </td>
                 <td class="r">
                   <button
@@ -129,7 +146,21 @@
                             </dd>
                           </div>
                           <div>
-                            <dt>Price</dt>
+                            <dt>Type</dt>
+                            <dd class="num">{{ order.type }}</dd>
+                          </div>
+                          <div>
+                            <dt>Good for</dt>
+                            <dd>{{ order.timeInForce }}</dd>
+                          </div>
+                          @if (order.status === 'PENDING') {
+                            <div>
+                              <dt>Expires</dt>
+                              <dd class="num">{{ order.expires }}</dd>
+                            </div>
+                          }
+                          <div>
+                            <dt>{{ order.status === 'COMPLETE' ? 'Fill price' : 'Market price when placed' }}</dt>
                             <dd class="num">{{ order.price }}</dd>
                           </div>
                           <div>

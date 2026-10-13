@@ -23,6 +23,18 @@ public record OrderRequest(
         @NotNull(message = "Quantity is required")
         @Positive(message = "Quantity must be positive")
         @Schema(description = "Number of shares to trade", example = "10")
-        BigDecimal quantity
+        BigDecimal quantity,
+
+        @Schema(description = "MARKET (default) fills at the market price; LIMIT only at limitPrice or better",
+                example = "LIMIT", allowableValues = {"MARKET", "LIMIT"})
+        String orderType,
+
+        @Positive(message = "Limit price must be positive")
+        @Schema(description = "Worst price to accept; required for LIMIT, not allowed for MARKET", example = "180.00")
+        BigDecimal limitPrice,
+
+        @Schema(description = "DAY (default) expires at the session close; GTC (LIMIT only) waits until filled or cancelled",
+                example = "DAY", allowableValues = {"DAY", "GTC"})
+        String timeInForce
 ) {
 }
