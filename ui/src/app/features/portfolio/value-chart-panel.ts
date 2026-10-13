@@ -6,6 +6,7 @@ import { OrdersService } from '../../core/api/orders.service';
 import { ActiveAccountService } from '../../core/state/active-account.service';
 import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatSignedPct, formatSignedUsd, formatStamp, formatUsd } from '../../shared/format';
+import { Icon } from '../../shared/icon';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
 
 /**
@@ -16,97 +17,132 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
 @Component({
   selector: 'leap-value-chart-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PriceChart],
+  imports: [PriceChart, Icon],
   template: `
-    <div class="panel">
-      <div class="panel-head">
-        <h2 class="panel-title">Value over time</h2>
-        @if (change(); as c) {
-          <span class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
-            @if (scrubbed()) {
-              <span class="cursor">{{ scrubbedText() }}</span>
-            }
-            {{ c.deltaText }} · {{ c.percentText }}
-            <span class="faint lbl">{{ scrubbed() ? 'at ' + c.at : range() }}</span>
-          </span>
-        }
+    <section class="panel card">
+      <div class="head">
+        <div class="head-text">
+          <h2 class="label">Portfolio performance</h2>
+          <p class="value num">{{ scrubbed() ? scrubbedText() : totalText() }}</p>
+          @if (change(); as c) {
+            <p class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
+              <leap-icon [name]="c.negative ? 'trending-down' : 'trending-up'" [size]="14" />
+              {{ c.percentText }} <span class="delta">{{ c.deltaText }}</span>
+              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : periods[range()] }}</span>
+            </p>
+          } @else {
+            <p class="chg lbl">Cash plus holdings, from filled orders</p>
+          }
+        </div>
+        <div class="segmented" role="group" aria-label="Chart range">
+          @for (r of ranges; track r) {
+            <button type="button" [class.on]="range() === r" [attr.aria-pressed]="range() === r" (click)="range.set(r)">{{ r }}</button>
+          }
+        </div>
       </div>
 
       <div class="body">
         @if (series().length >= 2) {
-          <leap-price-chart [points]="series()" [height]="220" [tone]="change()?.negative ? 'down' : 'up'" (scrub)="scrubbed.set($event)" />
+          <leap-price-chart [points]="series()" [height]="300" [axes]="true" [tone]="change()?.negative ? 'down' : 'up'" (scrub)="scrubbed.set($event)" />
         } @else {
-          <div class="chart-empty faint">
+          <div class="chart-empty">
             @if (history.initialLoading()) {
-              Loading value history…
+              <span class="skeleton" style="width: 100%; height: 100%; border-radius: 10px"></span>
+              <span class="sr-only" role="status">Loading value history…</span>
             } @else if (history.error(); as e) {
-              {{ e.message }}
+              <p class="state-error">{{ e.message }}</p>
             } @else {
-              No value history for this account yet.
+              <p class="faint">No value history for this account yet.</p>
             }
           </div>
         }
-
-        <div class="ranges">
-          @for (r of ranges; track r) {
-            <button type="button" [class.on]="range() === r" (click)="range.set(r)">{{ r }}</button>
-          }
-        </div>
-        <p class="note faint">
-          Cash plus each holding at the price recorded at that time, worked out from this account's filled orders.
-        </p>
       </div>
-    </div>
+      <p class="note faint">
+        Cash plus each holding at the price recorded at that time, worked out from this account's filled orders.
+      </p>
+    </section>
   `,
   styles: [
     `
-      .body {
-        padding: 6px 18px 14px;
+      :host {
+        display: block;
+        min-width: 0;
+      }
+      .card {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+      }
+      .head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 12px 16px;
+        padding: 16px 20px 0;
+      }
+      .head-text {
+        min-width: 0;
+      }
+      .label {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-2);
+        letter-spacing: 0;
+      }
+      .value {
+        margin: 4px 0 0;
+        font-size: 26px;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: -0.02em;
       }
       .chg {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 4px 0 0;
         font-size: 13px;
-        font-weight: 650;
+        font-weight: 600;
       }
-      .cursor {
-        color: var(--text);
-        margin-right: 8px;
+      .delta {
+        font-weight: 500;
       }
       .lbl {
         font-weight: 500;
-        margin-left: 4px;
-        font-size: 11.5px;
+        color: var(--text-3);
+      }
+      .body {
+        flex: 1;
+        padding: 12px 16px 4px 8px;
       }
       .chart-empty {
         display: grid;
         place-items: center;
-        height: 220px;
-        font-size: 12.5px;
+        height: 300px;
+        font-size: 13.5px;
       }
-      .ranges {
-        display: flex;
-        gap: 4px;
-        border-top: 1px solid var(--border-soft);
-        padding-top: 11px;
-      }
-      .ranges button {
-        padding: 5px 14px;
-        border-radius: var(--radius-sm);
-        font-size: 12.5px;
-        font-weight: 650;
-        color: var(--text-3);
-        transition: all 0.13s ease;
-      }
-      .ranges button:hover {
-        color: var(--text);
-        background: var(--panel-2);
-      }
-      .ranges button.on {
-        color: var(--up);
-        background: var(--up-soft);
+      .chart-empty p {
+        margin: 0;
       }
       .note {
-        margin: 10px 0 0;
-        font-size: 11.5px;
+        margin: 0;
+        padding: 10px 20px 14px;
+        font-size: 12px;
+      }
+      @media (max-width: 560px) {
+        .head {
+          padding: 14px 16px 0;
+        }
+        .segmented {
+          width: 100%;
+        }
+        .segmented button {
+          flex: 1;
+          min-width: 0;
+        }
       }
     `,
   ],
@@ -119,6 +155,15 @@ export class ValueChartPanel {
 
   readonly ranges: readonly PriceRange[] = ['1D', '1W', '1M', '3M', '1Y', 'All'];
   readonly range = signal<PriceRange>('1M');
+  /** Plain-language name for the period the change is measured over. */
+  readonly periods: Readonly<Record<PriceRange, string>> = {
+    '1D': 'Past day',
+    '1W': 'Past week',
+    '1M': 'Past month',
+    '3M': 'Past 3 months',
+    '1Y': 'Past year',
+    All: 'All time',
+  };
   readonly history = createLoader(() => this.api.valueHistory(this.account.activeId()!, this.range()));
   readonly scrubbed = signal<PricePoint | null>(null);
 
@@ -157,6 +202,7 @@ export class ValueChartPanel {
   });
 
   readonly scrubbedText = computed(() => formatUsd(this.scrubbed()?.price));
+  readonly totalText = computed(() => formatUsd(this.portfolio.totalValue()));
 
   constructor() {
     effect(() => {

@@ -4,8 +4,8 @@
  * The keyless fallback. It was the original source here and is kept because it
  * needs no credential and no plan: when the news key is missing or its daily
  * allowance is spent, this still answers, and a reader sees headlines instead
- * of an apology. Like the quote adapter it sends no CORS headers, so it goes
- * through the dev-server proxy at /api/yahoo.
+ * of an apology. Yahoo sends no CORS headers, so requests go through the
+ * LEAP API at /api/yahoo, which fetches and caches them server-side.
  *
  * It carries `relatedTickers`, which the app does not use for the stock board.
  * The field is the feed's own claim about what a story is about, and it is
@@ -30,6 +30,17 @@ interface YahooNewsEntry {
   readonly link?: string;
   readonly providerPublishTime?: number;
   readonly relatedTickers?: string[];
+  readonly thumbnail?: {
+    readonly resolutions?: readonly { readonly url?: string; readonly width?: number; readonly tag?: string }[];
+  } | null;
+}
+
+/** Prefers Yahoo's square 140px crop, then the smallest image still wide enough for a thumbnail. */
+function thumbnailOf(entry: YahooNewsEntry): string | undefined {
+  const sizes = (entry.thumbnail?.resolutions ?? []).filter((r) => r.url);
+  const square = sizes.find((r) => r.tag === '140x140');
+  if (square) return square.url;
+  return [...sizes].sort((a, b) => (a.width ?? 0) - (b.width ?? 0)).find((r) => (r.width ?? 0) >= 88)?.url ?? sizes[0]?.url;
 }
 
 export interface YahooSearchResponse {
@@ -43,6 +54,7 @@ export function parseYahooNews(payload: YahooSearchResponse): readonly NewsItem[
       const title = entry.title?.trim();
       const seconds = entry.providerPublishTime;
       if (!title || typeof seconds !== 'number') return [];
+      const imageUrl = thumbnailOf(entry);
 
       return [
         {
@@ -52,6 +64,7 @@ export function parseYahooNews(payload: YahooSearchResponse): readonly NewsItem[
           link: entry.link ?? '#',
           publishedAt: new Date(seconds * 1000),
           relatedTickers: entry.relatedTickers ?? [],
+          ...(imageUrl ? { imageUrl } : {}),
           source: 'yahoo',
         },
       ];
@@ -93,7 +106,7 @@ export class YahooNewsProvider implements NewsProvider {
       response = await fetch(url);
     } catch {
       throw new NewsUnavailable(
-        'The fallback news feed could not be reached. Live headlines are proxied through the dev server, so they need `npm start` rather than a static build.',
+        'The fallback news feed could not be reached. Headlines come through the LEAP API, so check that it is running.',
       );
     }
 
@@ -101,7 +114,9 @@ export class YahooNewsProvider implements NewsProvider {
       throw new NewsUnavailable(
         response.status === 429
           ? 'Yahoo is rate-limiting this IP (429). Fallback headlines are temporarily unavailable.'
-          : `Fallback news request failed (HTTP ${response.status}).`,
+          : response.status === 502 || response.status === 504
+            ? 'Yahoo Finance is not answering right now. Fallback headlines are temporarily unavailable.'
+            : `Fallback news request failed (HTTP ${response.status}).`,
       );
     }
     return parseYahooNews((await response.json()) as YahooSearchResponse);
