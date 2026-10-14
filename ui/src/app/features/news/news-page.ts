@@ -1,6 +1,6 @@
 /**
  * Market news for the instruments this platform trades: a mood summary, the
- * main stocks as filters, top stories with pictures, then every headline by day.
+ * main stocks as filters, top stories as equal picture cards, then every headline by day.
  *
  * Sentiment is a count of matched words (see core/news/sentiment.ts). Each
  * headline can show the words it matched and why it was filed under a stock,
@@ -20,7 +20,8 @@ import { ago, dayLabel, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format'
 
 type Mood = 'all' | SentimentLabel;
 
-const TOP_STORIES = 5;
+/** Two full rows of three equal cards on a wide screen. */
+const TOP_STORIES = 6;
 const PAGE = 30;
 
 @Component({
@@ -99,18 +100,18 @@ export class NewsPage {
     return mood === 'all' ? this.scoped() : this.scoped().filter((i) => i.sentiment.label === mood);
   });
 
-  /** Newest stories with a working picture lead the page; the rest follow as a list. */
+  /** Newest stories with a working picture, as equal cards; the rest follow as a list. */
   readonly topStories = computed(() => {
     if (this.query().trim()) return [];
     const items = this.filtered();
     if (items.length < 3) return [];
     const broken = this.broken();
+    // Pictured stories first, topped up with the newest others (shown with a logo tile),
+    // so the grid is always full rows instead of a ragged last row.
     const pictured = items.filter((i) => i.imageUrl && !broken.has(i.id));
-    return (pictured.length >= 3 ? pictured : items).slice(0, TOP_STORIES);
+    const chosen = new Set([...pictured, ...items].slice(0, TOP_STORIES));
+    return items.filter((i) => chosen.has(i));
   });
-
-  readonly lead = computed(() => this.topStories()[0] ?? null);
-  readonly side = computed(() => this.topStories().slice(1));
 
   private readonly rest = computed(() => {
     const top = new Set(this.topStories().map((i) => i.id));

@@ -247,13 +247,21 @@
 
 /* ---- Top stories ---------------------------------------------------------- */
 
-.top {
+.section-title {
+  margin: 8px 2px -4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Equal cards: same picture size, title held to three lines, byline pinned to the bottom. */
+.cards {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 16px;
 }
 
-.lead-story,
 .card {
   display: flex;
   flex-direction: column;
@@ -265,11 +273,21 @@
   color: inherit;
   transition:
     box-shadow 0.2s ease,
-    transform 0.2s var(--ease);
+    transform 0.2s var(--ease),
+    border-color 0.2s ease;
 
   &:hover {
+    border-color: var(--border);
     box-shadow: var(--shadow-lift);
     transform: translateY(-2px);
+
+    .card-title {
+      color: var(--accent);
+    }
+
+    img {
+      transform: scale(1.03);
+    }
   }
 
   &:focus-visible {
@@ -283,26 +301,14 @@
     object-fit: cover;
     transition: transform 0.4s var(--ease);
   }
-
-  &:hover img {
-    transform: scale(1.03);
-  }
 }
 
-.lead-img,
 .card-img {
   position: relative;
   display: block;
+  aspect-ratio: 16 / 9;
   overflow: hidden;
   background: var(--panel-3);
-}
-
-.lead-img {
-  aspect-ratio: 16 / 8;
-}
-
-.card-img {
-  aspect-ratio: 16 / 9;
 }
 
 .img-fallback {
@@ -316,25 +322,12 @@
     linear-gradient(135deg, var(--panel-2), var(--panel-3));
 }
 
-.badge {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: #fff;
-  background: rgba(16, 24, 40, 0.72);
-  backdrop-filter: blur(4px);
-}
-
-.lead-body {
+.card-body {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 8px;
-  padding: 16px 20px 18px;
+  padding: 14px 16px 14px;
 }
 
 .kicker {
@@ -353,21 +346,17 @@
   color: var(--text-2);
 }
 
-.lead-title {
-  font-size: 20px;
-  font-weight: 700;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
-}
-
-.lead-summary {
-  font-size: 14px;
-  line-height: 1.55;
-  color: var(--text-2);
+.card-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  /* Room for three lines whatever the length, so every card lines up. */
+  min-height: calc(1.4em * 3);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color 0.15s ease;
 }
 
 .byline {
@@ -375,69 +364,14 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  margin-top: auto;
   font-size: 12px;
   color: var(--text-3);
 }
 
-.side-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.card {
-  .card-title {
-    padding: 12px 14px 0;
-    font-size: 13.5px;
-    font-weight: 600;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .byline {
-    margin-top: auto;
-    padding: 10px 14px 12px;
-  }
-}
-
-.dot-mood {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  font-size: 10px;
-  background: var(--panel);
-  box-shadow: var(--shadow-2);
-
-  &.dm-pos {
-    color: var(--up);
-  }
-
-  &.dm-neg {
-    color: var(--down);
-  }
-
-  &.dm-neu {
-    color: var(--text-3);
-  }
-}
-
-.lead-sk {
+.card-sk {
   display: block;
-  height: 420px;
-  border-radius: var(--radius-lg);
-}
-
-.side-sk {
-  display: block;
-  height: 202px;
+  height: 300px;
   border-radius: var(--radius-lg);
 }
 
@@ -578,8 +512,8 @@ leap-headline-row + leap-headline-row {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .top {
-    grid-template-columns: minmax(0, 1fr);
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -589,12 +523,8 @@ leap-headline-row + leap-headline-row {
     row-gap: 16px;
   }
 
-  .side-grid {
+  .cards {
     grid-template-columns: minmax(0, 1fr);
-  }
-
-  .lead-title {
-    font-size: 17px;
   }
 
   .search {
