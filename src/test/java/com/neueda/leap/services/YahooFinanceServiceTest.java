@@ -106,6 +106,19 @@ class YahooFinanceServiceTest {
     }
 
     @Test
+    void returnsRssUnchanged() {
+        body.set("<?xml version=\"1.0\"?><rss><channel><item><title>Apple beats</title></item></channel></rss>");
+        assertEquals(body.get(), yahoo.getXml("/rss/2.0/headline?s=AAPL"));
+    }
+
+    @Test
+    void jsonWhereRssExpectedIs502() {
+        body.set("{\"error\":\"not found\"}");
+        ResponseStatusException e = assertThrows(ResponseStatusException.class, () -> yahoo.getXml("/rss"));
+        assertEquals(HttpStatus.BAD_GATEWAY, e.getStatusCode());
+    }
+
+    @Test
     void slowAnswerIs504() {
         delayMs.set(1500);
         ResponseStatusException e = assertThrows(ResponseStatusException.class, () -> yahoo.get("/x"));
