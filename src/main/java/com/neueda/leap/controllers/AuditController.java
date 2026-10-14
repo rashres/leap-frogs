@@ -1,8 +1,13 @@
 package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.OrderResponse;
+import com.neueda.leap.controllers.dto.AuditOrderPageResponse;
 import com.neueda.leap.services.AuditService;
 import com.neueda.leap.services.OrderService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.*;
@@ -32,13 +37,19 @@ public class AuditController {
     }
 
     @GetMapping("/orders")
-    public List<OrderResponse> ordersByFilters(
+        @Operation(summary = "List audit orders", description = "Returns all orders matching the optional filters, newest first, in a paginated response")
+        @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Orders retrieved"),
+            @ApiResponse(responseCode = "400", description = "Invalid filters or pagination parameters"),
+            @ApiResponse(responseCode = "404", description = "Account not found")
+        })
+        public AuditOrderPageResponse ordersByFilters(
             @RequestParam(required = false) Integer accountId,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        return orderService.findByFilters(accountId, startDate, endDate).stream()
-                .map(OrderResponse::from)
-                .toList();
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "0") @Parameter(description = "Zero-based page number") int page,
+            @RequestParam(defaultValue = "25") @Parameter(description = "Number of orders per page, from 1 to 100") int size) {
+        return AuditOrderPageResponse.from(auditService.findOrders(accountId, startDate, endDate, page, size));
     }
 
 
