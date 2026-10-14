@@ -96,11 +96,15 @@ export class OrdersPage {
           detail: `Waiting ${waiting}. ${o.expiresAt ? `Expires ${formatStamp(o.expiresAt)}.` : 'Open until filled or cancelled.'}`,
         });
       } else if (o.status === 'CANCELLED') {
-        steps.push({ state: 'Pending → Cancelled', at: '', detail: 'Cancelled before it filled; nothing was traded.' });
+        steps.push({
+          state: 'Pending → Cancelled',
+          at: o.closedAt ? formatStamp(o.closedAt) : '',
+          detail: 'Cancelled before it filled; nothing was traded.',
+        });
       } else if (o.status === 'EXPIRED') {
         steps.push({
           state: 'Pending → Expired',
-          at: formatStamp(o.expiresAt),
+          at: formatStamp(o.closedAt ?? o.expiresAt),
           detail: 'A day order that did not fill before its session closed; nothing was traded.',
         });
       }

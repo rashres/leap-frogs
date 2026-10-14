@@ -41,17 +41,19 @@ def run_etl_pipeline() -> None:
     try:
         # Step 1: EXTRACT
         extractor = ETLExtractor(DB_OPERATIONAL)
-        transactions_df, stock_df, exchange_df, account_df = extractor.extract_all_data()
+        transactions_df, stock_df, exchange_df, account_df, orders_df = extractor.extract_all_data()
 
         # Step 2: TRANSFORM
-        fact_trades, trading_volume, instrument_activity, client_activity = \
+        fact_trades, trading_volume, instrument_activity, client_activity, fact_orders, order_outcomes = \
             ETLTransformer.transform_all(
-                transactions_df, stock_df, exchange_df, account_df
+                transactions_df, stock_df, exchange_df, account_df, orders_df
             )
 
         # Step 3: LOAD
         loader = ETLLoader(DB_ANALYTICS)
-        loader.load_all(fact_trades, trading_volume, instrument_activity, client_activity)
+        loader.load_all(
+            fact_trades, trading_volume, instrument_activity, client_activity, fact_orders, order_outcomes
+        )
 
         # Step 4: VERIFY
         loader.verify_load()

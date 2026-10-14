@@ -131,7 +131,7 @@ public class OrderService {
         }
         Instant now = marketHours.now();
         if (order.getExpiresAt() != null && !now.isBefore(order.getExpiresAt())) {
-            orderMapper.closePending(orderId, "EXPIRED");
+            orderMapper.closePending(orderId, "EXPIRED", now);
             return "EXPIRED";
         }
 
@@ -153,7 +153,7 @@ public class OrderService {
         }
         // A market buy reserved at yesterday's price fails here if the market opened higher than the account can pay.
         if (checkFunds(order, order.getQuantity().multiply(marketPrice), cash, shares) != null) {
-            orderMapper.closePending(orderId, "FAILED");
+            orderMapper.closePending(orderId, "FAILED", now);
             return "FAILED";
         }
 
@@ -178,11 +178,13 @@ public class OrderService {
         if (order == null || order.getAccount().getAccountId() != accountId) {
             throw new ResourceNotFoundException("Order", orderId);
         }
-        if (!"PENDING".equals(order.getStatus()) || orderMapper.closePending(orderId, "CANCELLED") == 0) {
+        Instant now = marketHours.now();
+        if (!"PENDING".equals(order.getStatus()) || orderMapper.closePending(orderId, "CANCELLED", now) == 0) {
             Order current = orderMapper.findById(orderId);
             throw new OrderNotCancellableException(orderId, current.getStatus());
         }
         order.setStatus("CANCELLED");
+        order.setClosedAt(now);
         return order;
     }
 

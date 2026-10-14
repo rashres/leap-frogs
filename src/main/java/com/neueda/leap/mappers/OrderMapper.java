@@ -25,7 +25,7 @@ public interface OrderMapper {
     String SELECT_ORDER = """
             SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
                    t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,
-                   t.order_type, t.limit_price, t.time_in_force, t.expires_at,
+                   t.order_type, t.limit_price, t.time_in_force, t.expires_at, t.closed_at,
                    CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time
             FROM transactions t
             JOIN instrument i ON i.instrument_id = t.instrument_id
@@ -51,6 +51,7 @@ public interface OrderMapper {
         @Result(property = "limitPrice", column = "limit_price"),
         @Result(property = "timeInForce", column = "time_in_force"),
         @Result(property = "expiresAt", column = "expires_at"),
+        @Result(property = "closedAt", column = "closed_at"),
         // Must come before "status": setStatus("COMPLETE") only fills fulfilledTime when it is still empty.
         @Result(property = "fulfilledTime", column = "fulfilled_time"),
         @Result(property = "status", column = "status")
@@ -70,7 +71,7 @@ public interface OrderMapper {
             <script>
             SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
                    t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,
-                   t.order_type, t.limit_price, t.time_in_force, t.expires_at,
+                   t.order_type, t.limit_price, t.time_in_force, t.expires_at, t.closed_at,
                    CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time
             FROM transactions t
             JOIN instrument i ON i.instrument_id = t.instrument_id
@@ -143,7 +144,13 @@ public interface OrderMapper {
             """)
     int markFilled(@Param("orderId") int orderId, @Param("price") BigDecimal price, @Param("filledAt") Instant filledAt);
 
-    /** Moves a pending order to CANCELLED, EXPIRED or FAILED; returns 0 if it was no longer pending. */
-    @Update("UPDATE transactions SET status = #{status} WHERE transaction_id = #{orderId} AND status = 'PENDING'")
-    int closePending(@Param("orderId") int orderId, @Param("status") String status);
+    /**
+     * Moves a pending order to CANCELLED, EXPIRED or FAILED and records when, so
+     * the outcome has a time as well as a status. Returns 0 if it was no longer pending.
+     */
+    @Update("""
+            UPDATE transactions SET status = #{status}, closed_at = #{closedAt}
+            WHERE transaction_id = #{orderId} AND status = 'PENDING'
+            """)
+    int closePending(@Param("orderId") int orderId, @Param("status") String status, @Param("closedAt") Instant closedAt);
 }

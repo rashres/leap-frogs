@@ -99,6 +99,8 @@ export interface Order {
   timeInForce: TimeInForce;
   /** When a pending DAY order expires; null for GTC and for orders that never waited. */
   expiresAt: string | null;
+  /** When a pending order was cancelled, expired or rejected at the fill; null otherwise. */
+  closedAt: string | null;
   /** Rejection reason; only set on the response to a rejected POST. */
   message: string | null;
 }

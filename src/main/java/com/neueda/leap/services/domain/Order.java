@@ -19,6 +19,8 @@ public class Order {
     // DAY expires at expiresAt (the close of its session); GTC waits until filled or cancelled.
     private String timeInForce = "DAY";
     private Instant expiresAt;
+    // When a pending order was cancelled, expired or rejected at the fill; null otherwise.
+    private Instant closedAt;
 
     // Used by MyBatis when reading orders back from the transactions table.
     public Order() {
@@ -124,6 +126,14 @@ public class Order {
 
     public void setExpiresAt(Instant expiresAt) {
         this.expiresAt = expiresAt;
+    }
+
+    public Instant getClosedAt() {
+        return closedAt;
+    }
+
+    public void setClosedAt(Instant closedAt) {
+        this.closedAt = closedAt;
     }
 
     public boolean isLimit() {

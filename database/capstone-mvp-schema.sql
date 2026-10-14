@@ -54,6 +54,10 @@ CREATE TABLE transactions (
     expires_at         TIMESTAMPTZ,
     -- When the order filled. NULL on older rows, which filled at transaction_time.
     filled_at          TIMESTAMPTZ,
+    -- When a PENDING order stopped waiting without filling: cancelled by the
+    -- user, expired at its session close, or rejected when it came to fill.
+    -- NULL for orders that filled or were rejected on arrival.
+    closed_at          TIMESTAMPTZ,
     CHECK ((order_type = 'LIMIT') = (limit_price IS NOT NULL))
 );
 

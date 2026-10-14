@@ -55,6 +55,9 @@ public record OrderResponse(
         @Schema(description = "When a pending DAY order expires (null for GTC and orders that never waited)")
         Instant expiresAt,
 
+        @Schema(description = "When a pending order was cancelled, expired or rejected at the fill (null otherwise)")
+        Instant closedAt,
+
         @Schema(description = "Why the order was rejected (only set on a FAILED order just submitted)", example = "Insufficient cash: required 500, available 120.00")
         String message
 ) {
@@ -83,6 +86,7 @@ public record OrderResponse(
                 order.getLimitPrice(),
                 order.getTimeInForce(),
                 order.getExpiresAt(),
+                order.getClosedAt(),
                 message);
     }
 }

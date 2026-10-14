@@ -254,19 +254,127 @@ class ETLTransformer:
         logger.info(f"    ✓ Created {len(client_activity)} client_activity rows")
         return client_activity
     
+    FACT_ORDERS_COLUMNS = [
+        'transaction_id', 'account_id', 'symbol', 'stock_name', 'exchange_name',
+        'transaction_type', 'order_type', 'time_in_force', 'status',
+        'quantity', 'limit_price', 'price', 'amount',
+        'placed_at', 'filled_at', 'closed_at', 'expires_at', 'placed_date', 'refreshed_at'
+    ]
+
+    ORDER_OUTCOMES_COLUMNS = [
+        'symbol', 'stock_name', 'orders', 'filled', 'pending',
+        'cancelled', 'expired', 'rejected', 'cancel_rate', 'refreshed_at'
+    ]
+
+    # Operational status -> order_outcomes column.
+    OUTCOME_OF_STATUS = {
+        'COMPLETE': 'filled',
+        'PENDING': 'pending',
+        'CANCELLED': 'cancelled',
+        'EXPIRED': 'expired',
+        'FAILED': 'rejected',
+    }
+
+    @staticmethod
+    def build_fact_orders(
+        orders_df: pd.DataFrame,
+        stock_df: pd.DataFrame,
+        exchange_df: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Build fact_orders: one row per order in every status, with its timeline.
+
+        This is where cancellations and expiries are recorded for analytics;
+        fact_trades only ever holds filled orders.
+        """
+        logger.info("  Transforming: fact_orders (every order, every status)")
+
+        stock = stock_df.rename(columns={'name': 'stock_name'})
+        exchange = exchange_df.rename(columns={'name': 'exchange_name'})
+
+        df = orders_df.merge(stock[['instrument_id', 'symbol', 'stock_name', 'exchange_id']], on='instrument_id', how='left')
+        df = df.merge(exchange[['exchange_id', 'exchange_name']], on='exchange_id', how='left')
+
+        df['amount'] = (df['quantity'].astype(float) * df['price'].astype(float)).round(2)
+        df['placed_date'] = pd.to_datetime(df['placed_at'], utc=True).dt.date
+        df['refreshed_at'] = datetime.now()
+
+        fact_orders = df[ETLTransformer.FACT_ORDERS_COLUMNS].copy()
+        counts = fact_orders['status'].value_counts().to_dict()
+        logger.info(f"    ✓ Created {len(fact_orders)} fact_orders rows {counts}")
+        return fact_orders
+
+    @staticmethod
+    def build_order_outcomes(
+        orders_df: pd.DataFrame,
+        stock_df: pd.DataFrame
+    ) -> pd.DataFrame:
+        """
+        Build order_outcomes: per instrument, how many orders filled, are still
+        pending, were cancelled, expired or were rejected, plus the cancel rate.
+        """
+        logger.info("  Transforming: order_outcomes (aggregated)")
+
+        df = orders_df.merge(stock_df[['instrument_id', 'symbol', 'name']], on='instrument_id', how='left')
+        df['outcome'] = df['status'].map(ETLTransformer.OUTCOME_OF_STATUS)
+
+        outcomes = df.groupby(['symbol', 'outcome']).size().unstack(fill_value=0)
+        for col in ETLTransformer.OUTCOME_OF_STATUS.values():
+            if col not in outcomes.columns:
+                outcomes[col] = 0
+        outcomes = outcomes.reset_index()
+        outcomes.columns.name = None
+
+        outcomes['orders'] = df.groupby('symbol').size().reindex(outcomes['symbol']).to_numpy()
+        outcomes['cancel_rate'] = (outcomes['cancelled'] / outcomes['orders'] * 100).round(2)
+
+        outcomes = outcomes.merge(
+            stock_df[['symbol', 'name']].drop_duplicates(),
+            on='symbol',
+            how='left'
+        ).rename(columns={'name': 'stock_name'})
+        outcomes['refreshed_at'] = datetime.now()
+
+        order_outcomes = outcomes[ETLTransformer.ORDER_OUTCOMES_COLUMNS].copy()
+        logger.info(f"    ✓ Created {len(order_outcomes)} order_outcomes rows")
+        return order_outcomes
+
+    @staticmethod
+    def transform_orders(
+        orders_df: pd.DataFrame,
+        stock_df: pd.DataFrame,
+        exchange_df: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """fact_orders and order_outcomes, or empty tables when there are no orders."""
+        if orders_df.empty:
+            logger.warning("No orders found; writing empty order-outcome tables")
+            return (
+                pd.DataFrame(columns=ETLTransformer.FACT_ORDERS_COLUMNS),
+                pd.DataFrame(columns=ETLTransformer.ORDER_OUTCOMES_COLUMNS),
+            )
+        return (
+            ETLTransformer.build_fact_orders(orders_df, stock_df, exchange_df),
+            ETLTransformer.build_order_outcomes(orders_df, stock_df),
+        )
+
     @staticmethod
     def transform_all(
         transactions_df: pd.DataFrame,
         stock_df: pd.DataFrame,
         exchange_df: pd.DataFrame,
-        account_df: pd.DataFrame
-    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        account_df: pd.DataFrame,
+        orders_df: pd.DataFrame
+    ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
         """Execute all transformations"""
         logger.info("=" * 70)
         logger.info("PHASE 2: TRANSFORM")
         logger.info("=" * 70)
-        
+
         try:
+            # Built even with no filled trades: an account that has only
+            # cancelled or pending orders still has outcomes to report.
+            fact_orders, order_outcomes = ETLTransformer.transform_orders(orders_df, stock_df, exchange_df)
+
             if transactions_df.empty:
                 logger.warning("No transactions found; writing empty analytics tables")
                 return (
@@ -288,6 +396,8 @@ class ETLTransformer:
                         'month', 'segment', 'active_clients', 'trades',
                         'volume', 'avg_trades_per_client', 'refreshed_at'
                     ]),
+                    fact_orders,
+                    order_outcomes,
                 )
 
             fact_trades = ETLTransformer.build_fact_trades(
@@ -307,7 +417,7 @@ class ETLTransformer:
             )
             
             logger.info("✓ TRANSFORM PHASE COMPLETE\n")
-            return fact_trades, trading_volume, instrument_activity, client_activity
+            return fact_trades, trading_volume, instrument_activity, client_activity, fact_orders, order_outcomes
         
         except Exception as e:
             logger.error(f"✗ Transform failed: {e}")

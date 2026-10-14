@@ -51,23 +51,16 @@ class ETLLoader:
         raise last_error
 
     def _ensure_analytics_schema(self) -> None:
-        """Create analytics tables if they are not already present."""
+        """
+        Create any analytics tables that are not present yet.
+
+        The schema file is all CREATE ... IF NOT EXISTS, so it runs on every
+        refresh: a table added to it later (fact_orders, order_outcomes) reaches
+        an analytics database that already exists, and existing tables are left alone.
+        """
         schema_path = Path(ANALYTICS_SCHEMA_PATH)
         if not schema_path.exists():
             raise FileNotFoundError(f"Analytics schema not found: {schema_path}")
-
-        with self.engine.connect() as conn:
-            exists = conn.execute(
-                text(
-                    "SELECT EXISTS ("
-                    "  SELECT FROM information_schema.tables "
-                    "  WHERE table_schema = 'public' AND table_name = 'fact_trades'"
-                    ")"
-                )
-            ).scalar()
-
-        if exists:
-            return
 
         schema_sql = schema_path.read_text()
         raw = self.engine.raw_connection()
@@ -75,7 +68,7 @@ class ETLLoader:
             with raw.cursor() as cur:
                 cur.execute(schema_sql)
             raw.commit()
-            logger.info("  ✓ Applied analytics schema")
+            logger.info("  ✓ Analytics schema up to date")
         finally:
             raw.close()
 
@@ -84,7 +77,9 @@ class ETLLoader:
         fact_trades: pd.DataFrame,
         trading_volume: pd.DataFrame,
         instrument_activity: pd.DataFrame,
-        client_activity: pd.DataFrame
+        client_activity: pd.DataFrame,
+        fact_orders: pd.DataFrame,
+        order_outcomes: pd.DataFrame
     ) -> None:
         """
         Replace all analytics tables with the freshly transformed data (full refresh).
@@ -102,13 +97,13 @@ class ETLLoader:
             ('trading_volume', trading_volume),
             ('instrument_activity', instrument_activity),
             ('client_activity', client_activity),
+            ('fact_orders', fact_orders),
+            ('order_outcomes', order_outcomes),
         ]
         try:
             with self.engine.begin() as conn:
                 logger.info("Truncating existing data...")
-                conn.execute(text(
-                    "TRUNCATE TABLE fact_trades, trading_volume, instrument_activity, client_activity"
-                ))
+                conn.execute(text("TRUNCATE TABLE " + ", ".join(name for name, _ in tables)))
                 for name, frame in tables:
                     frame.to_sql(name, conn, if_exists='append', index=False)
                     logger.info(f"  ✓ Loaded {len(frame)} rows into {name}")
@@ -131,6 +126,8 @@ class ETLLoader:
                 ("trading_volume", "SELECT COUNT(*) as count FROM trading_volume"),
                 ("instrument_activity", "SELECT COUNT(*) as count FROM instrument_activity"),
                 ("client_activity", "SELECT COUNT(*) as count FROM client_activity"),
+                ("fact_orders", "SELECT COUNT(*) as count FROM fact_orders"),
+                ("order_outcomes", "SELECT COUNT(*) as count FROM order_outcomes"),
             ]
 
             for table_name, query in queries:

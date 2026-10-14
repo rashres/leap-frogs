@@ -185,6 +185,7 @@ class PendingOrderIntegrationTest {
         Order cancelled = orderService.cancelOrder(ACCOUNT, order.getOrderId());
         assertEquals("CANCELLED", cancelled.getStatus());
         assertEquals("CANCELLED", orderMapper.findById(order.getOrderId()).getStatus());
+        assertEquals(SATURDAY, orderMapper.findById(order.getOrderId()).getClosedAt(), "records when it was cancelled");
         assertEquals(0, BigDecimal.ZERO.compareTo(orderMapper.reservedCash(ACCOUNT)));
 
         assertThrows(OrderNotCancellableException.class, () -> orderService.cancelOrder(ACCOUNT, order.getOrderId()));
@@ -221,6 +222,7 @@ class PendingOrderIntegrationTest {
 
         clock.set(TUESDAY_OPEN);
         assertEquals("EXPIRED", orderService.processPending(order.getOrderId()));
+        assertEquals(TUESDAY_OPEN, orderMapper.findById(order.getOrderId()).getClosedAt(), "records when it expired");
         assertEquals(0, BigDecimal.ZERO.compareTo(orderMapper.reservedCash(ACCOUNT)));
     }
 
