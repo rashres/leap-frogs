@@ -100,6 +100,58 @@ public interface OrderMapper {
     @ResultMap("orderRow")
     List<Order> findPending();
 
+        @Select("""
+                        <script>
+                        SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
+                                   t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,
+                                   CASE WHEN t.status = 'COMPLETE' THEN t.transaction_time END AS fulfilled_time
+                        FROM transactions t
+                        JOIN instrument i ON i.instrument_id = t.instrument_id
+                        <where>
+                                <if test='accountId != null'>
+                                        t.account_id = #{accountId}
+                                </if>
+                                <if test='startDate != null'>
+                                        AND t.transaction_time &gt;= #{startDate}
+                                </if>
+                                <if test='endDate != null'>
+                                        AND t.transaction_time &lt;= #{endDate}
+                                </if>
+                        </where>
+                        ORDER BY t.transaction_time DESC, t.transaction_id DESC
+                        LIMIT #{limit} OFFSET #{offset}
+                        </script>
+                        """)
+        @ResultMap("orderRow")
+        List<Order> findByFiltersPage(
+                        @Param("accountId") Integer accountId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate,
+                        @Param("limit") int limit,
+                        @Param("offset") long offset);
+
+        @Select("""
+                        <script>
+                        SELECT COUNT(*)
+                        FROM transactions t
+                        <where>
+                                <if test='accountId != null'>
+                                        t.account_id = #{accountId}
+                                </if>
+                                <if test='startDate != null'>
+                                        AND t.transaction_time &gt;= #{startDate}
+                                </if>
+                                <if test='endDate != null'>
+                                        AND t.transaction_time &lt;= #{endDate}
+                                </if>
+                        </where>
+                        </script>
+                        """)
+        long countByFilters(
+                        @Param("accountId") Integer accountId,
+                        @Param("startDate") LocalDateTime startDate,
+                        @Param("endDate") LocalDateTime endDate);
+
     /**
      * Insert a new order; the generated transaction_id is written back into order.orderId
      */
