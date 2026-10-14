@@ -100,10 +100,16 @@ export class NewsPage {
     const c = this.counts();
     const bar = this.moodBar();
     return [
-      { key: 'pos', label: 'Positive', count: c.positive, pct: Math.round(bar.pos) },
-      { key: 'neu', label: 'Neutral', count: c.neutral, pct: Math.round(bar.neu) },
-      { key: 'neg', label: 'Negative', count: c.negative, pct: Math.round(bar.neg) },
+      { key: 'pos', label: 'Positive', count: c.positive, pct: Math.round(bar.pos), image: 'mascot/sentiment-positive.png' },
+      { key: 'neu', label: 'Neutral', count: c.neutral, pct: Math.round(bar.neu), image: 'mascot/sentiment-neutral.png' },
+      { key: 'neg', label: 'Negative', count: c.negative, pct: Math.round(bar.neg), image: 'mascot/sentiment-negative.png' },
     ];
+  });
+
+  /** The sentiment with the most headlines, its frog shown at full strength; null on a tie or with none. */
+  readonly leadTone = computed(() => {
+    const [first, second] = [...this.tones()].sort((a, b) => b.count - a.count);
+    return first.count > 0 && first.count > second.count ? first.key : null;
   });
 
   /**
