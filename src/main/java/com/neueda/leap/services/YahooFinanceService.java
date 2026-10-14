@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Server-side access to Yahoo Finance's public web endpoints (search and chart).
+ * Server-side access to Yahoo Finance's public web endpoints (search, chart and headline RSS).
  *
  * These endpoints are unofficial and undocumented: Yahoo can rate-limit (429),
  * change or withdraw them at any time. Responses are cached in memory, and when
@@ -74,13 +74,22 @@ public class YahooFinanceService {
      *                                 502 for any other upstream failure, each only when no cached copy is recent enough
      */
     public String get(String pathAndQuery) {
+        return get(pathAndQuery, false);
+    }
+
+    /** As {@link #get}, for Yahoo's RSS feeds, which answer XML instead of JSON. */
+    public String getXml(String pathAndQuery) {
+        return get(pathAndQuery, true);
+    }
+
+    private String get(String pathAndQuery, boolean xml) {
         Instant now = clock.instant();
         Entry cached = cache.get(pathAndQuery);
         if (cached != null && cached.fetchedAt().plus(fresh).isAfter(now)) {
             return cached.body();
         }
         try {
-            String body = fetch(pathAndQuery);
+            String body = fetch(pathAndQuery, xml);
             if (cache.size() >= MAX_ENTRIES) {
                 evictOldest();
             }
@@ -95,11 +104,11 @@ public class YahooFinanceService {
         }
     }
 
-    private String fetch(String pathAndQuery) {
+    private String fetch(String pathAndQuery, boolean xml) {
         HttpRequest request = HttpRequest.newBuilder(URI.create(baseUrl + pathAndQuery))
                 .timeout(timeout)
                 .header("User-Agent", USER_AGENT)
-                .header("Accept", "application/json")
+                .header("Accept", xml ? "application/xml" : "application/json")
                 .GET()
                 .build();
         HttpResponse<String> response;
@@ -124,7 +133,7 @@ public class YahooFinanceService {
         if (status == 404) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Yahoo Finance has no data for this request");
         }
-        if (status < 200 || status >= 300 || !response.body().stripLeading().startsWith("{")) {
+        if (status < 200 || status >= 300 || !response.body().stripLeading().startsWith(xml ? "<" : "{")) {
             log.warn("Yahoo answered {} for {}", status, pathAndQuery);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Yahoo Finance returned an unexpected response (HTTP " + status + ")");
         }

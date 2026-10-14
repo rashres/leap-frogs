@@ -18,11 +18,11 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * Yahoo Finance search and chart data, fetched server-side for the UI
- * (instrument search, the news fallback and daily volume).
+ * Yahoo Finance search, chart and headline data, fetched server-side for the UI
+ * (instrument search, news headlines and daily volume).
  *
- * Paths mirror Yahoo's own, so the UI reads Yahoo's JSON unchanged. Only these
- * two endpoints and their known parameters are forwarded; this is not an open proxy.
+ * Paths mirror Yahoo's own, so the UI reads Yahoo's responses unchanged. Only these
+ * three endpoints and their known parameters are forwarded; this is not an open proxy.
  */
 @RestController
 @RequestMapping("/yahoo")
@@ -97,6 +97,27 @@ public class YahooController {
         }
         String path = "/v8/finance/chart/" + encode(symbol) + "?range=" + range + "&interval=" + interval;
         return json(yahoo.get(path));
+    }
+
+    /**
+     * GET /api/yahoo/rss/2.0/headline?s=AAPL
+     */
+    @GetMapping(value = "/rss/2.0/headline", produces = MediaType.APPLICATION_XML_VALUE)
+    @Operation(summary = "Yahoo Finance headline feed", description = "Recent headlines for one Yahoo symbol, as Yahoo's RSS (each with a one-line summary)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Yahoo's RSS feed"),
+        @ApiResponse(responseCode = "400", description = "Invalid symbol"),
+        @ApiResponse(responseCode = "429", description = "Yahoo is rate-limiting"),
+        @ApiResponse(responseCode = "502", description = "Yahoo failed or answered unexpectedly"),
+        @ApiResponse(responseCode = "504", description = "Yahoo timed out")
+    })
+    public ResponseEntity<String> headlines(
+            @RequestParam @Parameter(description = "Yahoo symbol, e.g. AAPL, VOD.L") String s) {
+        if (!SYMBOL.matcher(s).matches()) {
+            throw badRequest("'" + s + "' is not a valid symbol");
+        }
+        String body = yahoo.getXml("/rss/2.0/headline?s=" + encode(s) + "&region=US&lang=en-US");
+        return ResponseEntity.ok().contentType(MediaType.APPLICATION_XML).body(body);
     }
 
     private static ResponseEntity<String> json(String body) {
