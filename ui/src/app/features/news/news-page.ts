@@ -95,6 +95,17 @@ export class NewsPage {
     return { pos: pct(c.positive), neu: pct(c.neutral), neg: pct(c.negative) };
   });
 
+  /** The legend under the tone bar: count and whole-number share per tone. */
+  readonly tones = computed(() => {
+    const c = this.counts();
+    const bar = this.moodBar();
+    return [
+      { key: 'pos', label: 'positive', count: c.positive, pct: Math.round(bar.pos) },
+      { key: 'neu', label: 'neutral', count: c.neutral, pct: Math.round(bar.neu) },
+      { key: 'neg', label: 'negative', count: c.negative, pct: Math.round(bar.neg) },
+    ];
+  });
+
   readonly filtered = computed(() => {
     const mood = this.mood();
     return mood === 'all' ? this.scoped() : this.scoped().filter((i) => i.sentiment.label === mood);

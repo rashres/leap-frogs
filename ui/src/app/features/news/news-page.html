@@ -40,47 +40,51 @@
     <p class="sr-only" role="status">Gathering headlines…</p>
   } @else {
     <!-- Mood summary -->
-    <section class="mood panel" aria-label="Headline summary">
-      <div class="mood-main">
-        <p class="mood-title">
+    <section class="mood panel" aria-labelledby="mood-title">
+      <div class="mood-head">
+        <h2 class="mood-title" id="mood-title">
           @if (selectedStock(); as s) {
-            Tone of <strong>{{ s.symbol }}</strong> headlines
+            {{ s.symbol }} headlines
           } @else {
-            Tone of recent headlines across the platform's stocks
+            Headline tone
           }
-        </p>
-        <div class="mood-bar" role="img"
-             [attr.aria-label]="counts().positive + ' positive, ' + counts().neutral + ' neutral, ' + counts().negative + ' negative headlines'">
-          <i class="pos" [style.width.%]="moodBar().pos"></i>
-          <i class="neu" [style.width.%]="moodBar().neu"></i>
-          <i class="neg" [style.width.%]="moodBar().neg"></i>
-        </div>
-        <div class="mood-legend">
-          <span class="sent sent-pos"><i class="glyph">▲</i>{{ counts().positive }} positive</span>
-          <span class="sent sent-neu"><i class="glyph">■</i>{{ counts().neutral }} neutral</span>
-          <span class="sent sent-neg"><i class="glyph">▼</i>{{ counts().negative }} negative</span>
-        </div>
+        </h2>
+        <span class="mood-total faint num">{{ counts().total }} {{ counts().total === 1 ? 'headline' : 'headlines' }}</span>
       </div>
-      <dl class="stats">
+
+      <div class="mood-bar" role="img"
+           [attr.aria-label]="counts().positive + ' positive, ' + counts().neutral + ' neutral, ' + counts().negative + ' negative headlines'">
+        <i class="pos" [style.width.%]="moodBar().pos"></i>
+        <i class="neu" [style.width.%]="moodBar().neu"></i>
+        <i class="neg" [style.width.%]="moodBar().neg"></i>
+      </div>
+
+      <ul class="mood-legend">
+        @for (t of tones(); track t.key) {
+          <li [class]="t.key">
+            <i class="swatch" aria-hidden="true"></i>
+            <strong class="num">{{ t.count }}</strong> {{ t.label }}
+            <span class="pct num">{{ t.pct }}%</span>
+          </li>
+        }
+      </ul>
+
+      <dl class="facts">
         <div>
           <dt>Headlines</dt>
-          <dd class="num">{{ stats().headlines }}</dd>
-          <span class="faint">{{ stats().span }}</span>
+          <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
         </div>
         <div>
           <dt>Stocks in the news</dt>
-          <dd class="num">{{ stats().inNews }}<span class="of">/{{ stats().covered }}</span></dd>
-          <span class="faint">with at least one headline</span>
+          <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
         </div>
         <div>
           <dt>Most written about</dt>
-          <dd>{{ stats().topSymbol ?? '—' }}</dd>
-          <span class="faint">{{ stats().topCount }} headlines</span>
+          <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
         </div>
         <div>
-          <dt>Latest headline</dt>
-          <dd>{{ stats().newest }}</dd>
-          <span class="faint">newest story</span>
+          <dt>Latest</dt>
+          <dd><span class="v">{{ stats().newest }}</span></dd>
         </div>
       </dl>
     </section>
@@ -88,16 +92,16 @@
     <!-- Stock chips -->
     <nav class="stocks" aria-label="Filter by stock">
       <button type="button" class="stock" [class.on]="selected() === null" (click)="pick(null)" [attr.aria-pressed]="selected() === null">
-        <span class="all-dot"><leap-icon name="layers" [size]="14" /></span>
-        <span class="st-text"><span class="st-sym">All stocks</span><span class="st-count">{{ all().length }}</span></span>
+        <span class="all-dot"><leap-icon name="layers" [size]="16" /></span>
+        <span class="st-text"><span class="st-sym">All stocks</span><span class="st-count num">{{ all().length }} headlines</span></span>
       </button>
       @for (s of stocks(); track s.id) {
         <button type="button" class="stock" [class.on]="selected() === s.id" [class.quiet]="s.total === 0"
                 (click)="pick(s.id)" [attr.aria-pressed]="selected() === s.id" [attr.title]="s.title">
-          <leap-instrument-logo [symbol]="s.symbol" [size]="26" />
+          <leap-instrument-logo [symbol]="s.symbol" [size]="32" />
           <span class="st-text">
             <span class="st-sym">{{ s.symbol }}</span>
-            <span class="st-count">{{ s.total || 'none' }}</span>
+            <span class="st-count num">{{ s.total ? s.total + (s.total === 1 ? ' headline' : ' headlines') : 'No headlines' }}</span>
           </span>
           @if (s.total > 0) {
             <span class="st-bar" aria-hidden="true">
