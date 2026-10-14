@@ -41,29 +41,40 @@
   } @else {
     <!-- Mood summary -->
     <section class="mood panel" aria-labelledby="mood-title">
-      <div class="mood-text">
-        <h2 class="mood-title" id="mood-title">News sentiment</h2>
-        <p class="verdict">{{ verdict() }}</p>
-        <p class="context faint">
-          <span class="num">{{ stats().headlines }}</span> headlines {{ stats().span }}
-          · <span class="num">{{ stats().inNews }}</span> of {{ stats().covered }} stocks covered
-          @if (stats().topSymbol; as top) {
-            · most on {{ top }}
-          }
-          · latest {{ stats().newest }}
-        </p>
-      </div>
+      <h2 class="mood-title" id="mood-title">News sentiment</h2>
+      <p class="verdict">{{ verdict() }}</p>
 
-      <ul class="split" [attr.aria-label]="counts().positive + ' positive, ' + counts().neutral + ' neutral, ' + counts().negative + ' negative headlines'">
+      <!-- One frog per sentiment: green positive, grey neutral, red negative. -->
+      <ul class="frogs">
         @for (t of tones(); track t.key) {
-          <li [class]="t.key">
-            <span class="s-label">{{ t.label }}</span>
-            <span class="s-track" aria-hidden="true"><i [style.width.%]="t.pct"></i></span>
-            <span class="s-pct num">{{ t.pct }}%</span>
-            <span class="s-count num faint">{{ t.count }}</span>
+          <li [class.lead]="t.key === leadTone()">
+            <img class="frog" [src]="t.image" alt="" width="56" height="57" />
+            <span class="f-text">
+              <span class="f-pct num">{{ t.pct }}%</span>
+              <span class="f-label">{{ t.label }} <span class="faint num">· {{ t.count }}</span></span>
+            </span>
           </li>
         }
       </ul>
+
+      <dl class="facts">
+        <div>
+          <dt>Headlines</dt>
+          <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
+        </div>
+        <div>
+          <dt>Stocks in the news</dt>
+          <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
+        </div>
+        <div>
+          <dt>Most written about</dt>
+          <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
+        </div>
+        <div>
+          <dt>Latest</dt>
+          <dd><span class="v">{{ stats().newest }}</span></dd>
+        </div>
+      </dl>
     </section>
 
     <!-- Stock chips -->

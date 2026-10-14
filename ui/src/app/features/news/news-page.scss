@@ -23,13 +23,8 @@
 
 /* ---- News sentiment ------------------------------------------------------- */
 
-/* Words on the left, the split on the right; stacked on narrow screens. */
 .mood {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
-  align-items: center;
-  gap: 16px 40px;
-  padding: 20px 24px;
+  padding: 20px 24px 18px;
 }
 
 .mood-title {
@@ -47,66 +42,93 @@
   color: var(--text);
 }
 
-.context {
-  margin: 8px 0 0;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-/* Positive / Neutral / Negative as three rows, each with its own bar. */
-.split {
+/* Three frogs in a row, split by hairlines like the facts below them. */
+.frogs {
   display: grid;
-  gap: 10px;
-  margin: 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 18px 0 0;
   padding: 0;
   list-style: none;
 
   li {
-    display: grid;
-    grid-template-columns: 64px minmax(0, 1fr) 40px 28px;
+    display: flex;
     align-items: center;
-    gap: 12px;
-    font-size: 13px;
-  }
+    gap: 14px;
+    padding: 0 24px;
+    border-left: 1px solid var(--border-soft);
 
-  .s-label {
-    color: var(--text-2);
-  }
-
-  .s-track {
-    height: 8px;
-    border-radius: 2px;
-    background: var(--panel-3);
-    overflow: hidden;
-
-    i {
-      display: block;
-      height: 100%;
-      transition: width 0.4s var(--ease);
+    &:first-child {
+      padding-left: 0;
+      border-left: none;
     }
   }
 
-  .pos i {
-    background: var(--chart-up);
+  .frog {
+    flex-shrink: 0;
+    width: 56px;
+    height: auto;
+    transition: opacity 0.2s ease;
   }
 
-  .neu i {
-    background: var(--border-strong);
+  /* When one sentiment leads, the other two frogs step back. */
+  &:has(.lead) li:not(.lead) .frog {
+    opacity: 0.45;
+  }
+}
+
+.f-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.f-pct {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.f-label {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* One quiet line of facts, label above value. */
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 0;
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+
+  > div {
+    padding: 0 24px;
+    border-left: 1px solid var(--border-soft);
+    min-width: 0;
+
+    &:first-child {
+      padding-left: 0;
+      border-left: none;
+    }
   }
 
-  .neg i {
-    background: var(--chart-down);
-  }
-
-  .s-pct {
-    text-align: right;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .s-count {
-    text-align: right;
+  dt {
     font-size: 12px;
+    color: var(--text-3);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: 14px;
+    color: var(--text-2);
+  }
+
+  /* The figure itself; the words around it stay quieter. */
+  .v {
+    color: var(--text);
+    font-weight: 600;
   }
 }
 
@@ -535,16 +557,33 @@ leap-headline-row + leap-headline-row {
 /* ---- Responsive ----------------------------------------------------------- */
 
 @media (max-width: 1200px) {
-  .mood {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .side-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
+  .frogs {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+
+    li,
+    li:first-child {
+      padding: 0;
+      border-left: none;
+    }
+  }
+
+  .facts > div {
+    flex: 1 1 45%;
+    padding: 0 0 0 12px;
+
+    &:nth-child(odd) {
+      padding-left: 0;
+      border-left: none;
+    }
+  }
+
   .side-grid {
     grid-template-columns: minmax(0, 1fr);
   }
