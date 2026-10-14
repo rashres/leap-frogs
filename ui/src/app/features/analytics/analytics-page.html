@@ -362,26 +362,27 @@
               </table>
             </div>
 
-            <div class="closed">
-              <h3 class="closed-title">Recently cancelled or expired</h3>
-              @if (closedRows().length === 0) {
-                <p class="faint note">None in this period.</p>
-              } @else {
-                <ul class="closed-list">
-                  @for (c of closedRows(); track c.orderId) {
-                    <li>
-                      <div class="c-top">
-                        <span class="sym">{{ c.symbol }}</span>
-                        <span class="side" [class.up]="c.side === 'BUY'" [class.down]="c.side === 'SELL'">{{ c.side }}</span>
-                        <span class="pill" [class.pill-muted]="c.status === 'CANCELLED'" [class.pill-warn]="c.status === 'EXPIRED'">{{ c.label }}</span>
-                        <span class="num faint when">{{ c.when }}</span>
-                      </div>
-                      <p class="c-sub faint num">{{ c.qty }} · {{ c.type }} · {{ c.tif }} · {{ c.value }}</p>
-                    </li>
-                  }
-                </ul>
-              }
-            </div>
+          </div>
+
+          <div class="closed">
+            <h3 class="closed-title">Recently cancelled or expired</h3>
+            @if (closedRows().length === 0) {
+              <p class="faint note">None in this period.</p>
+            } @else {
+              <ul class="closed-list">
+                @for (c of closedRows(); track c.orderId) {
+                  <li>
+                    <div class="c-top">
+                      <span class="sym">{{ c.symbol }}</span>
+                      <span class="side" [class.up]="c.side === 'BUY'" [class.down]="c.side === 'SELL'">{{ c.side }}</span>
+                      <span class="pill" [class.pill-muted]="c.status === 'CANCELLED'" [class.pill-warn]="c.status === 'EXPIRED'">{{ c.label }}</span>
+                      <span class="num faint when">{{ c.when }}</span>
+                    </div>
+                    <p class="c-sub faint num">{{ c.qty }} · {{ c.type }} · {{ c.tif }} · {{ c.value }}</p>
+                  </li>
+                }
+              </ul>
+            }
           </div>
         }
       }

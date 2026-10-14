@@ -370,6 +370,11 @@
 }
 
 .o-detail {
+  grid-template-columns: minmax(0, 1fr);
+  padding: 0 22px 20px;
+}
+
+.closed {
   padding: 0 22px 20px;
 }
 
