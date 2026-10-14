@@ -41,52 +41,29 @@
   } @else {
     <!-- Mood summary -->
     <section class="mood panel" aria-labelledby="mood-title">
-      <div class="mood-head">
-        <h2 class="mood-title" id="mood-title">
-          @if (selectedStock(); as s) {
-            {{ s.symbol }} headlines
-          } @else {
-            Headline tone
+      <div class="mood-text">
+        <h2 class="mood-title" id="mood-title">News sentiment</h2>
+        <p class="verdict">{{ verdict() }}</p>
+        <p class="context faint">
+          <span class="num">{{ stats().headlines }}</span> headlines {{ stats().span }}
+          · <span class="num">{{ stats().inNews }}</span> of {{ stats().covered }} stocks covered
+          @if (stats().topSymbol; as top) {
+            · most on {{ top }}
           }
-        </h2>
-        <span class="mood-total faint num">{{ counts().total }} {{ counts().total === 1 ? 'headline' : 'headlines' }}</span>
+          · latest {{ stats().newest }}
+        </p>
       </div>
 
-      <div class="mood-bar" role="img"
-           [attr.aria-label]="counts().positive + ' positive, ' + counts().neutral + ' neutral, ' + counts().negative + ' negative headlines'">
-        <i class="pos" [style.width.%]="moodBar().pos"></i>
-        <i class="neu" [style.width.%]="moodBar().neu"></i>
-        <i class="neg" [style.width.%]="moodBar().neg"></i>
-      </div>
-
-      <ul class="mood-legend">
+      <ul class="split" [attr.aria-label]="counts().positive + ' positive, ' + counts().neutral + ' neutral, ' + counts().negative + ' negative headlines'">
         @for (t of tones(); track t.key) {
           <li [class]="t.key">
-            <i class="swatch" aria-hidden="true"></i>
-            <strong class="num">{{ t.count }}</strong> {{ t.label }}
-            <span class="pct num">{{ t.pct }}%</span>
+            <span class="s-label">{{ t.label }}</span>
+            <span class="s-track" aria-hidden="true"><i [style.width.%]="t.pct"></i></span>
+            <span class="s-pct num">{{ t.pct }}%</span>
+            <span class="s-count num faint">{{ t.count }}</span>
           </li>
         }
       </ul>
-
-      <dl class="facts">
-        <div>
-          <dt>Headlines</dt>
-          <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
-        </div>
-        <div>
-          <dt>Stocks in the news</dt>
-          <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
-        </div>
-        <div>
-          <dt>Most written about</dt>
-          <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
-        </div>
-        <div>
-          <dt>Latest</dt>
-          <dd><span class="v">{{ stats().newest }}</span></dd>
-        </div>
-      </dl>
     </section>
 
     <!-- Stock chips -->
