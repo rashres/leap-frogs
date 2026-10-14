@@ -24,20 +24,26 @@
 /* ---- Mood summary --------------------------------------------------------- */
 
 .mood {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.4fr);
-  gap: 20px 32px;
-  padding: 20px 22px;
+  padding: 18px 22px 16px;
+}
+
+.mood-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
 .mood-title {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: var(--text-2);
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
 
-  strong {
-    color: var(--text);
-  }
+.mood-total {
+  font-size: 13px;
 }
 
 /* Positive, neutral and negative shares of the headlines in scope. */
@@ -45,7 +51,6 @@
 .st-bar {
   display: flex;
   overflow: hidden;
-  border-radius: 999px;
   background: var(--panel-3);
 
   i {
@@ -67,31 +72,75 @@
   }
 }
 
+/* Thin and squared off, like a chart axis rather than a progress pill. */
 .mood-bar {
-  height: 12px;
+  height: 6px;
   gap: 2px;
+  border-radius: 2px;
 }
 
 .mood-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
+  gap: 6px 22px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  color: var(--text-2);
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .pct {
+    color: var(--text-3);
+  }
+
+  .swatch {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+  }
+
+  .pos .swatch {
+    background: var(--chart-up);
+  }
+
+  .neu .swatch {
+    background: var(--border-strong);
+  }
+
+  .neg .swatch {
+    background: var(--chart-down);
+  }
 }
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
+/* One quiet line of facts under the bar, label above value. */
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 0;
+  margin: 16px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
 
   > div {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    padding-left: 16px;
+    padding: 0 24px;
     border-left: 1px solid var(--border-soft);
     min-width: 0;
+
+    &:first-child {
+      padding-left: 0;
+      border-left: none;
+    }
   }
 
   dt {
@@ -100,20 +149,15 @@
   }
 
   dd {
-    margin: 0;
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-
-  .of {
+    margin: 2px 0 0;
     font-size: 14px;
-    font-weight: 500;
-    color: var(--text-3);
+    color: var(--text-2);
   }
 
-  span.faint {
-    font-size: 11.5px;
+  /* The figure itself; the words around it stay quieter. */
+  .v {
+    color: var(--text);
+    font-weight: 600;
   }
 }
 
@@ -121,7 +165,7 @@
 
 .stocks {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   overflow-x: auto;
   padding: 2px 2px 6px;
   scrollbar-width: thin;
@@ -131,26 +175,27 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
-  padding: 7px 12px 9px 8px;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-soft);
+  min-width: 132px;
+  padding: 10px 16px 13px 10px;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
   background: var(--panel);
-  box-shadow: var(--shadow-1);
   transition:
     border-color 0.15s ease,
-    background-color 0.15s ease,
-    transform 0.15s var(--ease);
+    background-color 0.15s ease;
 
   &:hover {
     border-color: var(--border-strong);
-    transform: translateY(-1px);
+    background: var(--panel-hover);
   }
 
   &.on {
     border-color: var(--accent);
-    background: var(--accent-soft);
+    box-shadow: inset 0 0 0 1px var(--accent);
+    background: var(--panel);
   }
 
   &.quiet {
@@ -166,8 +211,8 @@
 .all-dot {
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   background: var(--panel-3);
   color: var(--text-2);
@@ -177,24 +222,26 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  line-height: 1.2;
+  gap: 1px;
+  line-height: 1.25;
 }
 
 .st-sym {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
 }
 
 .st-count {
-  font-size: 11.5px;
+  font-size: 12px;
   color: var(--text-3);
 }
 
+/* Tone split as the chip's bottom edge. */
 .st-bar {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 4px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   height: 3px;
 }
 
@@ -515,19 +562,20 @@ leap-headline-row + leap-headline-row {
 /* ---- Responsive ----------------------------------------------------------- */
 
 @media (max-width: 1200px) {
-  .mood {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
   .side-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
 @media (max-width: 760px) {
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    row-gap: 16px;
+  .facts > div {
+    flex: 1 1 45%;
+    padding: 0 0 0 12px;
+
+    &:nth-child(odd) {
+      padding-left: 0;
+      border-left: none;
+    }
   }
 
   .side-grid {
