@@ -1,0 +1,229 @@
+<div class="page-enter">
+  <leap-page-header heading="News" mascot="news">
+    <span description>Headlines about the stocks on this platform, with a quick read of their tone.</span>
+    <div actions>
+      @if (sourceText(); as text) {
+        <span class="pill pill-muted" [attr.title]="news.fellBackBecause() ?? 'Where these headlines come from'">
+          <leap-icon name="globe" [size]="14" />{{ text }}
+        </span>
+      }
+      @if (news.fellBackBecause(); as reason) {
+        <span class="pill pill-warn" [attr.title]="reason"><leap-icon name="alert" [size]="14" />Backup source</span>
+      }
+      <button type="button" class="btn btn-secondary btn-sm" (click)="reload()" [disabled]="loading()">
+        <leap-icon name="refresh" [size]="16" [class.spin]="loading()" />
+        {{ loading() ? 'Loading…' : 'Refresh' }}
+      </button>
+    </div>
+  </leap-page-header>
+
+  @if (news.state() === 'unavailable' && all().length === 0) {
+    <section class="panel unavailable">
+      <span class="empty-icon"><leap-icon name="alert" [size]="26" /></span>
+      <h2>Headlines are unavailable right now</h2>
+      <p class="faint">{{ news.error() }}</p>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
+    </section>
+  } @else if (all().length === 0 && news.state() !== 'ready') {
+    <!-- First load -->
+    <section class="mood panel" aria-hidden="true">
+      <span class="skeleton" style="width: 40%; height: 18px"></span>
+      <span class="skeleton" style="width: 100%; height: 10px; margin-top: 14px"></span>
+    </section>
+    <div class="top">
+      <div class="side-grid">
+        @for (n of [1, 2, 3, 4]; track n) {
+          <span class="skeleton side-sk"></span>
+        }
+      </div>
+    </div>
+    <p class="sr-only" role="status">Gathering headlines…</p>
+  } @else {
+    <!-- Mood summary -->
+    <section class="mood panel" aria-labelledby="mood-title">
+      <h2 class="mood-title" id="mood-title">News sentiment</h2>
+      <p class="verdict">{{ verdict() }}</p>
+
+      <!-- One frog per sentiment: green positive, grey neutral, red negative. -->
+      <ul class="frogs">
+        @for (t of tones(); track t.key) {
+          <li [class.lead]="t.key === leadTone()">
+            <img class="frog" [src]="t.image" alt="" width="56" height="57" />
+            <span class="f-text">
+              <span class="f-pct num">{{ t.pct }}%</span>
+              <span class="f-label">{{ t.label }} <span class="faint num">· {{ t.count }}</span></span>
+            </span>
+          </li>
+        }
+      </ul>
+
+      <dl class="facts">
+        <div>
+          <dt>Headlines</dt>
+          <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
+        </div>
+        <div>
+          <dt>Stocks in the news</dt>
+          <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
+        </div>
+        <div>
+          <dt>Most written about</dt>
+          <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
+        </div>
+        <div>
+          <dt>Latest</dt>
+          <dd><span class="v">{{ stats().newest }}</span></dd>
+        </div>
+      </dl>
+    </section>
+
+    <!-- Stock chips -->
+    <nav class="stocks" aria-label="Filter by stock">
+      <button type="button" class="stock" [class.on]="selected() === null" (click)="pick(null)" [attr.aria-pressed]="selected() === null">
+        <span class="all-dot"><leap-icon name="layers" [size]="16" /></span>
+        <span class="st-text"><span class="st-sym">All stocks</span><span class="st-count num">{{ all().length }} headlines</span></span>
+      </button>
+      @for (s of stocks(); track s.id) {
+        <button type="button" class="stock" [class.on]="selected() === s.id" [class.quiet]="s.total === 0"
+                (click)="pick(s.id)" [attr.aria-pressed]="selected() === s.id" [attr.title]="s.title">
+          <leap-instrument-logo [symbol]="s.symbol" [size]="32" />
+          <span class="st-text">
+            <span class="st-sym">{{ s.symbol }}</span>
+            <span class="st-count num">{{ s.total ? s.total + (s.total === 1 ? ' headline' : ' headlines') : 'No headlines' }}</span>
+          </span>
+          @if (s.total > 0) {
+            <span class="st-bar" aria-hidden="true">
+              <i class="pos" [style.width.%]="s.pos"></i><i class="neu" [style.width.%]="s.neu"></i><i class="neg" [style.width.%]="s.neg"></i>
+            </span>
+          }
+        </button>
+      }
+    </nav>
+
+    <!-- Filters -->
+    <div class="toolbar">
+      <div class="segmented" role="group" aria-label="Filter by tone">
+        @for (m of moods; track m) {
+          <button type="button" [class.on]="mood() === m" [attr.aria-pressed]="mood() === m" (click)="mood.set(m)">
+            @if (m !== 'all') {
+              <i class="glyph" [class]="'g-' + tone[m]">{{ glyph[m] }}</i>
+            }
+            {{ moodLabel[m] }}
+          </button>
+        }
+      </div>
+      <label class="search">
+        <leap-icon name="search" [size]="16" />
+        <input class="control" type="search" placeholder="Search headlines" [value]="query()" (input)="query.set($any($event.target).value)"
+               aria-label="Search headlines" />
+      </label>
+    </div>
+
+    @if (filtered().length === 0) {
+      <section class="panel">
+        <div class="empty">
+          <span class="empty-icon"><leap-icon name="inbox" [size]="26" /></span>
+          <span class="empty-title">No headlines match</span>
+          @if (selectedStock(); as s) {
+            @if (s.total === 0) {
+              Nothing has been written about {{ s.symbol }} in this window. That is not the same as neutral news.
+            } @else {
+              Try a different tone or search.
+            }
+          } @else {
+            Try a different tone or search.
+          }
+          <button type="button" class="btn btn-secondary btn-sm clear" (click)="clearFilters()">Clear filters</button>
+        </div>
+      </section>
+    } @else {
+      <!-- Top stories -->
+      @if (topStories().length > 0) {
+        <section class="top" aria-label="Top stories">
+          <div class="side-grid">
+            @for (item of topStories(); track item.id) {
+              <a class="card" [href]="item.link" target="_blank" rel="noopener noreferrer">
+                <span class="card-img">
+                  @if (item.imageUrl && !broken().has(item.id)) {
+                    <img [src]="item.imageUrl" alt="" loading="lazy" referrerpolicy="no-referrer" (error)="markBroken(item.id)" />
+                  } @else {
+                    <span class="img-fallback">
+                      @if (item.attributions[0]; as a) {
+                        <leap-instrument-logo [symbol]="a.symbol" [size]="40" />
+                      } @else {
+                        <leap-icon name="news" [size]="28" />
+                      }
+                    </span>
+                  }
+                  <span class="dot-mood" [class]="'dm-' + tone[item.sentiment.label]" [attr.title]="moodLabel[item.sentiment.label]">
+                    {{ glyph[item.sentiment.label] }}
+                  </span>
+                </span>
+                <span class="card-title">{{ item.title }}</span>
+                <span class="byline">
+                  @if (item.attributions[0]; as a) {
+                    <span class="tag-sym">{{ a.symbol }}</span>
+                  }
+                  {{ item.publisher }} · {{ ago(item.publishedAt) }}
+                </span>
+              </a>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Everything else, by day -->
+      @if (days().length > 0) {
+        <section class="panel list">
+          @for (day of days(); track day.label) {
+            <h2 class="day">
+              {{ day.label }}<span class="day-count">{{ day.items.length }}</span>
+            </h2>
+            @for (item of day.items; track item.id) {
+              <leap-headline-row [item]="item" [selected]="selected()" (pickStock)="pick($event)" />
+            }
+          }
+          @if (hidden() > 0) {
+            <div class="more">
+              <button type="button" class="btn btn-secondary btn-sm" (click)="showMore()">Show more headlines</button>
+              <span class="faint">{{ hidden() }} more</span>
+            </div>
+          }
+        </section>
+      }
+    }
+
+    <p class="disclaimer faint"><leap-icon name="alert" [size]="14" />{{ disclaimer }}</p>
+
+    <details class="panel method">
+      <summary>How headlines are filed and scored</summary>
+      <div class="method-body">
+        <p>
+          <strong>Filing.</strong> A headline is filed under a stock only when it names the company or its ticker. Words that
+          could mean something else ("apple", "shell", "reliance") also need a market word nearby, such as "shares" or
+          "earnings". Open <em>Why?</em> on any headline to see exactly which words filed it.
+        </p>
+        <p>
+          <strong>Tone.</strong> Each headline is checked against a fixed list of positive and negative finance words
+          ("beats", "upgrade", "plunges", "lawsuit"…). More positive words than negative makes it positive, and the other way
+          round makes it negative. "Not" in front of a word flips it, and questions are not counted. It is a count of
+          words, not a prediction.
+        </p>
+        <p>
+          <strong>Order.</strong> Stocks are listed by how much was written about them, never by how positive the news
+          was, so the page never reads as a ranking of what to buy. A stock with no headlines shows "none", which is not
+          the same as neutral news.
+        </p>
+        <p>
+          <strong>Sources.</strong>
+          @if (news.servedBy() === 'newsapi') {
+            NewsAPI.org: the most recent hundred headlines from the last seven days, from a fixed list of financial
+            publishers.
+          } @else {
+            Yahoo Finance search and headline feeds, fetched by the LEAP API, up to fifty per stock, with repeats merged.
+          }
+        </p>
+      </div>
+    </details>
+  }
+</div>

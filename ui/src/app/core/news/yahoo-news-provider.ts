@@ -22,7 +22,6 @@ import type { CoveredInstrument } from './news-attribution';
 import { NewsUnavailable, type NewsProvider } from './news-provider';
 
 const PROXY = '/api/yahoo';
-const RSS_PROXY = '/api/yahoo-rss';
 
 /**
  * Headlines asked for per ticker in a sweep. Yahoo has no daily allowance, and
@@ -181,7 +180,7 @@ export class YahooNewsProvider implements NewsProvider {
   }
 
   private async rss(ticker: string): Promise<readonly NewsItem[]> {
-    const response = await fetch(`${RSS_PROXY}/rss/2.0/headline?s=${encodeURIComponent(ticker)}&region=US&lang=en-US`);
+    const response = await fetch(`${PROXY}/rss/2.0/headline?s=${encodeURIComponent(ticker)}`);
     if (!response.ok) throw new NewsUnavailable(`Yahoo headline feed failed for ${ticker} (HTTP ${response.status}).`);
     return parseYahooRss(await response.text(), ticker);
   }

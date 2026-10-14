@@ -67,6 +67,8 @@ export class NewsService {
 
   /** Which provider served the most recent successful load. */
   readonly servedBy = signal<NewsSourceId | null>(null);
+  /** When the headlines on screen were fetched; older than now when they came from the cache. */
+  readonly fetchedAt = signal<Date | null>(null);
   /** Set when the primary source failed and the fallback answered instead. */
   readonly fellBackBecause = signal<string | null>(null);
 
@@ -129,6 +131,7 @@ export class NewsService {
     if (fresh && Date.now() - fresh.at < CACHE_MS) {
       this.state.set('ready');
       this.servedBy.set(fresh.source);
+      this.fetchedAt.set(new Date(fresh.at));
       return Promise.resolve(fresh.items);
     }
 
@@ -156,9 +159,11 @@ export class NewsService {
             continue;
           }
 
-          this.cache.set(key, { at: Date.now(), items, source: provider.id });
+          const at = Date.now();
+          this.cache.set(key, { at, items, source: provider.id });
           this.state.set('ready');
           this.servedBy.set(provider.id);
+          this.fetchedAt.set(new Date(at));
           // A fallback that answered because the primary merely had nothing to
           // say is not a degraded state and is not announced as one.
           this.fellBackBecause.set(provider === this.primary ? null : primaryFailure);
