@@ -46,9 +46,19 @@ class ETLExtractor:
             # Extract transactions. Only settled trades belong in analytics:
             # FAILED orders were rejected and PENDING ones have not settled, so
             # counting either would overstate volume on the dashboards.
+            # A pending order trades when it fills, not when it was placed, so
+            # its fill time stands in for transaction_time (older rows have no
+            # filled_at and filled at transaction_time).
             logger.info("Extracting: transactions (status = COMPLETE)")
             transactions_df = pd.read_sql(
-                "SELECT * FROM transactions WHERE status = 'COMPLETE'", self.engine
+                """
+                SELECT transaction_id, account_id, instrument_id, transaction_type,
+                       quantity, price, status,
+                       COALESCE(filled_at, transaction_time) AS transaction_time
+                FROM transactions
+                WHERE status = 'COMPLETE'
+                """,
+                self.engine,
             )
             logger.info(f"  ✓ Extracted {len(transactions_df)} completed transaction records")
             

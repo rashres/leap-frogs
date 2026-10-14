@@ -1,0 +1,336 @@
+:host {
+  display: block;
+}
+
+.page-enter > * + * {
+  margin-top: 16px;
+}
+
+/* ---- Filters -------------------------------------------------------------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px 16px;
+  padding: 16px 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+
+  &.grow {
+    flex: 1 1 220px;
+  }
+
+  &.end {
+    margin-left: auto;
+  }
+
+  .control {
+    height: 38px;
+  }
+
+  input.control {
+    width: 160px;
+  }
+}
+
+.full {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.scope {
+  margin: 4px 2px 0;
+  font-size: 13px;
+
+  strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+.pad {
+  padding: 18px 22px;
+}
+
+/* ---- KPI cards ------------------------------------------------------------ */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px 20px;
+  min-width: 0;
+}
+
+.k-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+
+  leap-icon {
+    color: var(--text-3);
+  }
+}
+
+.k-value {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.k-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.k-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Buy share of value traded, with sells as the remainder. */
+.split {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--chart-down);
+  overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    background: var(--chart-up);
+  }
+}
+
+/* ---- Chart ---------------------------------------------------------------- */
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.chart-body {
+  padding: 18px 20px 8px 8px;
+}
+
+.sw {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 4px 0 2px;
+  border-radius: 2px;
+
+  &.buy {
+    background: var(--chart-up);
+  }
+
+  &.sell {
+    background: var(--chart-down);
+  }
+}
+
+/* ---- Tables --------------------------------------------------------------- */
+
+.two-col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.data-table {
+  font-size: 13.5px;
+
+  td,
+  th {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  &.compact td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+
+.row {
+  cursor: pointer;
+
+  &.on {
+    background: var(--accent-soft);
+  }
+}
+
+.ident {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ident-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.sym {
+  font-weight: 600;
+}
+
+.name {
+  font-size: 12px;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.bar {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--panel-3);
+  overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--accent);
+  }
+}
+
+.share {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+
+  .bar {
+    width: 64px;
+    height: 4px;
+  }
+
+  .num {
+    font-size: 11.5px;
+    min-width: 36px;
+  }
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+  border-top: 1px solid var(--border-soft);
+}
+
+/* ---- By exchange ---------------------------------------------------------- */
+
+.markets {
+  list-style: none;
+  margin: 0;
+  padding: 6px 20px 14px;
+
+  li {
+    padding: 10px 0;
+
+    & + li {
+      border-top: 1px dashed var(--border-soft);
+    }
+  }
+}
+
+.m-top {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 13.5px;
+}
+
+.m-name {
+  font-weight: 600;
+}
+
+.m-sub {
+  margin: 5px 0 0;
+  font-size: 12px;
+}
+
+.reset-btn {
+  margin-top: 14px;
+}
+
+@media (max-width: 1200px) {
+  .kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .two-col {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .field input.control {
+    width: 100%;
+  }
+
+  .field {
+    flex: 1 1 140px;
+  }
+
+  .field:first-child {
+    flex-basis: 100%;
+
+    .segmented {
+      display: flex;
+
+      button {
+        flex: 1;
+        min-width: 0;
+        padding: 0 4px;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  .head-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

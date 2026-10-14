@@ -3,7 +3,9 @@
  * Angular dev server forwards it.
  *
  *   /api/news   NewsAPI.org, with the key attached here so it never reaches the browser.
- *   /api        The Spring Boot API, including /api/yahoo (Yahoo search, news fallback, volume).
+ *   /api/yahoo      Yahoo Finance search (news fallback and instrument search); it sends no CORS headers.
+ *   /api/yahoo-rss  Yahoo Finance headline RSS per ticker (more headlines, each with a summary).
+ *   /api        The Spring Boot API.
  *
  * Point the API at a different host with LEAP_API_URL, e.g.
  *   LEAP_API_URL=http://10.0.0.5:8081 npm start
@@ -49,6 +51,22 @@ export default {
       ...(newsApiKey ? { 'X-Api-Key': newsApiKey } : {}),
       'User-Agent': 'leap-frogs-ui/dev',
     },
+  },
+  // Before /api/yahoo, which would otherwise match this path too.
+  '/api/yahoo-rss': {
+    target: 'https://feeds.finance.yahoo.com',
+    secure: true,
+    changeOrigin: true,
+    pathRewrite: { '^/api/yahoo-rss': '' },
+    headers: { 'User-Agent': 'Mozilla/5.0 (leap-frogs-ui dev proxy)' },
+  },
+  '/api/yahoo': {
+    target: 'https://query2.finance.yahoo.com',
+    secure: true,
+    changeOrigin: true,
+    pathRewrite: { '^/api/yahoo': '' },
+    // Yahoo answers 429 to requests without a browser-like User-Agent.
+    headers: { 'User-Agent': 'Mozilla/5.0 (leap-frogs-ui dev proxy)' },
   },
   '/api': {
     target,

@@ -6,6 +6,7 @@ bin/
 **/*.pyc
 .venv/
 venv/
+**/.venv/
 node_modules/
 **/*.log
 .env

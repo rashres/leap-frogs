@@ -27,20 +27,33 @@ public record OrderResponse(
         @Schema(description = "Number of shares in the order", example = "100")
         BigDecimal quantity,
         
-        @Schema(description = "Price per share", example = "150.50")
+        @Schema(description = "Price per share: the fill price once COMPLETE; while PENDING, the market price when placed", example = "150.50")
         BigDecimal price,
-        
+
         @Schema(description = "Total order value (quantity × price)", example = "15050.00")
         BigDecimal value,
-        
-        @Schema(description = "Current order status", example = "COMPLETE", allowableValues = {"CREATED", "PENDING", "COMPLETE", "FAILED"})
+
+        @Schema(description = "Current order status", example = "COMPLETE",
+                allowableValues = {"CREATED", "PENDING", "COMPLETE", "FAILED", "CANCELLED", "EXPIRED"})
         String status,
-        
+
         @Schema(description = "Timestamp when order was placed")
         Instant placedTime,
-        
+
         @Schema(description = "Timestamp when order was fulfilled (null if not fulfilled)")
         Instant fulfilledTime,
+
+        @Schema(description = "MARKET or LIMIT", example = "LIMIT")
+        String orderType,
+
+        @Schema(description = "Worst price the order accepts (LIMIT only, otherwise null)", example = "180.00")
+        BigDecimal limitPrice,
+
+        @Schema(description = "DAY or GTC", example = "DAY")
+        String timeInForce,
+
+        @Schema(description = "When a pending DAY order expires (null for GTC and orders that never waited)")
+        Instant expiresAt,
 
         @Schema(description = "Why the order was rejected (only set on a FAILED order just submitted)", example = "Insufficient cash: required 500, available 120.00")
         String message
@@ -66,6 +79,10 @@ public record OrderResponse(
                 order.getStatus(),
                 order.getPlacedTime(),
                 order.getFulfilledTime(),
+                order.getOrderType(),
+                order.getLimitPrice(),
+                order.getTimeInForce(),
+                order.getExpiresAt(),
                 message);
     }
 }
