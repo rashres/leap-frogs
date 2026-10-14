@@ -1,0 +1,271 @@
+<div class="page-enter">
+  <leap-page-header heading="Analytics">
+    <span description>Trading activity across all clients: what is traded, how much, and by how many clients.</span>
+    <div actions>
+      @if (freshness(); as f) {
+        <span
+          class="pill"
+          [class.pill-muted]="!f.stale"
+          [class.pill-warn]="f.stale"
+          [attr.title]="'Reports are read from the reporting database, which the ETL refreshes from live trading. Last refresh ' + f.minutes + ' min ago.'"
+        >
+          <leap-icon [name]="f.stale ? 'alert' : 'clock'" [size]="14" />
+          Data as of {{ f.text }}{{ f.stale ? ' · may be out of date' : '' }}
+        </span>
+      }
+      <button type="button" class="btn btn-secondary btn-sm" (click)="reload()" [disabled]="report.loading()">
+        <leap-icon name="refresh" [size]="16" />Reload
+      </button>
+    </div>
+  </leap-page-header>
+
+  <!-- Filters -->
+  <section class="panel filters" aria-label="Report filters">
+    <div class="field">
+      <span class="field-label">Period</span>
+      <div class="segmented" role="group" aria-label="Quick period">
+        @for (p of presets; track p) {
+          <button type="button" [class.on]="preset() === p" [attr.aria-pressed]="preset() === p" (click)="choosePreset(p)">
+            {{ presetLabels[p] }}
+          </button>
+        }
+      </div>
+    </div>
+    <label class="field">
+      <span class="field-label">From</span>
+      <input class="control" type="date" [value]="from() ?? ''" [max]="to() ?? today" (change)="setFrom($any($event.target).value)" />
+    </label>
+    <label class="field">
+      <span class="field-label">To</span>
+      <input class="control" type="date" [value]="to() ?? ''" [min]="from() ?? ''" [max]="today" (change)="setTo($any($event.target).value)" />
+    </label>
+    <label class="field grow">
+      <span class="field-label">Instrument</span>
+      <select class="control" [value]="symbol() ?? ''" (change)="setSymbol($any($event.target).value)">
+        <option value="">All instruments</option>
+        @for (o of instrumentOptions(); track o.symbol) {
+          <option [value]="o.symbol" [selected]="symbol() === o.symbol">{{ o.symbol }} — {{ o.name }}</option>
+        }
+      </select>
+    </label>
+    <div class="field end">
+      <button type="button" class="btn btn-ghost btn-sm" (click)="reset()" [disabled]="preset() === 'ALL' && !symbol()">Reset</button>
+    </div>
+    @if (rangeError(); as message) {
+      <p class="state-error full" role="alert">{{ message }}</p>
+    }
+  </section>
+
+  @if (report.error(); as e) {
+    <section class="panel pad"><p class="state-error" role="alert">{{ e.message }}</p></section>
+  } @else if (report.initialLoading()) {
+    <section class="kpis" aria-hidden="true">
+      @for (n of [1, 2, 3, 4]; track n) {
+        <div class="panel kpi"><span class="skeleton" style="width: 50%"></span><span class="skeleton" style="width: 70%; height: 28px"></span></div>
+      }
+    </section>
+    <p class="sr-only" role="status">Loading reports…</p>
+  } @else if (kpis(); as k) {
+    <p class="scope faint">
+      Showing <strong>{{ rangeText() }}</strong>
+      @if (symbol(); as s) {
+        for <strong>{{ s }}</strong>
+      }
+      · completed trades only
+    </p>
+
+    <!-- KPI cards -->
+    <section class="kpis" aria-label="Key figures">
+      <div class="panel kpi">
+        <p class="k-label"><leap-icon name="dollar" [size]="15" />Value traded</p>
+        <p class="k-value num">{{ k.value }}</p>
+        <div class="split" aria-hidden="true"><i [style.width.%]="k.buyShare"></i></div>
+        <p class="k-sub k-row num"><span class="up">Buys</span>{{ k.buyValue }}</p>
+        <p class="k-sub k-row num"><span class="down">Sells</span>{{ k.sellValue }}</p>
+      </div>
+      <div class="panel kpi">
+        <p class="k-label"><leap-icon name="activity" [size]="15" />Trades</p>
+        <p class="k-value num">{{ k.trades }}</p>
+        <p class="k-sub num">{{ k.buyTrades }} buys · {{ k.sellTrades }} sells</p>
+        <p class="k-sub num">Average trade {{ k.avgTrade }}</p>
+      </div>
+      <div class="panel kpi">
+        <p class="k-label"><leap-icon name="portfolio" [size]="15" />Active clients</p>
+        <p class="k-value num">{{ k.clients }}</p>
+        <p class="k-sub">Clients with at least one trade</p>
+        <p class="k-sub num">{{ k.perClient }} trades per client</p>
+      </div>
+      <div class="panel kpi">
+        <p class="k-label"><leap-icon name="layers" [size]="15" />Instruments traded</p>
+        <p class="k-value num">{{ k.instruments }}</p>
+        <p class="k-sub">Across {{ k.exchanges }} {{ k.exchanges === 1 ? 'exchange' : 'exchanges' }}</p>
+      </div>
+    </section>
+
+    @if (k.empty) {
+      <section class="panel">
+        <div class="empty">
+          <span class="empty-icon"><leap-icon name="inbox" [size]="26" /></span>
+          <span class="empty-title">No trades in this period</span>
+          Try a wider date range or all instruments.
+          <button type="button" class="btn btn-secondary btn-sm reset-btn" (click)="reset()">Show all time</button>
+        </div>
+      </section>
+    } @else {
+      <!-- Volume chart -->
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <h2 class="panel-title">Value traded over time</h2>
+            <p class="panel-sub"><i class="sw buy"></i>Buys <i class="sw sell"></i>Sells · hover a bar for details</p>
+          </div>
+          <div class="head-actions">
+            <div class="segmented" role="group" aria-label="Chart interval">
+              @for (i of intervals; track i) {
+                <button type="button" [class.on]="interval() === i" [attr.aria-pressed]="interval() === i" (click)="interval.set(i)">
+                  {{ intervalLabels[i] }}
+                </button>
+              }
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="exportVolume()" [disabled]="!volume.data()?.length">
+              <leap-icon name="download" [size]="15" />CSV
+            </button>
+          </div>
+        </div>
+        <div class="chart-body">
+          @if (volume.error(); as e) {
+            <p class="state-error">{{ e.message }}</p>
+          } @else if (volume.data(); as points) {
+            <leap-volume-bars [points]="points" [interval]="interval()" />
+          } @else {
+            <span class="skeleton" style="display: block; height: 284px"></span>
+          }
+        </div>
+      </section>
+
+      <div class="two-col">
+        <!-- Top instruments -->
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title">Most traded instruments</h2>
+              <p class="panel-sub">Ranked by value traded. Click a row to filter the page to it.</p>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="exportInstruments()">
+              <leap-icon name="download" [size]="15" />CSV
+            </button>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th class="r">#</th>
+                  <th>Instrument</th>
+                  <th class="r">Trades</th>
+                  <th class="r">Buy / sell</th>
+                  <th class="r">Clients</th>
+                  <th class="r">Value traded · share</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of visibleInstruments(); track row.symbol) {
+                  <tr class="row" [class.on]="symbol() === row.symbol" (click)="setSymbol(symbol() === row.symbol ? '' : row.symbol)"
+                      [attr.title]="symbol() === row.symbol ? 'Show all instruments' : 'Show only ' + row.symbol">
+                    <td class="r num faint">{{ row.rank }}</td>
+                    <td>
+                      <div class="ident">
+                        <leap-instrument-logo [symbol]="row.symbol" [size]="30" />
+                        <span class="ident-text">
+                          <span class="sym">{{ row.symbol }}</span>
+                          <span class="name faint">{{ row.name }} · {{ row.exchange }}</span>
+                        </span>
+                      </div>
+                    </td>
+                    <td class="r num">{{ row.trades }}</td>
+                    <td class="r num"><span class="up">{{ row.buyTrades }}</span> / <span class="down">{{ row.sellTrades }}</span></td>
+                    <td class="r num">{{ row.clients }}</td>
+                    <td class="r">
+                      <span class="num strong">{{ row.value }}</span>
+                      <div class="share">
+                        <span class="bar" aria-hidden="true"><i [style.width.%]="row.share"></i></span>
+                        <span class="num faint">{{ row.share.toFixed(1) }}%</span>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          @if (hiddenInstruments() > 0) {
+            <div class="more">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="showAll.set(!showAll())">
+                {{ showAll() ? 'Show top 10' : 'Show all ' + instrumentRows().length }}
+              </button>
+            </div>
+          }
+        </section>
+
+        <div class="side">
+          <!-- By exchange -->
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">By exchange</h2>
+                <p class="panel-sub">Share of value traded</p>
+              </div>
+            </div>
+            <ul class="markets">
+              @for (m of marketRows(); track m.exchange) {
+                <li>
+                  <div class="m-top">
+                    <span class="m-name">{{ m.exchange }}</span>
+                    <span class="num strong">{{ m.value }}</span>
+                  </div>
+                  <span class="bar" aria-hidden="true"><i [style.width.%]="m.share"></i></span>
+                  <p class="m-sub faint num">
+                    {{ m.share.toFixed(1) }}% · {{ m.trades }} trades · {{ m.instruments }} {{ m.instruments === 1 ? 'instrument' : 'instruments' }}
+                  </p>
+                </li>
+              }
+            </ul>
+          </section>
+
+          <!-- Clients per month -->
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 class="panel-title">Client activity</h2>
+                <p class="panel-sub">Per month</p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="exportClients()">
+                <leap-icon name="download" [size]="15" />CSV
+              </button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table compact">
+                <thead>
+                  <tr>
+                    <th>Month</th>
+                    <th class="r">Clients</th>
+                    <th class="r">Trades</th>
+                    <th class="r">Per client</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (c of clientRows(); track c.month) {
+                    <tr [attr.title]="c.value + ' traded'">
+                      <td>{{ c.label }}</td>
+                      <td class="r num">{{ c.activeClients }}</td>
+                      <td class="r num">{{ c.trades }}</td>
+                      <td class="r num">{{ c.avgTradesPerClient.toFixed(2) }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </div>
+    }
+  }
+</div>
