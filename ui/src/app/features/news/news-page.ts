@@ -95,15 +95,27 @@ export class NewsPage {
     return { pos: pct(c.positive), neu: pct(c.neutral), neg: pct(c.negative) };
   });
 
-  /** The legend under the tone bar: count and whole-number share per tone. */
+  /** One row per sentiment: count and whole-number share of the headlines in scope. */
   readonly tones = computed(() => {
     const c = this.counts();
     const bar = this.moodBar();
     return [
-      { key: 'pos', label: 'positive', count: c.positive, pct: Math.round(bar.pos) },
-      { key: 'neu', label: 'neutral', count: c.neutral, pct: Math.round(bar.neu) },
-      { key: 'neg', label: 'negative', count: c.negative, pct: Math.round(bar.neg) },
+      { key: 'pos', label: 'Positive', count: c.positive, pct: Math.round(bar.pos) },
+      { key: 'neu', label: 'Neutral', count: c.neutral, pct: Math.round(bar.neu) },
+      { key: 'neg', label: 'Negative', count: c.negative, pct: Math.round(bar.neg) },
     ];
+  });
+
+  /**
+   * The split in plain words: "Most headlines are neutral", or "mixed" when no
+   * sentiment has a majority. Describes the headlines only, never the stock.
+   */
+  readonly verdict = computed(() => {
+    const total = this.counts().total;
+    const subject = this.selectedStock() ? `${this.selectedStock()!.symbol} headlines` : 'headlines';
+    if (total === 0) return `No ${subject} yet`;
+    const top = [...this.tones()].sort((a, b) => b.count - a.count)[0];
+    return top.count * 2 > total ? `Most ${subject} are ${top.label.toLowerCase()}` : `${subject[0].toUpperCase()}${subject.slice(1)} are mixed`;
   });
 
   readonly filtered = computed(() => {
