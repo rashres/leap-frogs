@@ -3,10 +3,11 @@ import {
   AnalyticsService,
   type AnalyticsFilter,
   type AnalyticsInterval,
+  type OutcomeCounts,
 } from '../../core/api/analytics.service';
 import { createLoader } from '../../core/api/loader';
 import { MarketStore } from '../../core/state/market.store';
-import { formatStamp, formatUsd } from '../../shared/format';
+import { formatPrice, formatQty, formatStamp, formatUsd } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { PageHeader } from '../../shared/page-header';
@@ -14,6 +15,20 @@ import { dayLabel, downloadCsv, isoDay, periodLabel } from './analytics-format';
 import { VolumeBars } from './volume-bars';
 
 type Preset = '30D' | '90D' | 'YTD' | 'ALL';
+
+/** The outcomes an order can end in, in the order the bar draws them. `tone` is the CSS class for its colour. */
+const OUTCOMES = [
+  { key: 'filled', label: 'Filled', tone: 'filled' },
+  { key: 'pending', label: 'Pending', tone: 'pending' },
+  { key: 'cancelled', label: 'Cancelled', tone: 'cancelled' },
+  { key: 'expired', label: 'Expired', tone: 'expired' },
+  { key: 'rejected', label: 'Rejected', tone: 'rejected' },
+] as const satisfies readonly { key: keyof OutcomeCounts; label: string; tone: string }[];
+
+/** "33.3%", or "—" when there were no orders to take a rate of. */
+function rate(value: number | null): string {
+  return value == null ? '—' : `${value.toFixed(1)}%`;
+}
 
 /** Reporting data older than this gets a warning; the ETL is meant to run every 15 minutes. */
 const STALE_AFTER_MS = 30 * 60_000;
@@ -59,6 +74,46 @@ export class AnalyticsPage {
 
   readonly report = createLoader(() => this.api.report(this.filter()));
   readonly volume = createLoader(() => this.api.volume(this.filter(), this.interval()));
+  readonly outcomes = createLoader(() => this.api.orderOutcomes(this.filter()));
+
+  /** The outcome bar and its legend: every order placed, split by how it ended. */
+  readonly outcomeView = computed(() => {
+    const data = this.outcomes.data();
+    if (!data) return null;
+    const t = data.totals;
+    const share = (n: number) => (t.orders > 0 ? (n / t.orders) * 100 : 0);
+    const segments = OUTCOMES.map((o) => ({ ...o, count: t[o.key], share: share(t[o.key]) }));
+    return {
+      orders: t.orders.toLocaleString('en-US'),
+      fillRate: rate(t.fillRate),
+      cancelRate: rate(t.cancelRate),
+      cancelled: t.cancelled,
+      expired: t.expired,
+      segments,
+      empty: t.orders === 0,
+    };
+  });
+
+  readonly outcomeRows = computed(() =>
+    (this.outcomes.data()?.instruments ?? []).map((row) => ({
+      symbol: row.symbol,
+      name: row.name,
+      ...row.counts,
+      cancelRateText: rate(row.counts.cancelRate),
+    })),
+  );
+
+  readonly closedRows = computed(() =>
+    (this.outcomes.data()?.recentlyClosed ?? []).map((o) => ({
+      ...o,
+      when: formatStamp(o.closedAt ?? o.placedAt),
+      type: o.orderType === 'LIMIT' ? `Limit ${formatPrice(o.limitPrice)}` : 'Market',
+      tif: o.timeInForce === 'GTC' ? 'GTC' : 'Day',
+      qty: formatQty(o.quantity),
+      value: formatUsd(o.amount),
+      label: o.status === 'CANCELLED' ? 'Cancelled' : 'Expired',
+    })),
+  );
 
   readonly instrumentOptions = computed(() =>
     [...this.market.instruments()].sort((a, b) => a.symbol.localeCompare(b.symbol)).map((i) => ({ symbol: i.symbol, name: i.name })),
@@ -155,6 +210,11 @@ export class AnalyticsPage {
       if (this.rangeError()) return;
       untracked(() => this.volume.reload());
     });
+    effect(() => {
+      this.filter();
+      if (this.rangeError()) return;
+      untracked(() => this.outcomes.reload());
+    });
     const timer = setInterval(() => this.reload(), RELOAD_EVERY_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
   }
@@ -207,6 +267,17 @@ export class AnalyticsPage {
     if (this.rangeError()) return;
     this.report.reload();
     this.volume.reload();
+    this.outcomes.reload();
+  }
+
+  exportOutcomes(): void {
+    downloadCsv(
+      `leap-order-outcomes-${this.fileSuffix()}.csv`,
+      ['Symbol', 'Name', 'Orders', 'Filled', 'Pending', 'Cancelled', 'Expired', 'Rejected', 'Fill rate (%)', 'Cancel rate (%)'],
+      this.outcomeRows().map((r) => [
+        r.symbol, r.name, r.orders, r.filled, r.pending, r.cancelled, r.expired, r.rejected, r.fillRate, r.cancelRate,
+      ]),
+    );
   }
 
   exportInstruments(): void {

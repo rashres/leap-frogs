@@ -267,5 +267,124 @@
         </div>
       </div>
     }
+
+    <!-- Order outcomes: every order placed, not just trades (fact_orders) -->
+    <section class="panel outcomes" aria-labelledby="outcomes-title">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title" id="outcomes-title">Order outcomes</h2>
+          <p class="panel-sub">Every order placed in the period, including ones that never traded</p>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="exportOutcomes()" [disabled]="!outcomeRows().length">
+          <leap-icon name="download" [size]="15" />CSV
+        </button>
+      </div>
+
+      @if (outcomes.error(); as e) {
+        <div class="pad">
+          <p class="state-error">{{ e.message }}</p>
+          <p class="faint note">Order outcomes appear once the ETL has run with the order-outcome tables.</p>
+        </div>
+      } @else if (outcomes.initialLoading()) {
+        <div class="pad"><span class="skeleton" style="display: block; height: 120px"></span></div>
+      } @else if (outcomeView(); as o) {
+        @if (o.empty) {
+          <p class="empty">No orders were placed in this period.</p>
+        } @else {
+          <div class="o-summary">
+            <div class="o-stat">
+              <span class="k-label">Orders placed</span>
+              <span class="o-num num">{{ o.orders }}</span>
+            </div>
+            <div class="o-stat">
+              <span class="k-label">Fill rate</span>
+              <span class="o-num num up">{{ o.fillRate }}</span>
+            </div>
+            <div class="o-stat">
+              <span class="k-label">Cancel rate</span>
+              <span class="o-num num">{{ o.cancelRate }}</span>
+              <span class="k-sub num">{{ o.cancelled }} cancelled · {{ o.expired }} expired</span>
+            </div>
+          </div>
+
+          <div class="o-bar" role="img" [attr.aria-label]="'Orders by outcome: ' + o.orders + ' in total'">
+            @for (s of o.segments; track s.key) {
+              @if (s.count > 0) {
+                <i [class]="'seg ' + s.tone" [style.width.%]="s.share" [attr.title]="s.label + ': ' + s.count + ' (' + s.share.toFixed(1) + '%)'"></i>
+              }
+            }
+          </div>
+          <ul class="o-legend">
+            @for (s of o.segments; track s.key) {
+              <li>
+                <i [class]="'sw ' + s.tone" aria-hidden="true"></i>{{ s.label }}
+                <span class="num strong">{{ s.count }}</span>
+                <span class="num faint">{{ s.share.toFixed(1) }}%</span>
+              </li>
+            }
+          </ul>
+
+          <div class="two-col o-detail">
+            <div class="table-wrap">
+              <table class="data-table compact">
+                <thead>
+                  <tr>
+                    <th>Instrument</th>
+                    <th class="r">Orders</th>
+                    <th class="r">Filled</th>
+                    <th class="r">Pending</th>
+                    <th class="r">Cancelled</th>
+                    <th class="r">Expired</th>
+                    <th class="r">Rejected</th>
+                    <th class="r">Cancel rate</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of outcomeRows(); track r.symbol) {
+                    <tr class="row" [class.on]="symbol() === r.symbol" (click)="setSymbol(symbol() === r.symbol ? '' : r.symbol)"
+                        [attr.title]="symbol() === r.symbol ? 'Show all instruments' : 'Show only ' + r.symbol">
+                      <td>
+                        <div class="ident">
+                          <leap-instrument-logo [symbol]="r.symbol" [size]="26" />
+                          <span class="sym">{{ r.symbol }}</span>
+                        </div>
+                      </td>
+                      <td class="r num strong">{{ r.orders }}</td>
+                      <td class="r num up">{{ r.filled }}</td>
+                      <td class="r num">{{ r.pending }}</td>
+                      <td class="r num">{{ r.cancelled }}</td>
+                      <td class="r num">{{ r.expired }}</td>
+                      <td class="r num down">{{ r.rejected }}</td>
+                      <td class="r num">{{ r.cancelRateText }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="closed">
+              <h3 class="closed-title">Recently cancelled or expired</h3>
+              @if (closedRows().length === 0) {
+                <p class="faint note">None in this period.</p>
+              } @else {
+                <ul class="closed-list">
+                  @for (c of closedRows(); track c.orderId) {
+                    <li>
+                      <div class="c-top">
+                        <span class="sym">{{ c.symbol }}</span>
+                        <span class="side" [class.up]="c.side === 'BUY'" [class.down]="c.side === 'SELL'">{{ c.side }}</span>
+                        <span class="pill" [class.pill-muted]="c.status === 'CANCELLED'" [class.pill-warn]="c.status === 'EXPIRED'">{{ c.label }}</span>
+                        <span class="num faint when">{{ c.when }}</span>
+                      </div>
+                      <p class="c-sub faint num">{{ c.qty }} · {{ c.type }} · {{ c.tif }} · {{ c.value }}</p>
+                    </li>
+                  }
+                </ul>
+              }
+            </div>
+          </div>
+        }
+      }
+    </section>
   }
 </div>

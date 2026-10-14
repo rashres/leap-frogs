@@ -13,6 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -135,6 +137,66 @@ public class AnalyticsService {
         }));
     }
 
+    /** Orders by status in fact_orders, one aggregate expression per outcome. */
+    private static final String OUTCOME_COUNTS = """
+            COUNT(*)                                       AS orders,
+            COUNT(*) FILTER (WHERE status = 'COMPLETE')    AS filled,
+            COUNT(*) FILTER (WHERE status = 'PENDING')     AS pending,
+            COUNT(*) FILTER (WHERE status = 'CANCELLED')   AS cancelled,
+            COUNT(*) FILTER (WHERE status = 'EXPIRED')     AS expired,
+            COUNT(*) FILTER (WHERE status = 'FAILED')      AS rejected
+            """;
+
+    /**
+     * How orders placed in the period ended up: totals, per instrument, and the
+     * latest cancellations and expiries. Reads fact_orders, which unlike
+     * fact_trades holds every order; the dates filter on when an order was placed.
+     */
+    public OrderOutcomes orderOutcomes(Filter filter, int recentLimit) {
+        Where where = Where.of(filter, "placed_date");
+        return query(() -> {
+            OutcomeCounts totals = jdbc.queryForObject(
+                    "SELECT " + OUTCOME_COUNTS + " FROM fact_orders" + where.sql(),
+                    where.params(), (rs, i) -> counts(rs));
+
+            List<InstrumentOutcomes> instruments = jdbc.query("SELECT symbol, MAX(stock_name) AS name, " + OUTCOME_COUNTS
+                    + " FROM fact_orders" + where.sql() + """
+                     GROUP BY symbol
+                     ORDER BY orders DESC, symbol
+                    """, where.params(), (rs, i) -> new InstrumentOutcomes(
+                    rs.getString("symbol"), rs.getString("name"), counts(rs)));
+
+            String closed = (where.sql().isEmpty() ? " WHERE " : where.sql() + " AND ") + "status IN ('CANCELLED', 'EXPIRED')";
+            List<ClosedOrder> recentlyClosed = jdbc.query("""
+                    SELECT transaction_id, symbol, transaction_type, order_type, time_in_force, status,
+                           quantity, limit_price, amount, placed_at, closed_at
+                    FROM fact_orders
+                    """ + closed + """
+                     ORDER BY COALESCE(closed_at, placed_at) DESC, transaction_id DESC
+                     LIMIT :limit
+                    """, where.params().addValue("limit", recentLimit), (rs, i) -> new ClosedOrder(
+                    rs.getInt("transaction_id"), rs.getString("symbol"), rs.getString("transaction_type"),
+                    rs.getString("order_type"), rs.getString("time_in_force"), rs.getString("status"),
+                    rs.getBigDecimal("quantity"), rs.getBigDecimal("limit_price"), rs.getBigDecimal("amount"),
+                    instant(rs.getTimestamp("placed_at")), instant(rs.getTimestamp("closed_at"))));
+
+            return new OrderOutcomes(totals, instruments, recentlyClosed);
+        });
+    }
+
+    private static OutcomeCounts counts(ResultSet rs) throws SQLException {
+        long orders = rs.getLong("orders");
+        long filled = rs.getLong("filled");
+        long cancelled = rs.getLong("cancelled");
+        return new OutcomeCounts(orders, filled, rs.getLong("pending"), cancelled,
+                rs.getLong("expired"), rs.getLong("rejected"), percent(filled, orders), percent(cancelled, orders));
+    }
+
+    private static BigDecimal percent(long part, long whole) {
+        return whole == 0 ? null
+                : BigDecimal.valueOf(part * 100).divide(BigDecimal.valueOf(whole), 2, RoundingMode.HALF_UP);
+    }
+
     private <T> T query(Supplier<T> run) {
         try {
             return run.get();
@@ -151,15 +213,21 @@ public class AnalyticsService {
 
     /** WHERE clause for the optional filters, with every value bound as a parameter. */
     private record Where(String sql, MapSqlParameterSource params) {
+        /** Filters fact_trades, whose date is the trade date. */
         static Where of(Filter filter) {
+            return of(filter, "trade_date");
+        }
+
+        /** `dateColumn` is the column the from/to dates apply to (a constant, never user input). */
+        static Where of(Filter filter, String dateColumn) {
             StringBuilder sql = new StringBuilder();
             MapSqlParameterSource params = new MapSqlParameterSource();
             if (filter.from() != null) {
-                sql.append(sql.isEmpty() ? " WHERE " : " AND ").append("trade_date >= :from");
+                sql.append(sql.isEmpty() ? " WHERE " : " AND ").append(dateColumn).append(" >= :from");
                 params.addValue("from", filter.from());
             }
             if (filter.to() != null) {
-                sql.append(sql.isEmpty() ? " WHERE " : " AND ").append("trade_date <= :to");
+                sql.append(sql.isEmpty() ? " WHERE " : " AND ").append(dateColumn).append(" <= :to");
                 params.addValue("to", filter.to());
             }
             if (filter.symbol() != null) {

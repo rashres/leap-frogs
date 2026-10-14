@@ -65,6 +65,40 @@ export interface ClientActivity {
   avgTradesPerClient: number;
 }
 
+/** Orders by outcome; rates are percentages of all orders, null when there are none. */
+export interface OutcomeCounts {
+  orders: number;
+  filled: number;
+  pending: number;
+  cancelled: number;
+  expired: number;
+  rejected: number;
+  fillRate: number | null;
+  cancelRate: number | null;
+}
+
+/** A cancelled or expired order. Carries no account: the dashboard identifies no client. */
+export interface ClosedOrder {
+  orderId: number;
+  symbol: string;
+  side: 'BUY' | 'SELL';
+  orderType: 'MARKET' | 'LIMIT';
+  timeInForce: 'DAY' | 'GTC';
+  status: 'CANCELLED' | 'EXPIRED';
+  quantity: number;
+  limitPrice: number | null;
+  amount: number;
+  placedAt: string;
+  closedAt: string | null;
+}
+
+/** GET /api/analytics/order-outcomes: every order, not just trades. Dates filter on when an order was placed. */
+export interface OrderOutcomes {
+  totals: OutcomeCounts;
+  instruments: { symbol: string; name: string | null; counts: OutcomeCounts }[];
+  recentlyClosed: ClosedOrder[];
+}
+
 /** Everything on the analytics page except the chart, which reloads on its own when the interval changes. */
 export interface AnalyticsReport {
   summary: AnalyticsSummary;
@@ -90,6 +124,11 @@ export class AnalyticsService {
 
   volume(filter: AnalyticsFilter, interval: AnalyticsInterval): Observable<VolumePoint[]> {
     return this.http.get<VolumePoint[]>('/api/analytics/volume', { params: toParams(filter).set('interval', interval) });
+  }
+
+  /** Loaded on its own, so a reporting database the ETL has not yet given fact_orders only blanks this panel. */
+  orderOutcomes(filter: AnalyticsFilter, recent = 10): Observable<OrderOutcomes> {
+    return this.http.get<OrderOutcomes>('/api/analytics/order-outcomes', { params: toParams(filter).set('recent', recent) });
   }
 }
 

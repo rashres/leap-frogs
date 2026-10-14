@@ -291,6 +291,134 @@
   margin-top: 14px;
 }
 
+/* ---- Order outcomes ------------------------------------------------------- */
+
+/* One colour per outcome, shared by the bar, its legend swatches and nothing else. */
+.filled {
+  --tone: var(--chart-up);
+}
+.pending {
+  --tone: var(--accent);
+}
+.cancelled {
+  --tone: var(--text-3);
+}
+.expired {
+  --tone: var(--warn);
+}
+.rejected {
+  --tone: var(--chart-down);
+}
+
+.o-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 40px;
+  padding: 18px 22px 4px;
+}
+
+.o-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.o-num {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.o-bar {
+  display: flex;
+  height: 12px;
+  margin: 16px 22px 0;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--panel-3);
+
+  .seg {
+    height: 100%;
+    background: var(--tone);
+  }
+
+  /* A hairline between segments, so neighbours of similar colour stay apart. */
+  .seg + .seg {
+    box-shadow: inset 2px 0 0 var(--panel);
+  }
+}
+
+.o-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 12px 22px 18px;
+  list-style: none;
+  font-size: 13px;
+
+  li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .sw {
+    margin: 0;
+    background: var(--tone);
+  }
+}
+
+.o-detail {
+  padding: 0 22px 20px;
+}
+
+.closed-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.closed-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: 10px 0;
+    border-top: 1px solid var(--border-soft);
+  }
+}
+
+.c-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  .side {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .when {
+    margin-left: auto;
+    font-size: 12px;
+  }
+}
+
+.c-sub {
+  margin: 4px 0 0;
+  font-size: 12px;
+}
+
+.note {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+}
+
 @media (max-width: 1200px) {
   .kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));

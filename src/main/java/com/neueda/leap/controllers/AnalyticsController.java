@@ -99,6 +99,23 @@ public class AnalyticsController {
         return analytics.clients(filter(from, to, symbol));
     }
 
+    /** GET /api/analytics/order-outcomes?recent=10 */
+    @GetMapping("/order-outcomes")
+    @Operation(summary = "How orders ended up",
+            description = "Orders placed in the period by outcome (filled, pending, cancelled, expired, rejected) with fill and "
+                        + "cancel rates, the same per instrument, and the latest cancelled or expired orders. "
+                        + "Dates filter on when an order was placed.")
+    public OrderOutcomes orderOutcomes(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) String symbol,
+            @RequestParam(defaultValue = "10") @Parameter(description = "Recent cancellations to list, 0 to 100") int recent) {
+        if (recent < 0 || recent > MAX_LIMIT) {
+            throw badRequest("recent must be 0 to " + MAX_LIMIT);
+        }
+        return analytics.orderOutcomes(filter(from, to, symbol), recent);
+    }
+
     private static Filter filter(LocalDate from, LocalDate to, String symbol) {
         if (from != null && to != null && from.isAfter(to)) {
             throw badRequest("from must be on or before to");
