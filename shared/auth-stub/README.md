@@ -24,7 +24,7 @@ Register a new user
 ```bash
 curl -X POST http://localhost:3000/auth/register \
   -H "Content-Type: application/json" \
-  -d '{"username":"alice","password":"password123"}'
+  -d '{"username":"<username>","password":"<password>"}'
 ```
 Response:
 ```json
@@ -36,13 +36,13 @@ Login with credentials
 ```bash
 curl -X POST http://localhost:3000/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"dave","password":"mission123"}'
+  -d '{"username":"<configured-user>","password":"<configured-password>"}'
 ```
 Response:
 ```json
 {
-  "accessToken":"stub-access-token-for-dave-...",
-  "refreshToken":"stub-refresh-token-for-dave-..."
+  "accessToken":"<access-token>",
+  "refreshToken":"<refresh-token>"
 }
 ```
 
@@ -51,11 +51,11 @@ Refresh access token using refresh token
 ```bash
 curl -X POST http://localhost:3000/auth/refresh \
   -H "Content-Type: application/json" \
-  -d '{"refreshToken":"stub-refresh-token-for-dave-..."}'
+  -d '{"refreshToken":"<refresh-token>"}'
 ```
 Response:
 ```json
-{"accessToken":"stub-access-token-for-dave-..."}
+{"accessToken":"<access-token>"}
 ```
 
 ### POST /auth/logout
@@ -63,17 +63,12 @@ Logout and invalidate refresh token
 ```bash
 curl -X POST http://localhost:3000/auth/logout \
   -H "Content-Type: application/json" \
-  -d '{"refreshToken":"stub-refresh-token-for-dave-..."}'
+  -d '{"refreshToken":"<refresh-token>"}'
 ```
 Response:
 ```json
 {"loggedOut":true}
 ```
-
-## Default Credentials
-
-- Username: `dave`
-- Password: `mission123`
 
 ## Implementation Notes
 
