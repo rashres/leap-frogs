@@ -1,10 +1,13 @@
-import { Injectable, computed, effect, inject, untracked } from '@angular/core';
+import { DestroyRef, Injectable, computed, effect, inject, untracked } from '@angular/core';
 import { AccountsService } from '../api/accounts.service';
 import { createLoader } from '../api/loader';
 import type { Order } from '../api/models';
 import { OrdersService } from '../api/orders.service';
 import { ActiveAccountService } from './active-account.service';
 import { MarketStore } from './market.store';
+
+/** Matches the API's pending-order check (orders.pending.interval.ms). */
+const PENDING_POLL_MS = 15_000;
 
 export interface Position {
   readonly instrumentId: number;
@@ -70,6 +73,21 @@ export class PortfolioStore {
   /** Newest first, as the API returns them. */
   readonly orderList = computed(() => this.orders.data() ?? []);
 
+  readonly pendingOrders = computed(() => this.orderList().filter((o) => o.status === 'PENDING'));
+
+  /** Cash held back by pending buys, worked out the way the API does (OrderMapper.reservedCash). */
+  readonly reservedCash = computed(() =>
+    this.pendingOrders()
+      .filter((o) => o.side === 'BUY')
+      .reduce((sum, o) => sum + o.quantity * (o.limitPrice ?? o.price), 0),
+  );
+
+  /** Cash a new order can use: the balance minus what pending buys hold back. */
+  readonly availableCash = computed(() => {
+    const cash = this.cash();
+    return cash == null ? null : cash - this.reservedCash();
+  });
+
   readonly positions = computed<Position[]>(() => {
     const basis = costBasis(this.orderList());
     const instruments = this.market.byId();
@@ -122,6 +140,21 @@ export class PortfolioStore {
         });
       }
     });
+
+    // Pending orders fill or expire on the server. While any are waiting, re-read
+    // the orders; when one stops pending, refresh everything that shows cash or holdings.
+    const poll = setInterval(() => {
+      if (this.pendingOrders().length) this.orders.reload();
+    }, PENDING_POLL_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(poll));
+
+    let pending = new Set<number>();
+    effect(() => {
+      const current = new Set(this.pendingOrders().map((o) => o.orderId));
+      const resolved = [...pending].some((id) => !current.has(id));
+      pending = current;
+      if (resolved) untracked(() => this.ordersApi.notifyChanged());
+    });
   }
 
   position(instrumentId: number): Position | undefined {
@@ -130,6 +163,14 @@ export class PortfolioStore {
 
   heldQuantity(instrumentId: number): number {
     return this.holdings.data()?.find((h) => h.instrumentId === instrumentId)?.quantity ?? 0;
+  }
+
+  /** Shares a new sell can use: those held minus what pending sells hold back. */
+  availableQuantity(instrumentId: number): number {
+    const reserved = this.pendingOrders()
+      .filter((o) => o.side === 'SELL' && o.instrumentId === instrumentId)
+      .reduce((sum, o) => sum + o.quantity, 0);
+    return this.heldQuantity(instrumentId) - reserved;
   }
 
   ordersFor(instrumentId: number): Order[] {

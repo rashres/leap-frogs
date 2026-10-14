@@ -84,6 +84,32 @@
   line-height: 1.5;
 }
 
+/* Order type and time-in-force pickers: label left, segmented control right. */
+.choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 14px;
+}
+
+/* Explains that the order will wait as Pending rather than fill now. */
+.waits {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+
+  p {
+    margin: 8px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+  }
+}
+
 .field {
   display: block;
   margin-bottom: 8px;

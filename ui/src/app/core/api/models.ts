@@ -67,8 +67,18 @@ export interface Holding {
   quantity: number;
 }
 
+/** WatchlistResponse: starred instrument ids, in display order. */
+export interface Watchlist {
+  accountId: number;
+  instrumentIds: number[];
+}
+
 export type OrderSide = 'BUY' | 'SELL';
-export type OrderStatus = 'CREATED' | 'PENDING' | 'COMPLETE' | 'FAILED';
+export type OrderStatus = 'CREATED' | 'PENDING' | 'COMPLETE' | 'FAILED' | 'CANCELLED' | 'EXPIRED';
+/** MARKET fills at the market price; LIMIT only at limitPrice or better. */
+export type OrderType = 'MARKET' | 'LIMIT';
+/** DAY expires at the close of its trading session; GTC (limit only) waits until filled or cancelled. */
+export type TimeInForce = 'DAY' | 'GTC';
 
 /** OrderResponse */
 export interface Order {
@@ -78,20 +88,29 @@ export interface Order {
   symbol: string;
   side: OrderSide;
   quantity: number;
+  /** The fill price once COMPLETE; while PENDING, the market price when it was placed. */
   price: number;
   value: number;
   status: OrderStatus;
   placedTime: string;
   fulfilledTime: string | null;
+  orderType: OrderType;
+  limitPrice: number | null;
+  timeInForce: TimeInForce;
+  /** When a pending DAY order expires; null for GTC and for orders that never waited. */
+  expiresAt: string | null;
   /** Rejection reason; only set on the response to a rejected POST. */
   message: string | null;
 }
 
-/** OrderRequest */
+/** OrderRequest. Leaving out the last three places a market order good for the day. */
 export interface OrderRequest {
   instrumentId: number;
   side: OrderSide;
   quantity: number;
+  orderType?: OrderType;
+  limitPrice?: number | null;
+  timeInForce?: TimeInForce;
 }
 
 /** GET /api/audit/orders */

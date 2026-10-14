@@ -13,6 +13,12 @@ public class Order {
     private String status;
     private Instant placedTime;
     private Instant fulfilledTime;
+    // MARKET fills at the market price; LIMIT only at limitPrice or better.
+    private String orderType = "MARKET";
+    private BigDecimal limitPrice;
+    // DAY expires at expiresAt (the close of its session); GTC waits until filled or cancelled.
+    private String timeInForce = "DAY";
+    private Instant expiresAt;
 
     // Used by MyBatis when reading orders back from the transactions table.
     public Order() {
@@ -83,6 +89,83 @@ public class Order {
         return fulfilledTime;
     }
 
+    /** When the order changed cash and holdings: its fill time, or for older rows its placed time. */
+    public Instant getEffectiveTime() {
+        return fulfilledTime != null ? fulfilledTime : placedTime;
+    }
+
+    public String getOrderType() {
+        return orderType;
+    }
+
+    public void setOrderType(String orderType) {
+        this.orderType = orderType;
+    }
+
+    public BigDecimal getLimitPrice() {
+        return limitPrice;
+    }
+
+    public void setLimitPrice(BigDecimal limitPrice) {
+        this.limitPrice = limitPrice;
+    }
+
+    public String getTimeInForce() {
+        return timeInForce;
+    }
+
+    public void setTimeInForce(String timeInForce) {
+        this.timeInForce = timeInForce;
+    }
+
+    public Instant getExpiresAt() {
+        return expiresAt;
+    }
+
+    public void setExpiresAt(Instant expiresAt) {
+        this.expiresAt = expiresAt;
+    }
+
+    public boolean isLimit() {
+        return "LIMIT".equals(orderType);
+    }
+
+    public boolean isBuy() {
+        return "BUY".equals(side);
+    }
+
+    /**
+     * The most this order can cost (BUY) while it waits: a limit order never
+     * fills above its limit; a market order is reserved at the price it was
+     * placed at, and is rejected at the fill if the market has since risen past
+     * what the account can pay.
+     */
+    public BigDecimal getReservedValue() {
+        return quantity.multiply(isLimit() ? limitPrice : price);
+    }
+
+    /**
+     * Whether the order may fill at `marketPrice`: a market order always can;
+     * a limit buy only at or below its limit, a limit sell at or above it.
+     */
+    public boolean canFillAt(BigDecimal marketPrice) {
+        if (marketPrice == null) {
+            return false;
+        }
+        if (!isLimit()) {
+            return true;
+        }
+        int cmp = marketPrice.compareTo(limitPrice);
+        return isBuy() ? cmp <= 0 : cmp >= 0;
+    }
+
+    /** Fills the order at `fillPrice`, at time `at`. */
+    public void fill(BigDecimal fillPrice, Instant at) {
+        this.price = fillPrice;
+        this.fulfilledTime = at;
+        setStatus("COMPLETE");
+    }
+
     public void setStatus(String status) {
         switch(status) {
             case "COMPLETE":
@@ -92,6 +175,8 @@ public class Order {
                 }
             case "PENDING":
             case "FAILED":
+            case "CANCELLED":
+            case "EXPIRED":
                 this.status = status;
                 break;
         }

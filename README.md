@@ -127,7 +127,19 @@ This extracts from `leapfrogsdb`, transforms, and loads into `leap_analytics`.
 Only `status = 'COMPLETE'` transactions are extracted, so rejected orders never
 count toward analytics volume.
 
-Both commands use the same image (`etl/Dockerfile`) and are under the `tools`
+To keep the analytics dashboard current, the `etl-scheduler` service runs the
+same ETL on start and then every 15 minutes. Unlike the two commands above it is
+a normal service, so `docker compose up -d` starts it:
+```bash
+docker compose up -d etl-scheduler
+docker compose logs -f etl-scheduler     # see each refresh
+```
+Change the interval with `ETL_INTERVAL_MINUTES` in `.env`. Each refresh replaces
+the analytics tables in a single transaction, so the dashboard never sees them
+empty and a failed run keeps the previous data. Without Docker:
+`python etl/scheduler.py`.
+
+`price-fetcher` and `etl` use the same image (`etl/Dockerfile`) and are under the `tools`
 profile, so `docker compose up` does not start them. To run either on the host
 instead, `pip install -r etl/requirements-etl.txt` and use
 `python etl/price_fetcher.py` / `python etl/main.py` — on the host, `.env` must
@@ -139,6 +151,17 @@ set `DB_PORT=8100`, since that is the published port.
 mvn compile
 mvn exec:java -Dexec.mainClass="com.neueda.leap.Main"
 ```
+
+**How orders behave.** A market order fills straight away while its market is
+open. A limit order fills only at its limit price or better. An order that
+cannot fill yet (market closed, or limit not reached) waits as `PENDING` and
+holds back the cash or shares it needs. Every 15 seconds the API fills pending
+orders that can now fill. A Day order that has not filled by its session close
+becomes `EXPIRED`; a Good-'til-cancelled one (limit only) waits until it fills.
+Cancel a pending order with `POST /api/accounts/{id}/orders/{orderId}/cancel`
+or the Cancel button on the Orders page. Trading hours live in
+`services/MarketHours.java`; set `market.hours.enforced=false` in
+`application.properties` to let every market trade around the clock.
 
 ### 7. Generate Analytics
 ```bash
@@ -152,6 +175,17 @@ Shows trading volume, most active stocks, and client trends as matplotlib charts
 ```bash
 docker-compose down -v    # Remove volume
 docker-compose up -d      # Start fresh
+```
+
+### "column ... does not exist" after pulling
+Postgres only runs `database/*.sql` when its volume is first created, so a
+schema change does not reach a database you already have. Rebuild it (this
+deletes its data), then reload prices and sample orders:
+```bash
+docker compose down -v
+docker compose up -d
+docker compose run --rm price-fetcher
+docker compose run --rm price-fetcher python seed_orders.py
 ```
 
 ### ETL fails - "Connection refused"

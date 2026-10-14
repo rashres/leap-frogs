@@ -1,0 +1,384 @@
+[1mdiff --git a/nohup.out b/nohup.out[m
+[1mdeleted file mode 100644[m
+[1mindex e69de29..0000000[m
+[1mdiff --git a/src/main/java/com/neueda/leap/mappers/OrderMapper.java b/src/main/java/com/neueda/leap/mappers/OrderMapper.java[m
+[1mindex 97d819f..05c1647 100644[m
+[1m--- a/src/main/java/com/neueda/leap/mappers/OrderMapper.java[m
+[1m+++ b/src/main/java/com/neueda/leap/mappers/OrderMapper.java[m
+[36m@@ -13,6 +13,8 @@[m [mimport org.apache.ibatis.annotations.Update;[m
+ [m
+ import java.math.BigDecimal;[m
+ import java.time.Instant;[m
+[32m+[m[32mimport java.time.LocalDate;[m
+[32m+[m[32mimport java.time.LocalDateTime;[m
+ import java.util.List;[m
+ [m
+ // Orders are stored as rows in the "transactions" table (one row per order, whatever its status).[m
+[36m@@ -55,6 +57,40 @@[m [mpublic interface OrderMapper {[m
+     })[m
+     List<Order> findByAccountId(int accountId);[m
+ [m
+[32m+[m[32m    @Select(SELECT_ORDER + """[m
+[32m+[m[32m            WHERE t.transaction_time >= #{startDate}[m
+[32m+[m[32m                AND t.transaction_time <= #{endDate}[m
+[32m+[m[32m            ORDER BY t.transaction_time DESC, t.transaction_id DESC[m
+[32m+[m[32m            """)[m
+[32m+[m[32m    @ResultMap("orderRow")[m
+[32m+[m[32m    List<Order> findByDate(LocalDate startDate, LocalDate endDate);[m
+[32m+[m
+[32m+[m[32m    /** Get orders using any combination of account and date filters. */[m
+[32m+[m[32m    @Select("""[m
+[32m+[m[32m            <script>[m
+[32m+[m[32m            SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,[m
+[32m+[m[32m                   t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,[m
+[32m+[m[32m                   t.order_type, t.limit_price, t.time_in_force, t.expires_at,[m
+[32m+[m[32m                   CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time[m
+[32m+[m[32m            FROM transactions t[m
+[32m+[m[32m            JOIN instrument i ON i.instrument_id = t.instrument_id[m
+[32m+[m[32m            <where>[m
+[32m+[m[32m                <if test='accountId != null'>[m
+[32m+[m[32m                    t.account_id = #{accountId}[m
+[32m+[m[32m                </if>[m
+[32m+[m[32m                <if test='startDate != null'>[m
+[32m+[m[32m                    AND t.transaction_time &gt;= #{startDate}[m
+[32m+[m[32m                </if>[m
+[32m+[m[32m                <if test='endDate != null'>[m
+[32m+[m[32m                    AND t.transaction_time &lt;= #{endDate}[m
+[32m+[m[32m                </if>[m
+[32m+[m[32m            </where>[m
+[32m+[m[32m            ORDER BY t.transaction_time DESC, t.transaction_id DESC[m
+[32m+[m[32m            </script>[m
+[32m+[m[32m            """)[m
+[32m+[m[32m    @ResultMap("orderRow")[m
+[32m+[m[32m    List<Order> findByFilters(Integer accountId, LocalDateTime startDate, LocalDateTime endDate);[m
+[32m+[m
+     @Select(SELECT_ORDER + " WHERE t.transaction_id = #{orderId}")[m
+     @ResultMap("orderRow")[m
+     Order findById(int orderId);[m
+[1mdiff --git a/src/main/java/com/neueda/leap/services/OrderService.java b/src/main/java/com/neueda/leap/services/OrderService.java[m
+[1mindex dd624ee..3911d2d 100644[m
+[1m--- a/src/main/java/com/neueda/leap/services/OrderService.java[m
+[1m+++ b/src/main/java/com/neueda/leap/services/OrderService.java[m
+[36m@@ -8,6 +8,9 @@[m [mimport org.springframework.transaction.annotation.Transactional;[m
+ [m
+ import java.math.BigDecimal;[m
+ import java.time.Instant;[m
+[32m+[m[32mimport java.time.LocalDate;[m
+[32m+[m[32mimport java.time.LocalDateTime;[m
+[32m+[m[32mimport java.time.LocalTime;[m
+ import java.util.List;[m
+ import java.util.Locale;[m
+ [m
+[36m@@ -188,6 +191,19 @@[m [mpublic class OrderService {[m
+         return orderMapper.findByAccountId(accountId);[m
+     }[m
+ [m
+[32m+[m[32m    public List<Order> findByFilters(Integer accountId, LocalDate startDate, LocalDate endDate) {[m
+[32m+[m[32m        if (accountId != null) {[m
+[32m+[m[32m            accountService.findById(accountId);[m
+[32m+[m[32m        }[m
+[32m+[m[32m        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {[m
+[32m+[m[32m            throw new InvalidOrderException("startDate must be before or equal to endDate");[m
+[32m+[m[32m        }[m
+[32m+[m
+[32m+[m[32m        LocalDateTime startDateTime = startDate == null ? null : startDate.atStartOfDay();[m
+[32m+[m[32m        LocalDateTime endDateTime = endDate == null ? null : endDate.atTime(LocalTime.MAX);[m
+[32m+[m[32m        return orderMapper.findByFilters(accountId, startDateTime, endDateTime);[m
+[32m+[m[32m    }[m
+[32m+[m
+     /** Moves the cash and shares of a filled order. */[m
+     private void settle(Order order, Account account) {[m
+         int accountId = account.getAccountId();[m
+[1mdiff --git a/ui/leapfrogsdb-backup-before-migration.sql b/ui/leapfrogsdb-backup-before-migration.sql[m
+[1mdeleted file mode 100644[m
+[1mindex 5e21750..0000000[m
+[1m--- a/ui/leapfrogsdb-backup-before-migration.sql[m
+[1m+++ /dev/null[m
+[36m@@ -1,18100 +0,0 @@[m
+[31m---[m
+[31m--- PostgreSQL database dump[m
+[31m---[m
+[31m-[m
+[31m-\restrict yb09DhO7hpLAH2df5fIZhvXJF1pgOWsXUqabIHo6vVgJ7ImxFaGqNLTI2Q5UFPX[m
+[31m-[m
+[31m--- Dumped from database version 16.15 (Debian 16.15-1.pgdg13+2)[m
+[31m--- Dumped by pg_dump version 16.15 (Debian 16.15-1.pgdg13+2)[m
+[31m-[m
+[31m-SET statement_timeout = 0;[m
+[31m-SET lock_timeout = 0;[m
+[31m-SET idle_in_transaction_session_timeout = 0;[m
+[31m-SET client_encoding = 'UTF8';[m
+[31m-SET standard_conforming_strings = on;[m
+[31m-SELECT pg_catalog.set_config('search_path', '', false);[m
+[31m-SET check_function_bodies = false;[m
+[31m-SET xmloption = content;[m
+[31m-SET client_min_messages = warning;[m
+[31m-SET row_security = off;[m
+[31m-[m
+[31m-SET default_tablespace = '';[m
+[31m-[m
+[31m-SET default_table_access_method = heap;[m
+[31m-[m
+[31m---[m
+[31m--- Name: account; Type: TABLE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE TABLE public.account ([m
+[31m-    account_id integer NOT NULL,[m
+[31m-    name character varying(100) NOT NULL,[m
+[31m-    email character varying(255) NOT NULL,[m
+[31m-    cash_balance numeric(18,2) DEFAULT 0 NOT NULL,[m
+[31m-    created_at timestamp with time zone DEFAULT now() NOT NULL,[m
+[31m-    CONSTRAINT account_cash_balance_check CHECK ((cash_balance >= (0)::numeric))[m
+[31m-);[m
+[31m-[m
+[31m-[m
+[31m-ALTER TABLE public.account OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: account_account_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE SEQUENCE public.account_account_id_seq[m
+[31m-    AS integer[m
+[31m-    START WITH 1[m
+[31m-    INCREMENT BY 1[m
+[31m-    NO MINVALUE[m
+[31m-    NO MAXVALUE[m
+[31m-    CACHE 1;[m
+[31m-[m
+[31m-[m
+[31m-ALTER SEQUENCE public.account_account_id_seq OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: account_account_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER SEQUENCE public.account_account_id_seq OWNED BY public.account.account_id;[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: exchange; Type: TABLE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE TABLE public.exchange ([m
+[31m-    exchange_id integer NOT NULL,[m
+[31m-    name character varying(100) NOT NULL,[m
+[31m-    country character varying(100) NOT NULL[m
+[31m-);[m
+[31m-[m
+[31m-[m
+[31m-ALTER TABLE public.exchange OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: exchange_exchange_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE SEQUENCE public.exchange_exchange_id_seq[m
+[31m-    AS integer[m
+[31m-    START WITH 1[m
+[31m-    INCREMENT BY 1[m
+[31m-    NO MINVALUE[m
+[31m-    NO MAXVALUE[m
+[31m-    CACHE 1;[m
+[31m-[m
+[31m-[m
+[31m-ALTER SEQUENCE public.exchange_exchange_id_seq OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: exchange_exchange_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER SEQUENCE public.exchange_exchange_id_seq OWNED BY public.exchange.exchange_id;[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: holdings; Type: TABLE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE TABLE public.holdings ([m
+[31m-    holding_id integer NOT NULL,[m
+[31m-    account_id integer NOT NULL,[m
+[31m-    instrument_id integer NOT NULL,[m
+[31m-    symbol character varying(20) NOT NULL,[m
+[31m-    quantity numeric(18,6) DEFAULT 0 NOT NULL,[m
+[31m-    updated_at timestamp with time zone DEFAULT now() NOT NULL,[m
+[31m-    CONSTRAINT holdings_quantity_check CHECK ((quantity >= (0)::numeric))[m
+[31m-);[m
+[31m-[m
+[31m-[m
+[31m-ALTER TABLE public.holdings OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: holdings_holding_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE SEQUENCE public.holdings_holding_id_seq[m
+[31m-    AS integer[m
+[31m-    START WITH 1[m
+[31m-    INCREMENT BY 1[m
+[31m-    NO MINVALUE[m
+[31m-    NO MAXVALUE[m
+[31m-    CACHE 1;[m
+[31m-[m
+[31m-[m
+[31m-ALTER SEQUENCE public.holdings_holding_id_seq OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: holdings_holding_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER SEQUENCE public.holdings_holding_id_seq OWNED BY public.holdings.holding_id;[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: instrument; Type: TABLE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE TABLE public.instrument ([m
+[31m-    instrument_id integer NOT NULL,[m
+[31m-    symbol character varying(20) NOT NULL,[m
+[31m-    name character varying(150) NOT NULL,[m
+[31m-    exchange_id integer NOT NULL,[m
+[31m-    last_price numeric(18,6),[m
+[31m-    price_updated_at timestamp with time zone,[m
+[31m-    CONSTRAINT instrument_last_price_check CHECK ((last_price > (0)::numeric))[m
+[31m-);[m
+[31m-[m
+[31m-[m
+[31m-ALTER TABLE public.instrument OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: instrument_instrument_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE SEQUENCE public.instrument_instrument_id_seq[m
+[31m-    AS integer[m
+[31m-    START WITH 1[m
+[31m-    INCREMENT BY 1[m
+[31m-    NO MINVALUE[m
+[31m-    NO MAXVALUE[m
+[31m-    CACHE 1;[m
+[31m-[m
+[31m-[m
+[31m-ALTER SEQUENCE public.instrument_instrument_id_seq OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: instrument_instrument_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER SEQUENCE public.instrument_instrument_id_seq OWNED BY public.instrument.instrument_id;[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: instrument_price; Type: TABLE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE TABLE public.instrument_price ([m
+[31m-    instrument_id integer NOT NULL,[m
+[31m-    observed_at timestamp with time zone NOT NULL,[m
+[31m-    price numeric(18,6) NOT NULL,[m
+[31m-    CONSTRAINT instrument_price_price_check CHECK ((price > (0)::numeric))[m
+[31m-);[m
+[31m-[m
+[31m-[m
+[31m-ALTER TABLE public.instrument_price OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: transactions; Type: TABLE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE TABLE public.transactions ([m
+[31m-    transaction_id integer NOT NULL,[m
+[31m-    account_id integer NOT NULL,[m
+[31m-    instrument_id integer NOT NULL,[m
+[31m-    transaction_type character varying(4) NOT NULL,[m
+[31m-    quantity numeric(18,6) NOT NULL,[m
+[31m-    price numeric(18,6) NOT NULL,[m
+[31m-    status character varying(10) DEFAULT 'COMPLETE'::character varying NOT NULL,[m
+[31m-    transaction_time timestamp with time zone DEFAULT now() NOT NULL,[m
+[31m-    CONSTRAINT transactions_price_check CHECK ((price > (0)::numeric)),[m
+[31m-    CONSTRAINT transactions_quantity_check CHECK ((quantity > (0)::numeric)),[m
+[31m-    CONSTRAINT transactions_status_check CHECK (((status)::text = ANY ((ARRAY['PENDING'::character varying, 'COMPLETE'::character varying, 'FAILED'::character varying])::text[]))),[m
+[31m-    CONSTRAINT transactions_transaction_type_check CHECK (((transaction_type)::text = ANY ((ARRAY['BUY'::character varying, 'SELL'::character varying])::text[])))[m
+[31m-);[m
+[31m-[m
+[31m-[m
+[31m-ALTER TABLE public.transactions OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: transactions_transaction_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-CREATE SEQUENCE public.transactions_transaction_id_seq[m
+[31m-    AS integer[m
+[31m-    START WITH 1[m
+[31m-    INCREMENT BY 1[m
+[31m-    NO MINVALUE[m
+[31m-    NO MAXVALUE[m
+[31m-    CACHE 1;[m
+[31m-[m
+[31m-[m
+[31m-ALTER SEQUENCE public.transactions_transaction_id_seq OWNER TO postgres;[m
+[31m-[m
+[31m---[m
+[31m--- Name: transactions_transaction_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER SEQUENCE public.transactions_transaction_id_seq OWNED BY public.transactions.transaction_id;[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: account account_id; Type: DEFAULT; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER TABLE ONLY public.account ALTER COLUMN account_id SET DEFAULT nextval('public.account_account_id_seq'::regclass);[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: exchange exchange_id; Type: DEFAULT; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER TABLE ONLY public.exchange ALTER COLUMN exchange_id SET DEFAULT nextval('public.exchange_exchange_id_seq'::regclass);[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: holdings holding_id; Type: DEFAULT; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER TABLE ONLY public.holdings ALTER COLUMN holding_id SET DEFAULT nextval('public.holdings_holding_id_seq'::regclass);[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: instrument instrument_id; Type: DEFAULT; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER TABLE ONLY public.instrument ALTER COLUMN instrument_id SET DEFAULT nextval('public.instrument_instrument_id_seq'::regclass);[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Name: transactions transaction_id; Type: DEFAULT; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-ALTER TABLE ONLY public.transactions ALTER COLUMN transaction_id SET DEFAULT nextval('public.transactions_transaction_id_seq'::regclass);[m
+[31m-[m
+[31m-[m
+[31m---[m
+[31m--- Data for Name: account; Type: TABLE DATA; Schema: public; Owner: postgres[m
+[31m---[m
+[31m-[m
+[31m-COPY public.account (account_id, name, email, cash_balance, created_at) FROM stdin;[m
+[31m-14	Henry Rodriguez	henry.rodriguez@example.com	50851.49	2026-10-07 16:45:03.296158+00[m
+[31m-15	Iris Anderson	iris.anderson@example.com	17423.06	2026-10-07 16:45:03.296158+00[m
+[31m-16	Jack Williams	jack.williams@example.com	50451.34	2026-10-07 16:45:03.296158+00[m
+[31m-1	Jane Doe	jane@example.com	10000.00	2026-10-07 16:45:03.296158+00[m
+[31m-2	Alice Cooper	alice.cooper@example.com	4089.44	2026-10-07 16:45:03.296158+00[m
+[31m-3	Bob Dylan	bob.dylan@example.com	5238.32	2026-10-07 16:45:03.296158+00[m
+[31m-4	Carol White	carol.white@example.com	5115.36	2026-10-07 16:45:03.296158+00[m
+[31m-5	David Green	david.green@example.com	6452.75	2026-10-07 16:45:03.296158+00[m
+[31m-6	Emma Harris	emma.harris@example.com	3585.24	2026-10-07 16:45:03.296158+00[m
+[31m-7	Alice Johnson	alice.johnson@example.com	10753.63	2026-10-07 16:45:03.296158+00[m
+[31m-8	Bob Smith	bob.smith@example.com	35574.51	2026-10-07 16:45:03.296158+00[m
+[31m-9	Carol Martinez	carol.martinez@example.com	36260.94	2026-10-07 16:45:03.296158+00[m
+[31m-10	David Chen	david.chen@example.com	15628.79	2026-10-07 16:45:03.296158+00[m
+[31m-11	Emma Wilson	emma.wilson@exa
