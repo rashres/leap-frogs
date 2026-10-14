@@ -86,66 +86,37 @@ class ETLLoader:
         instrument_activity: pd.DataFrame,
         client_activity: pd.DataFrame
     ) -> None:
-        """Load all transformed tables into analytics database"""
+        """
+        Replace all analytics tables with the freshly transformed data (full refresh).
+
+        The truncate and every insert run in ONE transaction: the dashboard reads
+        either the previous data or the new data, never empty tables mid-refresh,
+        and a failed load rolls back and leaves the previous data in place.
+        """
         logger.info("=" * 70)
         logger.info("PHASE 3: LOAD")
         logger.info("=" * 70)
 
+        tables = [
+            ('fact_trades', fact_trades),
+            ('trading_volume', trading_volume),
+            ('instrument_activity', instrument_activity),
+            ('client_activity', client_activity),
+        ]
         try:
-            # Truncate existing data (full refresh)
-            logger.info("Truncating existing data...")
-            with self.engine.connect() as conn:
-                conn.execute(text("TRUNCATE TABLE fact_trades CASCADE"))
-                conn.execute(text("TRUNCATE TABLE trading_volume CASCADE"))
-                conn.execute(text("TRUNCATE TABLE instrument_activity CASCADE"))
-                conn.execute(text("TRUNCATE TABLE client_activity CASCADE"))
-                conn.commit()
-            logger.info("  ✓ Truncated all analytics tables")
-
-            # Load fact_trades
-            logger.info("Loading: fact_trades")
-            fact_trades.to_sql(
-                'fact_trades',
-                self.engine,
-                if_exists='append',
-                index=False
-            )
-            logger.info(f"  ✓ Loaded {len(fact_trades)} rows into fact_trades")
-
-            # Load trading_volume
-            logger.info("Loading: trading_volume")
-            trading_volume.to_sql(
-                'trading_volume',
-                self.engine,
-                if_exists='append',
-                index=False
-            )
-            logger.info(f"  ✓ Loaded {len(trading_volume)} rows into trading_volume")
-
-            # Load instrument_activity
-            logger.info("Loading: instrument_activity")
-            instrument_activity.to_sql(
-                'instrument_activity',
-                self.engine,
-                if_exists='append',
-                index=False
-            )
-            logger.info(f"  ✓ Loaded {len(instrument_activity)} rows into instrument_activity")
-
-            # Load client_activity
-            logger.info("Loading: client_activity")
-            client_activity.to_sql(
-                'client_activity',
-                self.engine,
-                if_exists='append',
-                index=False
-            )
-            logger.info(f"  ✓ Loaded {len(client_activity)} rows into client_activity")
-
-            logger.info("✓ LOAD PHASE COMPLETE\n")
+            with self.engine.begin() as conn:
+                logger.info("Truncating existing data...")
+                conn.execute(text(
+                    "TRUNCATE TABLE fact_trades, trading_volume, instrument_activity, client_activity"
+                ))
+                for name, frame in tables:
+                    frame.to_sql(name, conn, if_exists='append', index=False)
+                    logger.info(f"  ✓ Loaded {len(frame)} rows into {name}")
+            logger.info("✓ LOAD PHASE COMPLETE (committed)\n")
 
         except Exception as e:
-            logger.error(f"✗ Load failed: {e}")
+            # The first line is enough; the rest is every row's parameters.
+            logger.error(f"✗ Load failed, previous analytics data kept: {str(e).splitlines()[0]}")
             raise
 
     def verify_load(self) -> None:
