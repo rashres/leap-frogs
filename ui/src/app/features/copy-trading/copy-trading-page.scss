@@ -1,0 +1,298 @@
+/* ---- Lead trader notice --------------------------------------------------- */
+
+.leader-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px 16px;
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 14px;
+
+  strong {
+    font-weight: 600;
+  }
+}
+
+/* ---- Traders you copy ----------------------------------------------------- */
+
+.mine {
+  margin-bottom: 28px;
+}
+
+.pad {
+  padding: 18px 22px;
+}
+
+.none {
+  margin: 0;
+  padding: 20px 22px;
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+.who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  > span:last-child {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.who-name {
+  font-weight: 600;
+}
+
+.who-handle {
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.sym {
+  font-weight: 600;
+
+  &:hover {
+    color: var(--accent);
+  }
+}
+
+.side {
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+
+  &.buy {
+    color: var(--up);
+    background: var(--up-soft);
+  }
+  &.sell {
+    color: var(--down);
+    background: var(--down-soft);
+  }
+}
+
+/* ---- Leaderboard ---------------------------------------------------------- */
+
+.section-head {
+  margin-bottom: 14px;
+
+  p {
+    margin: 2px 0 0;
+    font-size: 13px;
+  }
+}
+
+.section-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  background: var(--panel);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-1);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    box-shadow: var(--shadow-2);
+  }
+
+  &.selected {
+    border-color: var(--accent);
+  }
+}
+
+.sk-card {
+  min-height: 260px;
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 15px;
+  font-weight: 700;
+
+  &.sm {
+    width: 34px;
+    height: 34px;
+    font-size: 12.5px;
+  }
+}
+
+.ident {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.handle {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.rank {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+}
+
+.strategy {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--panel-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.bio {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text-3);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+
+  dt {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .big {
+    font-size: 17px;
+  }
+}
+
+.meta {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: auto;
+
+  .btn leap-icon {
+    margin-right: 6px;
+  }
+
+  .pill leap-icon {
+    margin-right: -2px;
+  }
+}
+
+.copy-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+
+  .hint {
+    margin: 0;
+    font-size: 12.5px;
+  }
+
+  .actions {
+    margin-top: 4px;
+  }
+}
+
+.form-error {
+  margin: 0;
+  font-size: 13px;
+  color: var(--down);
+}
+
+.trades {
+  margin-bottom: 24px;
+}
+
+@media (max-width: 560px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
