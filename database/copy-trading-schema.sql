@@ -35,3 +35,12 @@ CREATE TABLE copy_trade (
 
 CREATE INDEX idx_copy_trade_subscription
     ON copy_trade(subscription_id);
+
+-- Demo lead traders use the sample accounts seeded by capstone-mvp-schema.sql.
+-- Their performance is populated once etl/seed_orders.py creates sample trades.
+INSERT INTO copy_trader (account_id, handle, strategy, markets, bio, risk_level, starting_capital)
+VALUES
+    (7, '@johnson_growth', 'US growth', 'US', 'Concentrated growth investing in established technology leaders.', 'MEDIUM', 50000.00),
+    (8, '@smith_crypto', 'Digital assets', 'US,FX', 'Momentum-focused exposure to digital assets and liquid technology names.', 'HIGH', 75000.00),
+    (9, '@martinez_global', 'Global value', 'UK,IN', 'Diversified value positions across international markets.', 'LOW', 100000.00),
+    (10, '@chen_macro', 'Macro rotation', 'US,FX', 'A balanced approach that rotates between equities, crypto and currencies.', 'MEDIUM', 60000.00);
