@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { InstrumentsService } from '../../core/api/instruments.service';
 import { createLoader } from '../../core/api/loader';
 import type { OrderStatus, PriceRange } from '../../core/api/models';
+import { IntradayService, type IntradaySeries } from '../../core/markets/intraday.service';
 import { marketFor } from '../../core/markets/sessions';
 import type { ScoredNewsItem } from '../../core/news/news';
 import { NewsService } from '../../core/news/news.service';
@@ -16,6 +17,9 @@ import { NewsFeed } from '../../shared/news-feed';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { OrderTicket } from './order-ticket';
+
+/** How often the live 1D line asks for new minutes; the API caches them for 10 seconds. */
+const LIVE_REFRESH_MS = 15_000;
 
 /**
  * One instrument: price, rules, headlines, your orders and position, with the
@@ -36,6 +40,7 @@ export class InstrumentPage {
   private readonly portfolio = inject(PortfolioStore);
   private readonly watchlist = inject(WatchlistService);
   protected readonly news = inject(NewsService);
+  private readonly intraday = inject(IntradayService);
 
   /** Route parameter, bound by withComponentInputBinding. */
   readonly id = input.required<string>();
@@ -62,8 +67,30 @@ export class InstrumentPage {
   readonly history = createLoader(() => this.api.prices(this.instrumentId(), this.range()));
   readonly scrubbed = signal<PricePoint | null>(null);
 
+  /** 1D draws today's session minute by minute from Yahoo; recorded history is the fallback. */
+  private readonly symbol = computed(() => this.instrument()?.symbol ?? null);
+  readonly today = signal<{ symbol: string; series: IntradaySeries | null } | null>(null);
+  private readonly todaySeries = computed(() => {
+    const today = this.today();
+    return this.range() === '1D' && today?.symbol === this.symbol() ? today.series : undefined;
+  });
+  readonly todayLoading = computed(() => this.range() === '1D' && this.todaySeries() === undefined);
+  readonly todayWindow = computed(() => {
+    const t = this.todaySeries();
+    return t ? { start: t.start, end: t.end } : null;
+  });
+  readonly todayReference = computed(() => this.todaySeries()?.previousClose ?? null);
+  readonly live = computed(() => {
+    const t = this.todaySeries();
+    const now = this.market.now();
+    return !!t && this.marketOpen() && now >= t.start && now <= t.end;
+  });
+
   /** Recorded prices for the range, ending at the live price when it is newer. */
   readonly series = computed<readonly PricePoint[]>(() => {
+    const today = this.todaySeries();
+    if (today) return today.points;
+    if (today === undefined && this.range() === '1D') return [];
     const points = (this.history.data() ?? []).map((p) => ({ at: new Date(p.observedAt), price: p.price }));
     const inst = this.instrument();
     if (inst?.lastPrice != null && inst.priceUpdatedAt) {
@@ -77,7 +104,7 @@ export class InstrumentPage {
   readonly rangeChange = computed(() => {
     const series = this.series();
     if (series.length < 2) return null;
-    const open = series[0].price;
+    const open = this.todayReference() ?? series[0].price;
     const end = this.scrubbed()?.price ?? series[series.length - 1].price;
     const delta = end - open;
     const deltaText = `${delta < 0 ? '−' : '+'}${formatPrice(Math.abs(delta), open)}`;
@@ -90,7 +117,9 @@ export class InstrumentPage {
     return prices.length ? { low: formatPrice(Math.min(...prices)), high: formatPrice(Math.max(...prices)) } : null;
   });
 
-  readonly priceText = computed(() => formatPrice(this.scrubbed()?.price ?? this.instrument()?.lastPrice));
+  readonly priceText = computed(() =>
+    formatPrice(this.scrubbed()?.price ?? this.todaySeries()?.points.at(-1)?.price ?? this.instrument()?.lastPrice),
+  );
   readonly lastPriceText = computed(() => formatPrice(this.instrument()?.lastPrice));
   readonly updatedText = computed(() => {
     const at = this.instrument()?.priceUpdatedAt;
@@ -149,6 +178,16 @@ export class InstrumentPage {
     inject(DestroyRef).onDestroy(() => clearInterval(refresh));
 
     effect(() => {
+      const symbol = this.symbol();
+      if (symbol && this.range() === '1D') untracked(() => void this.loadToday(symbol));
+    });
+    const tick = setInterval(() => {
+      const symbol = this.symbol();
+      if (symbol && this.range() === '1D' && document.visibilityState === 'visible') void this.loadToday(symbol);
+    }, LIVE_REFRESH_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(tick));
+
+    effect(() => {
       const query = this.newsQuery();
       if (!query) return;
       untracked(() => {
@@ -158,6 +197,14 @@ export class InstrumentPage {
         });
       });
     });
+  }
+
+  private async loadToday(symbol: string): Promise<void> {
+    const series = await this.intraday.series(symbol);
+    if (this.symbol() !== symbol) return;
+    // A failed refresh keeps the line already drawn.
+    if (!series && this.today()?.symbol === symbol && this.today()?.series) return;
+    this.today.set({ symbol, series });
   }
 
   setRange(range: PriceRange): void {

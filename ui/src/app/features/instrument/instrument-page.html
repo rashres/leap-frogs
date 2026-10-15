@@ -39,7 +39,10 @@
                     <leap-icon [name]="rising() ? 'trending-up' : 'trending-down'" [size]="14" />{{ change.percentText }}
                   </span>
                   {{ change.deltaText }}
-                  <span class="lbl">{{ scrubbed() ? 'at cursor' : range() }}</span>
+                  <span class="lbl">{{ scrubbed() ? 'at cursor' : todayWindow() ? 'Today' : range() }}</span>
+                  @if (live()) {
+                    <span class="live-tag"><i aria-hidden="true"></i>Live</span>
+                  }
                 </p>
               } @else {
                 <p class="chg faint">
@@ -60,10 +63,19 @@
 
           <div class="chart-body">
             @if (series().length >= 2) {
-              <leap-price-chart [points]="series()" [height]="320" [axes]="true" [tone]="rising() ? 'up' : 'down'" (scrub)="scrubbed.set($event)" />
+              <leap-price-chart
+                [points]="series()"
+                [height]="320"
+                [axes]="true"
+                [tone]="rising() ? 'up' : 'down'"
+                [window]="todayWindow()"
+                [reference]="todayReference()"
+                [live]="live()"
+                (scrub)="scrubbed.set($event)"
+              />
             } @else {
               <div class="chart-empty">
-                @if (history.initialLoading()) {
+                @if (history.initialLoading() || todayLoading()) {
                   <span class="skeleton" style="width: 100%; height: 100%; border-radius: 10px"></span>
                   <span class="sr-only" role="status">Loading price history…</span>
                 } @else if (history.error(); as e) {

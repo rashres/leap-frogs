@@ -3,11 +3,17 @@ import { AccountsService } from '../../core/api/accounts.service';
 import { createLoader } from '../../core/api/loader';
 import type { PriceRange } from '../../core/api/models';
 import { OrdersService } from '../../core/api/orders.service';
+import { IntradayService, portfolioIntraday, type IntradaySeries } from '../../core/markets/intraday.service';
+import { marketFor } from '../../core/markets/sessions';
 import { ActiveAccountService } from '../../core/state/active-account.service';
+import { MarketStore } from '../../core/state/market.store';
 import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatSignedPct, formatSignedUsd, formatStamp, formatUsd } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
+
+/** How often the live 1D line asks for new minutes; the API caches them for 10 seconds. */
+const LIVE_REFRESH_MS = 15_000;
 
 /**
  * The active account's value (cash plus holdings) over a range, from
@@ -28,7 +34,10 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
             <p class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
               <leap-icon [name]="c.negative ? 'trending-down' : 'trending-up'" [size]="14" />
               {{ c.percentText }} <span class="delta">{{ c.deltaText }}</span>
-              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : periods[range()] }}</span>
+              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : todayWindow() ? 'Today' : periods[range()] }}</span>
+              @if (live()) {
+                <span class="live-tag"><i aria-hidden="true"></i>Live</span>
+              }
             </p>
           } @else {
             <p class="chg lbl">Cash plus holdings, from filled orders</p>
@@ -43,10 +52,19 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
 
       <div class="body">
         @if (series().length >= 2) {
-          <leap-price-chart [points]="series()" [height]="300" [axes]="true" [tone]="change()?.negative ? 'down' : 'up'" (scrub)="scrubbed.set($event)" />
+          <leap-price-chart
+            [points]="series()"
+            [height]="300"
+            [axes]="true"
+            [tone]="change()?.negative ? 'down' : 'up'"
+            [window]="todayWindow()"
+            [reference]="todayReference()"
+            [live]="live()"
+            (scrub)="scrubbed.set($event)"
+          />
         } @else {
           <div class="chart-empty">
-            @if (history.initialLoading()) {
+            @if (history.initialLoading() || todayLoading()) {
               <span class="skeleton" style="width: 100%; height: 100%; border-radius: 10px"></span>
               <span class="sr-only" role="status">Loading value history…</span>
             } @else if (history.error(); as e) {
@@ -58,7 +76,11 @@ import { PriceChart, type PricePoint } from '../../shared/price-chart';
         }
       </div>
       <p class="note faint">
-        Cash plus each holding at the price recorded at that time, worked out from this account's filled orders.
+        @if (todayWindow()) {
+          Cash plus today's holdings at each minute's price, previous close dotted. Times in Central.
+        } @else {
+          Cash plus each holding at the price recorded at that time, worked out from this account's filled orders.
+        }
       </p>
     </section>
   `,
@@ -152,6 +174,8 @@ export class ValueChartPanel {
   private readonly account = inject(ActiveAccountService);
   private readonly orders = inject(OrdersService);
   private readonly portfolio = inject(PortfolioStore);
+  private readonly market = inject(MarketStore);
+  private readonly intraday = inject(IntradayService);
 
   readonly ranges: readonly PriceRange[] = ['1D', '1W', '1M', '3M', '1Y', 'All'];
   readonly range = signal<PriceRange>('1M');
@@ -167,8 +191,38 @@ export class ValueChartPanel {
   readonly history = createLoader(() => this.api.valueHistory(this.account.activeId()!, this.range()));
   readonly scrubbed = signal<PricePoint | null>(null);
 
+  /** What today's line is built from; a new key means the line must be rebuilt. */
+  private readonly todayKey = computed(() => {
+    const cash = this.portfolio.cash();
+    if (this.range() !== '1D' || cash == null || !this.portfolio.holdings.data()) return null;
+    const held = this.portfolio.positions().map((p) => `${p.symbol}:${p.quantity}`);
+    return `${this.account.activeId()}|${cash}|${held.join(',')}`;
+  });
+  /** 1D: today's value minute by minute from Yahoo; the recorded history is the fallback. */
+  private readonly today = signal<{ key: string; series: IntradaySeries | null } | null>(null);
+  private readonly todaySeries = computed(() => {
+    const key = this.todayKey();
+    const today = this.today();
+    return key && today?.key === key ? today.series : undefined;
+  });
+  readonly todayLoading = computed(() => this.range() === '1D' && this.todaySeries() === undefined);
+  readonly todayWindow = computed(() => {
+    const t = this.todaySeries();
+    return t ? { start: t.start, end: t.end } : null;
+  });
+  readonly todayReference = computed(() => this.todaySeries()?.previousClose ?? null);
+  readonly live = computed(() => {
+    const t = this.todaySeries();
+    const now = this.market.now();
+    if (!t || now < t.start || now > t.end) return false;
+    return this.portfolio.positions().some((p) => marketFor(p.exchange)?.isOpen(now) ?? false);
+  });
+
   /** Value per point, ending at the live total from the hero. Filter out flat lines (duplicate prices). */
   readonly series = computed<readonly PricePoint[]>(() => {
+    const today = this.todaySeries();
+    if (today) return today.points;
+    if (today === undefined && this.range() === '1D') return [];
     const rawPoints = (this.history.data() ?? []).map((p) => ({ at: new Date(p.at), price: p.totalValue }));
     
     // Filter consecutive duplicates while keeping the first and last
@@ -190,7 +244,7 @@ export class ValueChartPanel {
   readonly change = computed(() => {
     const series = this.series();
     if (series.length < 2) return null;
-    const open = series[0].price;
+    const open = this.todayReference() ?? series[0].price;
     const end = this.scrubbed() ?? series[series.length - 1];
     const delta = end.price - open;
     return {
@@ -202,7 +256,7 @@ export class ValueChartPanel {
   });
 
   readonly scrubbedText = computed(() => formatUsd(this.scrubbed()?.price));
-  readonly totalText = computed(() => formatUsd(this.portfolio.totalValue()));
+  readonly totalText = computed(() => formatUsd(this.todaySeries()?.points.at(-1)?.price ?? this.portfolio.totalValue()));
 
   constructor() {
     effect(() => {
@@ -219,5 +273,28 @@ export class ValueChartPanel {
       if (this.account.activeId() != null) this.history.reload();
     }, 60_000);
     inject(DestroyRef).onDestroy(() => clearInterval(refresh));
+
+    effect(() => {
+      const key = this.todayKey();
+      if (key) untracked(() => void this.loadToday(key));
+    });
+    const tick = setInterval(() => {
+      const key = this.todayKey();
+      if (key && document.visibilityState === 'visible') void this.loadToday(key);
+    }, LIVE_REFRESH_MS);
+    inject(DestroyRef).onDestroy(() => clearInterval(tick));
+  }
+
+  private async loadToday(key: string): Promise<void> {
+    const positions = this.portfolio.positions();
+    const cash = this.portfolio.cash() ?? 0;
+    const loaded = await Promise.all(positions.map((p) => this.intraday.series(p.symbol)));
+    const series = loaded.every((s) => s != null)
+      ? portfolioIntraday(positions.map((p, i) => ({ quantity: p.quantity, series: loaded[i]! })), cash)
+      : null;
+    if (this.todayKey() !== key) return;
+    // A failed refresh keeps the line already drawn.
+    if (!series && this.today()?.key === key && this.today()?.series) return;
+    this.today.set({ key, series });
   }
 }
