@@ -42,12 +42,18 @@ interface YahooNewsEntry {
   } | null;
 }
 
-/** Prefers Yahoo's square 140px crop, then the smallest image still wide enough for a thumbnail. */
+/**
+ * The image is shown up to a full-width 16:9 news card, so the 140px crop
+ * blurs. Takes the smallest image at least SHARP_WIDTH wide (sharp on
+ * high-density screens), or the largest there is.
+ */
+const SHARP_WIDTH = 800;
+
 function thumbnailOf(entry: YahooNewsEntry): string | undefined {
-  const sizes = (entry.thumbnail?.resolutions ?? []).filter((r) => r.url);
-  const square = sizes.find((r) => r.tag === '140x140');
-  if (square) return square.url;
-  return [...sizes].sort((a, b) => (a.width ?? 0) - (b.width ?? 0)).find((r) => (r.width ?? 0) >= 88)?.url ?? sizes[0]?.url;
+  const sizes = [...(entry.thumbnail?.resolutions ?? [])]
+    .filter((r) => r.url)
+    .sort((a, b) => (a.width ?? 0) - (b.width ?? 0));
+  return (sizes.find((r) => (r.width ?? 0) >= SHARP_WIDTH) ?? sizes[sizes.length - 1])?.url;
 }
 
 export interface YahooSearchResponse {
