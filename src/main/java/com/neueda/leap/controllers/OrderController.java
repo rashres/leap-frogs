@@ -2,6 +2,7 @@ package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.OrderRequest;
 import com.neueda.leap.controllers.dto.OrderResponse;
+import com.neueda.leap.services.CopyTradingService;
 import com.neueda.leap.services.OrderResult;
 import com.neueda.leap.services.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,9 +29,11 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final CopyTradingService copyTradingService;
 
-    public OrderController(OrderService orderService) {
+    public OrderController(OrderService orderService, CopyTradingService copyTradingService) {
         this.orderService = orderService;
+        this.copyTradingService = copyTradingService;
     }
 
     /**
@@ -58,6 +61,8 @@ public class OrderController {
             @Valid @RequestBody OrderRequest request) {
         OrderResult result = orderService.placeOrder(accountId, request.instrumentId(), request.side(), request.quantity(),
                 request.orderType(), request.limitPrice(), request.timeInForce());
+        // After the order is saved, so copying it can never undo it. Does nothing unless the account is a lead trader.
+        copyTradingService.mirror(result.order());
         HttpStatus status = result.isRejected() ? HttpStatus.UNPROCESSABLE_ENTITY
                 : "PENDING".equals(result.order().getStatus()) ? HttpStatus.ACCEPTED
                 : HttpStatus.CREATED;
