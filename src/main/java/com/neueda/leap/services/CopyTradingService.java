@@ -13,6 +13,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,24 +32,30 @@ public class CopyTradingService {
 
     /** Copied quantities are rounded down to this many decimal places. */
     private static final int QUANTITY_SCALE = 4;
-    private static final int RECENT_ORDERS = 25;
+    /** Daily equity points needed before a Sharpe ratio means anything. */
+    private static final int MIN_SHARPE_RETURNS = 20;
+    /** The equity curve is daily, weekends included. */
+    private static final double PERIODS_PER_YEAR = 365;
 
     private final CopyTradingMapper copyTradingMapper;
     private final OrderMapper orderMapper;
     private final HoldingsMapper holdingsMapper;
     private final AccountService accountService;
     private final OrderService orderService;
+    private final PortfolioHistoryService portfolioHistoryService;
     private final TransactionTemplate transactionTemplate;
     private final Clock clock;
 
     public CopyTradingService(CopyTradingMapper copyTradingMapper, OrderMapper orderMapper, HoldingsMapper holdingsMapper,
                               AccountService accountService, OrderService orderService,
+                              PortfolioHistoryService portfolioHistoryService,
                               TransactionTemplate transactionTemplate, Clock clock) {
         this.copyTradingMapper = copyTradingMapper;
         this.orderMapper = orderMapper;
         this.holdingsMapper = holdingsMapper;
         this.accountService = accountService;
         this.orderService = orderService;
+        this.portfolioHistoryService = portfolioHistoryService;
         this.transactionTemplate = transactionTemplate;
         this.clock = clock;
     }
@@ -60,12 +68,11 @@ public class CopyTradingService {
         return summarize(traderById(copyTraderId));
     }
 
-    /** The trader's latest filled orders, newest first. */
+    /** Every filled order of the trader, newest first. */
     public List<Order> findTraderOrders(int copyTraderId) {
         CopyTrader trader = traderById(copyTraderId);
         return orderMapper.findByAccountId(trader.getAccountId()).stream()
                 .filter(o -> "COMPLETE".equals(o.getStatus()))
-                .limit(RECENT_ORDERS)
                 .toList();
     }
 
@@ -205,7 +212,7 @@ public class CopyTradingService {
         return trader;
     }
 
-    /** Return, win rate and trade counts from the trader's filled orders, oldest first. */
+    /** Performance from the trader's filled orders (oldest first) and their daily equity curve. */
     private CopyTraderSummary summarize(CopyTrader trader) {
         List<Order> filled = new ArrayList<>(orderMapper.findByAccountId(trader.getAccountId()).stream()
                 .filter(o -> "COMPLETE".equals(o.getStatus()))
@@ -235,12 +242,76 @@ public class CopyTradingService {
         }
 
         BigDecimal start = trader.getStartingCapital();
-        BigDecimal returnPercent = start == null || start.signum() <= 0 || trader.getEquity() == null
+        BigDecimal equity = trader.getEquity() == null ? BigDecimal.ZERO : trader.getEquity();
+        BigDecimal pnl = start == null ? null : equity.subtract(start).setScale(2, RoundingMode.HALF_UP);
+        BigDecimal roi = start == null || start.signum() <= 0
                 ? null
-                : trader.getEquity().subtract(start).multiply(BigDecimal.valueOf(100)).divide(start, 2, RoundingMode.HALF_UP);
-        BigDecimal winRate = closed == 0
+                : equity.subtract(start).multiply(BigDecimal.valueOf(100)).divide(start, 2, RoundingMode.HALF_UP);
+        BigDecimal successRate = closed == 0
                 ? null
                 : BigDecimal.valueOf(wins * 100L).divide(BigDecimal.valueOf(closed), 1, RoundingMode.HALF_UP);
-        return new CopyTraderSummary(trader, returnPercent, winRate, closed, filled.size());
+        BigDecimal aum = equity.add(trader.getCopierFunds()).setScale(2, RoundingMode.HALF_UP);
+
+        List<PortfolioValuePoint> curve = equityCurve(trader);
+        List<Double> values = curve.stream().map(p -> p.totalValue().doubleValue()).toList();
+        return new CopyTraderSummary(trader, pnl, roi, maxDrawdown(values), sharpeRatio(values), aum, successRate,
+                closed, filled.size(), curve);
+    }
+
+    /**
+     * Daily cash plus holdings since the trader started, from recorded prices.
+     * The last point is today's equity at the latest prices, so it matches the
+     * equity shown everywhere else.
+     */
+    private List<PortfolioValuePoint> equityCurve(CopyTrader trader) {
+        Instant since = trader.getCreatedAt() == null ? Instant.EPOCH : trader.getCreatedAt().minus(1, ChronoUnit.DAYS);
+        List<PortfolioValuePoint> curve = new ArrayList<>(
+                portfolioHistoryService.valueHistory(trader.getAccountId(), PriceRange.ONE_YEAR).stream()
+                        .filter(p -> !p.at().isBefore(since))
+                        .toList());
+        if (!curve.isEmpty()) {
+            curve.remove(curve.size() - 1);
+        }
+        BigDecimal cash = accountService.findById(trader.getAccountId()).getCashBalance();
+        BigDecimal equity = trader.getEquity() == null ? cash : trader.getEquity();
+        curve.add(new PortfolioValuePoint(clock.instant(), cash.setScale(2, RoundingMode.HALF_UP),
+                equity.subtract(cash).setScale(2, RoundingMode.HALF_UP)));
+        return curve;
+    }
+
+    /** Largest fall from a running peak, in percent. 0 for a curve that never fell. */
+    static BigDecimal maxDrawdown(List<Double> values) {
+        double peak = 0;
+        double worst = 0;
+        for (double value : values) {
+            peak = Math.max(peak, value);
+            if (peak > 0) {
+                worst = Math.max(worst, (peak - value) / peak);
+            }
+        }
+        return BigDecimal.valueOf(worst * 100).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Mean daily return over its standard deviation, scaled to a year, with a
+     * risk-free rate of 0. Null with too few points or a flat curve.
+     */
+    static BigDecimal sharpeRatio(List<Double> values) {
+        List<Double> returns = new ArrayList<>();
+        for (int i = 1; i < values.size(); i++) {
+            if (values.get(i - 1) > 0) {
+                returns.add(values.get(i) / values.get(i - 1) - 1);
+            }
+        }
+        if (returns.size() < MIN_SHARPE_RETURNS) {
+            return null;
+        }
+        double mean = returns.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        double variance = returns.stream().mapToDouble(r -> (r - mean) * (r - mean)).sum() / (returns.size() - 1);
+        double deviation = Math.sqrt(variance);
+        if (deviation == 0) {
+            return null;
+        }
+        return BigDecimal.valueOf(mean / deviation * Math.sqrt(PERIODS_PER_YEAR)).setScale(2, RoundingMode.HALF_UP);
     }
 }

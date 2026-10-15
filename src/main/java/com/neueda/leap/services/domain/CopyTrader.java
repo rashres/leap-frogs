@@ -20,9 +20,11 @@ public class CopyTrader {
     private String riskLevel;
     private BigDecimal startingCapital;
     private Instant createdAt;
-    // Worked out by the query: cash plus holdings at last_price, and active followers.
+    // Worked out by the query: cash plus holdings at last_price, active followers
+    // and the total those followers have allocated.
     private BigDecimal equity;
     private int followers;
+    private BigDecimal copierFunds = BigDecimal.ZERO;
 
     public int getCopyTraderId() {
         return copyTraderId;
@@ -118,5 +120,13 @@ public class CopyTrader {
 
     public void setFollowers(int followers) {
         this.followers = followers;
+    }
+
+    public BigDecimal getCopierFunds() {
+        return copierFunds;
+    }
+
+    public void setCopierFunds(BigDecimal copierFunds) {
+        this.copierFunds = copierFunds;
     }
 }

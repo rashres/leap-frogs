@@ -60,7 +60,7 @@ public class CopyTradingController {
      * GET /api/copy-traders/{copyTraderId}/orders
      */
     @GetMapping("/copy-traders/{copyTraderId}/orders")
-    @Operation(summary = "List a lead trader's recent trades", description = "The trader's latest filled orders, newest first")
+    @Operation(summary = "List a lead trader's trades", description = "Every filled order of the trader, newest first")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Trades retrieved (empty list if none)"),
         @ApiResponse(responseCode = "404", description = "Lead trader not found")
