@@ -132,7 +132,10 @@
 
 .perf-head {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 16px;
   padding: 0 4px 8px;
 }
 

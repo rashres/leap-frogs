@@ -41,8 +41,18 @@
                 <p class="equity num">{{ h.equity }}</p>
                 <p class="change num" [class]="h.tone">
                   {{ h.delta }} ({{ h.pct }})
-                  <span class="faint">since starting with {{ v.started }} · {{ h.at }}</span>
+                  @if (!scrubbed()) {
+                    <span class="faint">{{ h.period }}{{ range() === 'All' ? ' · started with ' + v.started : '' }}</span>
+                    @if (live()) {
+                      <span class="live-tag"><i aria-hidden="true"></i>Live</span>
+                    }
+                  }
                 </p>
+              }
+            </div>
+            <div class="segmented" role="group" aria-label="Chart range">
+              @for (r of ranges; track r) {
+                <button type="button" [class.on]="range() === r" [attr.aria-pressed]="range() === r" (click)="setRange(r)">{{ r }}</button>
               }
             </div>
           </div>
@@ -51,11 +61,21 @@
               [points]="series()"
               [height]="260"
               [axes]="true"
-              [tone]="(v.t.roi ?? 0) < 0 ? 'down' : 'up'"
+              [tone]="headline()?.tone === 'down' ? 'down' : 'up'"
+              [window]="todayWindow()"
+              [reference]="todayReference()"
+              [live]="live()"
               (scrub)="scrubbed.set($event)"
             />
           } @else {
-            <div class="chart-empty faint">Not enough history for a chart yet.</div>
+            <div class="chart-empty">
+              @if (todayLoading() || (range() !== '1D' && range() !== 'All' && history.initialLoading())) {
+                <span class="skeleton" style="width: 100%; height: 100%; border-radius: 10px"></span>
+                <span class="sr-only" role="status">Loading equity…</span>
+              } @else {
+                <p class="faint">Not enough history for a chart yet.</p>
+              }
+            </div>
           }
         </div>
 
