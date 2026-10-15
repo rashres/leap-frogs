@@ -14,7 +14,7 @@ import java.time.Instant;
 import java.util.List;
 
 // Lead traders (copy_trader), who follows them (copy_subscription) and which
-// follower orders were copies (copy_trade). Tables: database/copy-trading.sql.
+// follower orders were copies (copy_trade). Tables: database/copy-trading-schema.sql.
 @Mapper
 public interface CopyTradingMapper {
 

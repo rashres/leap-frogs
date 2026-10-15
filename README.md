@@ -178,15 +178,12 @@ docker-compose up -d      # Start fresh
 ```
 
 ### "column ... does not exist" after pulling
-Postgres only runs `database/*.sql` when its volume is first created, so a
-schema change does not reach a database you already have. Rebuild it (this
-deletes its data), then reload prices and sample orders:
-```bash
-docker compose down -v
-docker compose up -d
-docker compose run --rm price-fetcher
-docker compose run --rm price-fetcher python seed_orders.py
-```
+Postgres only runs the initialization files when its volume is first created.
+The operational and copy-trading schemas are loaded automatically for a fresh
+volume. Existing databases are not changed automatically.
+
+Do not run `docker compose down -v` unless you intend to delete the database
+volume and all of its data.
 
 ### ETL fails - "Connection refused"
 - Check `.env` has correct DB_HOST, DB_PORT, POSTGRES_USER, POSTGRES_PASSWORD
