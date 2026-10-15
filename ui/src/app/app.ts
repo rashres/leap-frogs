@@ -26,6 +26,7 @@ const NAV: readonly NavItem[] = [
   { path: '/orders', label: 'Orders', icon: 'orders' },
   { path: '/copy-trading', label: 'Copy Trading', icon: 'copy' },
   { path: '/news', label: 'News', icon: 'news' },
+  { path: '/audit', label: 'Audit', icon: 'activity' },
   { path: '/analytics', label: 'Analytics', icon: 'analytics' },
 ];
 

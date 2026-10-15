@@ -3,6 +3,7 @@ target/
 **/target/
 .env
 .env.local
+source/
 
 # Node / Angular frontend build output
 node_modules/

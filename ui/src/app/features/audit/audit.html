@@ -1,0 +1,107 @@
+<div class="page-enter">
+	<leap-page-header heading="Audit" mascot="orders">
+		<span description>Search every order recorded in the database by account or date.</span>
+	</leap-page-header>
+
+	<section class="toolbar panel" aria-label="Audit filters">
+		<label class="filter-field">
+			<span class="field-label">Account</span>
+			<select class="control" [value]="accountId()" (change)="setAccount($event)">
+				<option value="">All accounts</option>
+				@for (item of account.accounts(); track item.accountId) {
+					<option [value]="item.accountId">{{ item.name }} · #{{ item.accountId }}</option>
+				}
+			</select>
+		</label>
+
+		<label class="filter-field">
+			<span class="field-label">From</span>
+			<input class="control" type="date" [value]="startDate()" (input)="setStartDate($event)" />
+		</label>
+
+		<label class="filter-field">
+			<span class="field-label">To</span>
+			<input class="control" type="date" [value]="endDate()" (input)="setEndDate($event)" />
+		</label>
+
+		<div class="filter-actions">
+			<button type="button" class="btn btn-primary" [disabled]="loading()" (click)="load()">
+				<leap-icon name="search" [size]="16" />Apply
+			</button>
+			<button type="button" class="btn btn-ghost" [disabled]="loading()" (click)="clearFilters()">
+				<leap-icon name="x" [size]="16" />Clear
+			</button>
+		</div>
+	</section>
+
+	@if (error(); as e) {
+		<section class="panel state-panel">
+			<p class="state-error"><leap-icon name="alert" [size]="18" />{{ e.message }}</p>
+		</section>
+	} @else if (loading()) {
+		<p class="sr-only" role="status">Loading audit orders…</p>
+	} @else if (page(); as result) {
+		<p class="result-summary" role="status">
+			{{ result.totalElements }} {{ result.totalElements === 1 ? 'order' : 'orders' }} found.
+		</p>
+		@if (rows().length === 0) {
+			<section class="panel empty-state">
+				<span class="empty-icon"><leap-icon name="inbox" [size]="26" /></span>
+				<strong>No orders match these filters</strong>
+				<span>Try a different account or date range.</span>
+			</section>
+		} @else {
+			<section class="panel orders-panel" aria-label="Audit orders">
+				<div class="table-wrap">
+					<table class="data-table">
+						<thead>
+							<tr>
+								<th>Submitted</th>
+								<th>Account</th>
+								<th>Order</th>
+								<th class="r">Quantity</th>
+								<th class="r">Price</th>
+								<th class="r">Value</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							@for (order of rows(); track order.orderId) {
+								<tr>
+									<td class="num faint">{{ order.submitted }}</td>
+									<td class="num">#{{ order.accountId }}</td>
+									<td>
+										<div class="order-ident">
+											<strong>{{ order.symbol }}</strong>
+											<span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">{{ order.side }}</span>
+										</div>
+									</td>
+									<td class="r num">{{ order.quantityLabel }}</td>
+									<td class="r num">{{ order.priceLabel }}</td>
+									<td class="r num strong">{{ order.valueLabel }}</td>
+									<td><span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.statusLabel }}</span></td>
+								</tr>
+							}
+						</tbody>
+					</table>
+				</div>
+
+				@if (result.totalPages > 1) {
+					<nav class="pagination" aria-label="Audit order pages">
+						<button type="button" class="page-button page-arrow" [disabled]="!result.hasPrevious || loading()" (click)="goToPage(result.page - 1)">
+							<leap-icon name="chevron-left" [size]="16" /><span class="sr-only">Previous page</span>
+						</button>
+						@for (pageNumber of pageButtons(); track pageNumber) {
+							<button type="button" class="page-button" [class.current]="pageNumber === result.page" [attr.aria-current]="pageNumber === result.page ? 'page' : null" (click)="goToPage(pageNumber)">
+								{{ pageNumber + 1 }}
+							</button>
+						}
+						<button type="button" class="page-button page-arrow" [disabled]="!result.hasNext || loading()" (click)="goToPage(result.page + 1)">
+							<leap-icon name="chevron-right" [size]="16" /><span class="sr-only">Next page</span>
+						</button>
+					</nav>
+				}
+			</section>
+		}
+	}
+</div>
