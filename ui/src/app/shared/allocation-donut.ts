@@ -34,7 +34,6 @@ const GAP = 2;
           @for (arc of arcs(); track arc.key) {
             <circle
               class="arc"
-              [class.dim]="active() != null && active() !== arc.key"
               [class.on]="active() === arc.key"
               [attr.cx]="size / 2"
               [attr.cy]="size / 2"
@@ -62,7 +61,7 @@ const GAP = 2;
         @for (arc of arcs(); track arc.key) {
           <li
             tabindex="0"
-            [class.dim]="active() != null && active() !== arc.key"
+            [class.on]="active() === arc.key"
             (mouseenter)="active.set(arc.key)"
             (mouseleave)="active.set(null)"
             (focus)="active.set(arc.key)"
@@ -122,16 +121,11 @@ const GAP = 2;
       .arc {
         fill: none;
         cursor: pointer;
-        transition:
-          opacity 0.15s ease,
-          stroke-width 0.15s ease;
+        transition: stroke-width 0.15s ease;
       }
+      /* The hovered slice grows; the others keep their full colour. */
       .arc.on {
-        stroke-width: 24px;
-      }
-      .arc.dim,
-      li.dim {
-        opacity: 0.4;
+        stroke-width: 26px;
       }
       .centre {
         position: absolute;
@@ -179,11 +173,10 @@ const GAP = 2;
         padding: 6px 8px;
         border-radius: 6px;
         cursor: default;
-        transition:
-          opacity 0.15s ease,
-          background-color 0.15s ease;
+        transition: background-color 0.15s ease;
       }
       li:hover,
+      li.on,
       li:focus-visible {
         background: var(--panel-hover);
         outline: none;
