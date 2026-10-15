@@ -1,0 +1,108 @@
+/* Pieces shared by the leaderboard and the trader profile. Each page @uses
+   this file, so the rules land inside that page's encapsulated styles. */
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 55%, #12b76a) 100%);
+  color: var(--on-accent);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+
+  &.sm {
+    width: 34px;
+    height: 34px;
+    font-size: 12px;
+  }
+
+  &.lg {
+    width: 72px;
+    height: 72px;
+    font-size: 24px;
+  }
+}
+
+.chip {
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--panel-2);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+.strong {
+  font-weight: 600;
+}
+
+.pad {
+  padding: 18px 22px;
+}
+
+/* Metric tiles: a label over a number, hover for what it means. */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+
+  > div {
+    padding: 10px 12px;
+    background: var(--panel-2);
+    cursor: help;
+    box-shadow:
+      inset -1px 0 0 var(--border-soft),
+      inset 0 -1px 0 var(--border-soft);
+  }
+
+  dt {
+    font-size: 11.5px;
+    font-weight: 500;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  dd {
+    margin: 3px 0 0;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.side {
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+
+  &.buy {
+    color: var(--up);
+    background: var(--up-soft);
+  }
+  &.sell {
+    color: var(--down);
+    background: var(--down-soft);
+  }
+}

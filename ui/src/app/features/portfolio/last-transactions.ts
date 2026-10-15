@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { CopiedOrdersStore } from '../../core/state/copied-orders.store';
 import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatPrice, formatQty, formatUsd } from '../../shared/format';
 
@@ -51,6 +52,9 @@ const SHOWN = 5;
                   </td>
                   <td>
                     <a class="sym" [routerLink]="['/instrument', row.instrumentId]">{{ row.symbol }}</a>
+                    @if (row.copiedFrom; as from) {
+                      <span class="copied" [attr.title]="'Copy traded from ' + from">Copy traded</span>
+                    }
                   </td>
                   <td class="num">{{ row.qty }}</td>
                   <td class="num">{{ row.price }}</td>
@@ -140,6 +144,15 @@ const SHOWN = 5;
       .sym:hover {
         color: var(--accent);
       }
+      .copied {
+        margin-left: 8px;
+        padding: 1px 7px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-size: 11px;
+        font-weight: 600;
+      }
       .when {
         color: var(--text-3);
       }
@@ -176,6 +189,7 @@ const SHOWN = 5;
 })
 export class LastTransactions {
   protected readonly portfolio = inject(PortfolioStore);
+  private readonly copied = inject(CopiedOrdersStore);
 
   readonly rows = computed(() => {
     const now = new Date();
@@ -190,6 +204,7 @@ export class LastTransactions {
         price: formatPrice(o.price),
         total: formatUsd(o.value),
         when: relativeDay(new Date(o.fulfilledTime ?? o.placedTime), now),
+        copiedFrom: this.copied.copiedFrom(o.orderId)?.traderName ?? null,
       }));
   });
 }

@@ -2,7 +2,7 @@
   <leap-page-header heading="Orders" mascot="orders">
     <span description>
       Every order for {{ portfolio.account.active()?.name ?? 'this account' }}, newest first. Pending orders can be
-      cancelled until they fill. Expand a row for its history.
+      cancelled until they fill. Orders placed by a trader you copy are marked Copy traded. Expand a row for its history.
     </span>
   </leap-page-header>
 
@@ -77,6 +77,11 @@
                     <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
                       {{ order.side }}
                     </span>
+                    @if (order.copiedFrom; as from) {
+                      <span class="copied" [attr.title]="'Copy traded from ' + from.name + ' (' + from.handle + ')'">
+                        <leap-icon name="copy" [size]="13" />Copy traded · {{ from.name }}
+                      </span>
+                    }
                   </div>
                 </td>
                 <td class="r num">{{ order.quantity }}</td>
@@ -145,6 +150,15 @@
                               </a>
                             </dd>
                           </div>
+                          @if (order.copiedFrom; as from) {
+                            <div>
+                              <dt>Copy traded from</dt>
+                              <dd>
+                                <a class="lnk" [routerLink]="['/copy-trading', from.traderId]">{{ from.name }} {{ from.handle }}</a>
+                                <span class="num faint"> · order #{{ from.leaderOrderId }}</span>
+                              </dd>
+                            </div>
+                          }
                           <div>
                             <dt>Type</dt>
                             <dd class="num">{{ order.type }}</dd>

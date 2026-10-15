@@ -113,6 +113,62 @@ export interface OrderRequest {
   timeInForce?: TimeInForce;
 }
 
+/** CopyTraderResponse: a lead trader other accounts can copy. Money is in USD. */
+export interface CopyTrader {
+  copyTraderId: number;
+  /** The account the trader places orders from. */
+  accountId: number;
+  name: string;
+  handle: string;
+  strategy: string;
+  markets: string[];
+  bio: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  startingCapital: number;
+  /** Cash plus holdings at the latest prices. */
+  equity: number;
+  /** Profit and loss: equity minus starting capital. */
+  pnl: number | null;
+  /** Return on investment, in percent. */
+  roi: number | null;
+  /** Maximum drawdown of the daily equity curve, in percent (0 or more). */
+  maxDrawdown: number | null;
+  /** Annualised Sharpe ratio; null with under 20 days of history. */
+  sharpeRatio: number | null;
+  /** Assets under management: equity plus what copiers have allocated. */
+  aum: number;
+  copierFunds: number;
+  /** Percent of closing sells made above the average buy price; null before the first sell. */
+  successRate: number | null;
+  closedTrades: number;
+  totalTrades: number;
+  copiers: number;
+  tradingSince: string;
+  /** Daily equity, oldest first, ending at today's equity. */
+  equityCurve: { at: string; equity: number }[];
+}
+
+/** CopySubscriptionResponse: an account copying a lead trader. */
+export interface CopySubscription {
+  subscriptionId: number;
+  followerAccountId: number;
+  copyTraderId: number;
+  traderName: string;
+  traderHandle: string;
+  allocation: number;
+  startedAt: string;
+  copiedOrders: number;
+}
+
+/** CopiedOrderResponse: one of the account's orders that was copied from a lead trader. */
+export interface CopiedOrder {
+  orderId: number;
+  leaderOrderId: number;
+  copyTraderId: number;
+  traderName: string;
+  traderHandle: string;
+}
+
 /** GET /api/audit/orders */
 export interface AuditOrderPage {
   orders: Order[];
