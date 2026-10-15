@@ -60,6 +60,12 @@ export class App {
     { initialValue: this.router.url },
   );
 
+  /** Full-bleed auth pages sit outside the console shell. */
+  readonly authRoute = computed(() => {
+    const path = this.url().split(/[?#]/)[0];
+    return path === '/login';
+  });
+
   /** Section and, for detail routes, the page within it. */
   readonly crumbs = computed(() => {
     const path = this.url().split(/[?#]/)[0];

@@ -1,7 +1,13 @@
 import { Routes } from '@angular/router';
 
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'portfolio' },
+  { path: '', pathMatch: 'full', redirectTo: 'login' },
+  {
+    path: 'login',
+    title: 'Sign in — LEAP',
+    loadComponent: () => import('./features/auth/auth-page').then((m) => m.AuthPage),
+  },
+  { path: 'signup', redirectTo: 'login' },
   {
     path: 'portfolio',
     title: 'Portfolio — LEAP',

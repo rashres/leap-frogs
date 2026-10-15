@@ -1,0 +1,175 @@
+<div class="auth">
+  <section class="pane form-pane" aria-labelledby="auth-title">
+    <header class="brand-row">
+      <a class="brand" routerLink="/login" aria-label="LEAP Console">
+        <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
+          <rect width="32" height="32" rx="8" fill="var(--text)" />
+          <path
+            d="M7 21 L13 14 L18 18 L25 9"
+            stroke="var(--panel)"
+            stroke-width="2.8"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="brand-name">LEAP</span>
+      </a>
+      <span class="brand-meta faint">Multi-market console</span>
+    </header>
+
+    <div class="form-body">
+      <h1 id="auth-title">Login to Your Account!</h1>
+
+      <form class="form" (submit)="submit($event)" novalidate>
+        <label class="uline">
+          <span>Email Address</span>
+          <input
+            type="email"
+            name="email"
+            autocomplete="email"
+            [value]="email()"
+            (input)="email.set($any($event.target).value)"
+            placeholder="you@example.com"
+          />
+        </label>
+
+        <label class="uline">
+          <span>Password</span>
+          <div class="pass-row">
+            <input
+              [type]="showPassword() ? 'text' : 'password'"
+              name="password"
+              autocomplete="current-password"
+              [value]="password()"
+              (input)="password.set($any($event.target).value)"
+              placeholder="••••••••"
+            />
+            <button
+              type="button"
+              class="reveal"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              (click)="togglePassword()"
+            >
+              <leap-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="18" />
+            </button>
+          </div>
+        </label>
+
+        <div class="row-actions">
+          <label class="check">
+            <input
+              type="checkbox"
+              name="remember"
+              [checked]="remember()"
+              (change)="remember.set($any($event.target).checked)"
+            />
+            <span class="dot" aria-hidden="true"></span>
+            Remember Me
+          </label>
+          <button type="button" class="text-link" disabled title="Coming with real auth">Forgot Password</button>
+        </div>
+
+        @if (error(); as err) {
+          <p class="form-error" role="alert">{{ err }}</p>
+        }
+
+        <button type="submit" class="cta" [disabled]="submitting()">
+          {{ submitting() ? 'Opening console…' : 'Login To Your Account' }}
+        </button>
+      </form>
+
+      @if (demoAccounts().length) {
+        <div class="demo">
+          <span class="demo-kicker">Demo accounts</span>
+          <div class="demo-row">
+            @for (a of demoAccounts(); track a.id) {
+              <button type="button" class="demo-btn" (click)="enterAs(a.id)">{{ a.name }}</button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <section class="pane show-pane" aria-hidden="true">
+    <div class="iso"></div>
+
+    <div class="show-top">
+      @for (s of sessions(); track s.label) {
+        <span class="sess" [class.on]="s.open"><i></i>{{ s.label }}</span>
+      }
+    </div>
+
+    <div class="collage">
+      <article class="float card-balance">
+        <div class="bal-top">
+          <span class="coin a"></span>
+          <span class="coin b"></span>
+        </div>
+        <p class="bal-label">Portfolio value</p>
+        <p class="bal-value num">{{ showcase().value }}</p>
+        <div class="bal-foot">
+          <span class="bal-mask">{{ showcase().mask }}</span>
+          <span class="bal-chg num" [class.up]="showcase().dayUp" [class.down]="!showcase().dayUp">
+            {{ showcase().dayPct }} today
+          </span>
+        </div>
+        <div class="dots"></div>
+      </article>
+
+      <article class="float card-movers">
+        <div class="movers-head">
+          <span>Live movers</span>
+          <span class="movers-time">Now</span>
+        </div>
+        <div class="movers-row">
+          @for (m of movers(); track m.symbol) {
+            <span class="avatar" [title]="m.symbol + ' ' + m.pct">
+              <leap-instrument-logo [symbol]="m.symbol" [size]="28" />
+            </span>
+          } @empty {
+            <span class="avatar ghost"></span>
+            <span class="avatar ghost"></span>
+            <span class="avatar ghost"></span>
+          }
+          @if (moverExtra() > 0) {
+            <span class="avatar more">+{{ moverExtra() }}</span>
+          }
+        </div>
+      </article>
+
+      <article class="float card-bars">
+        <div class="bars" role="img" aria-label="Weekly activity">
+          @for (b of weekBars(); track b.label) {
+            <div class="bar-col">
+              <span class="bar" [class.on]="b.on" [style.height.%]="b.h"></span>
+              <span class="bar-lbl">{{ b.label }}</span>
+            </div>
+          }
+        </div>
+      </article>
+
+      @if (headlineMover(); as hm) {
+        <article class="float card-toast">
+          <leap-instrument-logo [symbol]="hm.symbol" [size]="36" />
+          <div class="toast-body">
+            <div class="toast-meta">
+              <strong>{{ hm.symbol }}</strong>
+              <span>Top mover</span>
+            </div>
+            <p>
+              {{ hm.price }}
+              <span class="num" [class.up]="hm.up" [class.down]="!hm.up">{{ hm.pct }}</span>
+            </p>
+          </div>
+          <span class="toast-pill">Trade</span>
+        </article>
+      }
+
+      <div class="float tape-ribbon">
+        <leap-ticker-belt [linked]="false" />
+      </div>
+    </div>
+  </section>
+</div>

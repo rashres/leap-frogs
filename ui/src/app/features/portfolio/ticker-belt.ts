@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { formatPrice, formatSignedPct } from '../../shared/format';
 import { InstrumentLogo } from '../../shared/instrument-logo';
@@ -21,14 +21,25 @@ import { DayChangeStore } from './day-change.store';
             <ul class="run" [attr.aria-hidden]="copy === 1 ? 'true' : null">
               @for (item of items(); track item.id) {
                 <li>
-                  <a [routerLink]="['/instrument', item.id]" [attr.tabindex]="copy === 1 ? -1 : null">
-                    <leap-instrument-logo [symbol]="item.symbol" [size]="22" />
-                    <span class="sym">{{ item.symbol }}</span>
-                    <span class="price num">{{ item.price }}</span>
-                    @if (item.pct; as pct) {
-                      <span class="chg num" [class.up]="!item.negative" [class.down]="item.negative">{{ pct }}</span>
-                    }
-                  </a>
+                  @if (linked()) {
+                    <a class="chip" [routerLink]="['/instrument', item.id]" [attr.tabindex]="copy === 1 ? -1 : null">
+                      <leap-instrument-logo [symbol]="item.symbol" [size]="22" />
+                      <span class="sym">{{ item.symbol }}</span>
+                      <span class="price num">{{ item.price }}</span>
+                      @if (item.pct; as pct) {
+                        <span class="chg num" [class.up]="!item.negative" [class.down]="item.negative">{{ pct }}</span>
+                      }
+                    </a>
+                  } @else {
+                    <span class="chip">
+                      <leap-instrument-logo [symbol]="item.symbol" [size]="22" />
+                      <span class="sym">{{ item.symbol }}</span>
+                      <span class="price num">{{ item.price }}</span>
+                      @if (item.pct; as pct) {
+                        <span class="chg num" [class.up]="!item.negative" [class.down]="item.negative">{{ pct }}</span>
+                      }
+                    </span>
+                  }
                 </li>
               }
             </ul>
@@ -70,7 +81,7 @@ import { DayChangeStore } from './day-change.store';
         margin: 0;
         padding: 0;
       }
-      a {
+      .chip {
         display: flex;
         align-items: center;
         gap: 8px;
@@ -81,7 +92,7 @@ import { DayChangeStore } from './day-change.store';
         border-right: 1px solid var(--border-soft);
         transition: background-color 0.15s ease;
       }
-      a:hover {
+      a.chip:hover {
         background: var(--panel-hover);
       }
       .sym {
@@ -111,6 +122,9 @@ import { DayChangeStore } from './day-change.store';
 })
 export class TickerBelt {
   private readonly store = inject(DayChangeStore);
+
+  /** When false, chips are decorative (used on the sign-in page). */
+  readonly linked = input(true);
 
   readonly items = computed(() =>
     this.store
