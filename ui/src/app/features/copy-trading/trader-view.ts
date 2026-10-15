@@ -46,7 +46,7 @@ export function since(trader: CopyTrader): string {
 }
 
 export function equitySeries(trader: CopyTrader): PricePoint[] {
-  return trader.equityCurve.map((p) => ({ at: new Date(p.at), price: p.equity }));
+  return (trader.equityCurve ?? []).map((p) => ({ at: new Date(p.at), price: p.equity }));
 }
 
 /** "$1.2M", "$125.6K", "$950". */
