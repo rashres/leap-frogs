@@ -14,6 +14,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { DISPLAY_ZONE, DISPLAY_ZONE_LABEL } from '../core/markets/sessions';
 import { formatPrice } from './format';
 
 export interface PricePoint {
@@ -98,6 +99,10 @@ interface Geometry {
               stroke="var(--panel)"
               stroke-width="2.5"
             />
+          } @else if (live()) {
+            @let last = geo.xs.length - 1;
+            <circle class="pulse" [attr.cx]="geo.xs[last]" [attr.cy]="geo.ys[last]" r="5" [attr.fill]="strokeColour()" />
+            <circle [attr.cx]="geo.xs[last]" [attr.cy]="geo.ys[last]" r="4" [attr.fill]="strokeColour()" stroke="var(--panel)" stroke-width="2" />
           }
         </svg>
 
@@ -166,6 +171,27 @@ interface Geometry {
         margin-left: 6px;
         font-weight: 500;
       }
+      .pulse {
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: pulse 1.6s ease-out infinite;
+      }
+      @keyframes pulse {
+        from {
+          transform: scale(1);
+          opacity: 0.55;
+        }
+        to {
+          transform: scale(3.2);
+          opacity: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .pulse {
+          animation: none;
+          opacity: 0;
+        }
+      }
     `,
   ],
 })
@@ -178,6 +204,12 @@ export class PriceChart {
   readonly tone = input<'auto' | 'up' | 'down'>('auto');
   /** Value labels on the left, time labels underneath, and horizontal gridlines. */
   readonly axes = input(false);
+  /** Places points by time across this span (a trading session) instead of evenly, so the line stops at "now". */
+  readonly window = input<{ readonly start: Date; readonly end: Date } | null>(null);
+  /** Level for the dotted line, such as the previous close; defaults to the first point. */
+  readonly reference = input<number | null>(null);
+  /** Pulses the latest point while the market is trading. */
+  readonly live = input(false);
 
   /** Emits the scrubbed point so the parent can retitle its headline figure. */
   readonly scrub = output<PricePoint | null>();
@@ -213,19 +245,25 @@ export class PriceChart {
     const plotWidth = Math.max(40, width - plotLeft - (axes ? 6 : 0));
 
     const values = points.map((p) => p.price);
-    const min = Math.min(...values);
-    const max = Math.max(...values);
+    const reference = this.reference() ?? values[0];
+    const min = Math.min(...values, reference);
+    const max = Math.max(...values, reference);
     const span = max - min || Math.abs(max) * 0.01 || 1;
 
     const plot = height - padTop - padBottom;
     const plotBottom = height - padBottom;
     const yOf = (v: number) => padTop + plot - ((v - min) / span) * plot;
-    const xs = values.map((_, i) => plotLeft + (i / (values.length - 1)) * plotWidth);
+    const win = this.window();
+    const t0 = win?.start.getTime() ?? 0;
+    const length = win ? Math.max(1, win.end.getTime() - t0) : 0;
+    const xs = win
+      ? points.map((p) => plotLeft + Math.min(1, Math.max(0, (p.at.getTime() - t0) / length)) * plotWidth)
+      : values.map((_, i) => plotLeft + (i / (values.length - 1)) * plotWidth);
     const ys = values.map(yOf);
 
     const line = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${ys[i].toFixed(2)}`).join(' ');
-    const area = `${line} L${xs[xs.length - 1]},${plotBottom} L${plotLeft},${plotBottom} Z`;
-    const baselineY = yOf(values[0]);
+    const area = `${line} L${xs[xs.length - 1]},${plotBottom} L${xs[0]},${plotBottom} Z`;
+    const baselineY = yOf(reference);
 
     const yTicks: { y: number; label: string }[] = [];
     let xTicks: { x: number; label: string; anchor: string }[] = [];
@@ -234,16 +272,24 @@ export class PriceChart {
       for (let v = Math.ceil(min / step) * step; v <= max + step * 1e-6; v += step) {
         yTicks.push({ y: yOf(v), label: axisPrice(v, step) });
       }
-      const count = Math.min(6, points.length);
-      const spanMs = points[points.length - 1].at.getTime() - points[0].at.getTime();
-      xTicks = Array.from({ length: count }, (_, k) => {
-        const i = Math.round((k / (count - 1)) * (points.length - 1));
-        return {
-          x: xs[i],
-          label: axisTime(points[i].at, spanMs),
-          anchor: k === 0 ? 'start' : k === count - 1 ? 'end' : 'middle',
-        };
-      });
+      if (win) {
+        xTicks = hourTicks(t0, length).map((t) => {
+          const x = plotLeft + ((t - t0) / length) * plotWidth;
+          const anchor = x - plotLeft < 24 ? 'start' : width - x < 24 ? 'end' : 'middle';
+          return { x, label: hourLabel(new Date(t)), anchor };
+        });
+      } else {
+        const count = Math.min(6, points.length);
+        const spanMs = points[points.length - 1].at.getTime() - points[0].at.getTime();
+        xTicks = Array.from({ length: count }, (_, k) => {
+          const i = Math.round((k / (count - 1)) * (points.length - 1));
+          return {
+            x: xs[i],
+            label: axisTime(points[i].at, spanMs),
+            anchor: k === 0 ? 'start' : k === count - 1 ? 'end' : 'middle',
+          };
+        });
+      }
     }
 
     return {
@@ -252,7 +298,7 @@ export class PriceChart {
       line,
       area,
       baselineY,
-      rising: values[values.length - 1] >= values[0],
+      rising: values[values.length - 1] >= reference,
       xs,
       ys,
       plotLeft,
@@ -295,8 +341,14 @@ export class PriceChart {
     const geo = this.geometry();
     if (!geo) return;
     const bounds = (event.currentTarget as SVGElement).getBoundingClientRect();
-    const ratio = Math.min(1, Math.max(0, (event.clientX - bounds.left - geo.plotLeft) / geo.plotWidth));
-    const index = Math.min(this.points().length - 1, Math.max(0, Math.round(ratio * (this.points().length - 1))));
+    let index: number;
+    if (this.window()) {
+      const x = event.clientX - bounds.left;
+      index = geo.xs.reduce((best, xi, i) => (Math.abs(xi - x) < Math.abs(geo.xs[best] - x) ? i : best), 0);
+    } else {
+      const ratio = Math.min(1, Math.max(0, (event.clientX - bounds.left - geo.plotLeft) / geo.plotWidth));
+      index = Math.min(this.points().length - 1, Math.max(0, Math.round(ratio * (this.points().length - 1))));
+    }
     this.hoverIndex.set(index);
     this.scrub.emit(this.points()[index]);
   }
@@ -314,9 +366,23 @@ export class PriceChart {
     const ageMs = Date.now() - at.getTime();
     const withinDay = ageMs < 24 * 60 * 60 * 1000;
     return withinDay
-      ? at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      ? `${at.toLocaleTimeString('en-US', { timeZone: DISPLAY_ZONE, hour: 'numeric', minute: '2-digit' })} ${DISPLAY_ZONE_LABEL}`
       : at.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
   }
+}
+
+const HOUR_MS = 60 * 60 * 1000;
+
+/** Whole hours inside a session, spaced so about five fit. */
+function hourTicks(start: number, length: number): number[] {
+  const step = [1, 2, 3, 4, 6].find((h) => length / (h * HOUR_MS) <= 6) ?? 6;
+  const ticks: number[] = [];
+  for (let t = Math.ceil(start / HOUR_MS) * HOUR_MS; t <= start + length; t += step * HOUR_MS) ticks.push(t);
+  return ticks;
+}
+
+function hourLabel(at: Date): string {
+  return at.toLocaleTimeString('en-US', { timeZone: DISPLAY_ZONE, hour: 'numeric' });
 }
 
 function niceStep(raw: number): number {
