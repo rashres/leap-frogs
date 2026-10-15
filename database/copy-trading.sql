@@ -270,10 +270,10 @@ BEGIN
     FROM seed_trader t JOIN account a ON a.email = t.email;
 
     INSERT INTO copy_subscription (follower_account_id, copy_trader_id, allocation, started_at)
-    SELECT f.account_id, ct.copy_trader_id, s.allocation, ((v_today - s.days_ago) + s.at) AT TIME ZONE 'UTC'
-    FROM seed_subscription s
-    JOIN account f ON f.email = s.follower_email
-    JOIN account l ON l.email = s.trader_email
+    SELECT f.account_id, ct.copy_trader_id, ss.allocation, ((v_today - ss.days_ago) + ss.at) AT TIME ZONE 'UTC'
+    FROM seed_subscription ss
+    JOIN account f ON f.email = ss.follower_email
+    JOIN account l ON l.email = ss.trader_email
     JOIN copy_trader ct ON ct.account_id = l.account_id;
 
     -- Every leader order, oldest first, each followed by its copies.
