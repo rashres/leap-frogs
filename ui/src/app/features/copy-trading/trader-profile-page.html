@@ -32,30 +32,48 @@
 
     <!-- Performance: equity curve and every headline number in one panel -->
     <section class="panel perf" aria-labelledby="perf-title">
-      <div class="perf-chart">
-        <div class="perf-head">
-          <div>
-            <h2 class="label" id="perf-title">Equity</h2>
-            @if (headline(); as h) {
-              <p class="equity num">{{ h.equity }}</p>
-              <p class="change num" [class]="h.tone">
-                {{ h.delta }} ({{ h.pct }})
-                <span class="faint">since starting with {{ v.started }} · {{ h.at }}</span>
-              </p>
-            }
+      <div class="perf-top">
+        <div class="perf-chart">
+          <div class="perf-head">
+            <div>
+              <h2 class="label" id="perf-title">Equity</h2>
+              @if (headline(); as h) {
+                <p class="equity num">{{ h.equity }}</p>
+                <p class="change num" [class]="h.tone">
+                  {{ h.delta }} ({{ h.pct }})
+                  <span class="faint">since starting with {{ v.started }} · {{ h.at }}</span>
+                </p>
+              }
+            </div>
           </div>
+          @if (series().length > 1) {
+            <leap-price-chart
+              [points]="series()"
+              [height]="260"
+              [axes]="true"
+              [tone]="(v.t.roi ?? 0) < 0 ? 'down' : 'up'"
+              (scrub)="scrubbed.set($event)"
+            />
+          } @else {
+            <div class="chart-empty faint">Not enough history for a chart yet.</div>
+          }
         </div>
-        @if (series().length > 1) {
-          <leap-price-chart
-            [points]="series()"
-            [height]="260"
-            [axes]="true"
-            [tone]="(v.t.roi ?? 0) < 0 ? 'down' : 'up'"
-            (scrub)="scrubbed.set($event)"
-          />
-        } @else {
-          <div class="chart-empty faint">Not enough history for a chart yet.</div>
-        }
+
+        <div class="perf-alloc">
+          <h2 class="label">Allocation</h2>
+          @if (holdings.initialLoading()) {
+            <div class="alloc-empty" aria-hidden="true"><span class="skeleton" style="width: 150px; height: 150px; border-radius: 50%"></span></div>
+          } @else if (allocation().segments.length === 0) {
+            <div class="alloc-empty faint">Nothing held yet.</div>
+          } @else {
+            <leap-allocation-donut
+              [segments]="allocation().segments"
+              idleLabel="Invested"
+              [idleValue]="allocation().invested"
+              [idleSub]="allocation().holdings + (allocation().holdings === 1 ? ' holding' : ' holdings')"
+            />
+          }
+        </div>
       </div>
 
       <dl class="metrics perf-metrics">

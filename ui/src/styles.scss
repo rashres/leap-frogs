@@ -32,6 +32,13 @@
   --down-line: #fecdca;
   --chart-up: #12b76a;
   --chart-down: #f04438;
+  /* Categorical series, in this fixed order (checked for colour-blind separation
+     with the dataviz validator). --series-neutral is for cash / "not a series". */
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --series-3: #1baf7a;
+  --series-4: #eda100;
+  --series-neutral: #a3a29b;
 
   --accent: #5750f1;
   --accent-strong: #4840d6;
@@ -107,6 +114,11 @@
   --down-line: rgba(240, 68, 56, 0.4);
   --chart-up: #32d583;
   --chart-down: #f97066;
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --series-3: #199e70;
+  --series-4: #c98500;
+  --series-neutral: #6b6a65;
 
   /* Monochrome accent: white buttons with black text, white-tinted highlights.
      Green and red stay the only colours, so direction still stands out. */
