@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
 import { filter, map, tap } from 'rxjs';
-import { MARKET_ORDER, marketFor, type MarketPolicy } from './core/markets/sessions';
+import { DISPLAY_ZONE, DISPLAY_ZONE_LABEL, MARKET_ORDER, marketFor, type MarketPolicy } from './core/markets/sessions';
 import { ActiveAccountService } from './core/state/active-account.service';
 import { ApiStatusService } from './core/state/api-status.service';
 import { MarketStore } from './core/state/market.store';
@@ -87,7 +87,7 @@ export class App {
   });
 
   readonly clock = computed(() =>
-    this.market.now().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    `${this.market.now().toLocaleTimeString('en-US', { timeZone: DISPLAY_ZONE, hour: 'numeric', minute: '2-digit', second: '2-digit' })} ${DISPLAY_ZONE_LABEL}`,
   );
 
   /** Header pill: is the API up, and is the price feed filling instrument.last_price. */
