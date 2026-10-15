@@ -125,14 +125,27 @@ export interface CopyTrader {
   bio: string;
   riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
   startingCapital: number;
+  /** Cash plus holdings at the latest prices. */
   equity: number;
-  returnPercent: number | null;
+  /** Profit and loss: equity minus starting capital. */
+  pnl: number | null;
+  /** Return on investment, in percent. */
+  roi: number | null;
+  /** Maximum drawdown of the daily equity curve, in percent (0 or more). */
+  maxDrawdown: number | null;
+  /** Annualised Sharpe ratio; null with under 20 days of history. */
+  sharpeRatio: number | null;
+  /** Assets under management: equity plus what copiers have allocated. */
+  aum: number;
+  copierFunds: number;
   /** Percent of closing sells made above the average buy price; null before the first sell. */
-  winRate: number | null;
+  successRate: number | null;
   closedTrades: number;
   totalTrades: number;
-  followers: number;
+  copiers: number;
   tradingSince: string;
+  /** Daily equity, oldest first, ending at today's equity. */
+  equityCurve: { at: string; equity: number }[];
 }
 
 /** CopySubscriptionResponse: an account copying a lead trader. */

@@ -11,7 +11,11 @@ export class CopyTradingService {
     return this.http.get<CopyTrader[]>('/api/copy-traders');
   }
 
-  /** The trader's latest filled orders, newest first. */
+  trader(copyTraderId: number): Observable<CopyTrader> {
+    return this.http.get<CopyTrader>(`/api/copy-traders/${copyTraderId}`);
+  }
+
+  /** Every filled order of the trader, newest first. */
   traderOrders(copyTraderId: number): Observable<Order[]> {
     return this.http.get<Order[]>(`/api/copy-traders/${copyTraderId}/orders`);
   }

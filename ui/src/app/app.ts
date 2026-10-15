@@ -63,6 +63,9 @@ export class App {
   readonly crumbs = computed(() => {
     const path = this.url().split(/[?#]/)[0];
     if (path.startsWith('/instrument')) return { section: NAV[1], page: 'Instrument' };
+    if (path.startsWith('/copy-trading/')) {
+      return { section: NAV.find((n) => n.path === '/copy-trading')!, page: 'Lead trader' };
+    }
     return { section: NAV.find((n) => path.startsWith(n.path)) ?? NAV[0], page: null };
   });
 
