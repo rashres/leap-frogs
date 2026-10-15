@@ -15,7 +15,18 @@
         </svg>
         <span class="brand-name">LEAP</span>
       </a>
-      <span class="brand-meta faint">Multi-market console</span>
+      <div class="brand-actions">
+        <span class="brand-meta faint">Multi-market console</span>
+        <button
+          type="button"
+          class="icon-btn theme-btn"
+          [attr.aria-label]="theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
+          [attr.title]="theme() === 'dark' ? 'Light theme' : 'Dark theme'"
+          (click)="toggleTheme()"
+        >
+          <leap-icon [name]="theme() === 'dark' ? 'sun' : 'moon'" [size]="18" />
+        </button>
+      </div>
     </header>
 
     <div class="form-body">
