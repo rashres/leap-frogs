@@ -18,6 +18,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/copy-trading/copy-trading-page').then((m) => m.CopyTradingPage),
   },
   {
+    path: 'copy-trading/:id',
+    title: 'Lead Trader — LEAP',
+    loadComponent: () => import('./features/copy-trading/trader-profile-page').then((m) => m.TraderProfilePage),
+  },
+  {
     path: 'news',
     title: 'News — LEAP',
     loadComponent: () => import('./features/news/news-page').then((m) => m.NewsPage),
