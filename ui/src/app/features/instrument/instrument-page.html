@@ -39,9 +39,11 @@
                     <leap-icon [name]="rising() ? 'trending-up' : 'trending-down'" [size]="14" />{{ change.percentText }}
                   </span>
                   {{ change.deltaText }}
-                  <span class="lbl">{{ scrubbed() ? 'at cursor' : todayWindow() ? 'Today' : range() }}</span>
-                  @if (live()) {
-                    <span class="live-tag"><i aria-hidden="true"></i>Live</span>
+                  @if (!scrubbed()) {
+                    <span class="lbl">{{ todayWindow() ? 'Today' : range() }}</span>
+                    @if (live()) {
+                      <span class="live-tag"><i aria-hidden="true"></i>Live</span>
+                    }
                   }
                 </p>
               } @else {
