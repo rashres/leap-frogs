@@ -1,0 +1,250 @@
+<div class="page-enter">
+  <a class="back" routerLink="/copy-trading"><leap-icon name="arrow-left" [size]="16" />All lead traders</a>
+
+  @if (trader.error(); as e) {
+    <p class="state-error">{{ e.message }}</p>
+  } @else if (view(); as v) {
+    <!-- Profile -->
+    <section class="panel hero" aria-labelledby="trader-name">
+      <div class="hero-main">
+        <span class="avatar lg">{{ v.initials }}</span>
+        <div class="hero-text">
+          <h1 id="trader-name">{{ v.t.name }}</h1>
+          <p class="hero-handle">{{ v.t.handle }} · Lead trader since {{ v.since }}</p>
+          <div class="tags">
+            <span class="strategy">{{ v.t.strategy }}</span>
+            @for (m of v.t.markets; track m) {
+              <span class="chip">{{ m }}</span>
+            }
+            <span [class]="'pill pill-' + v.riskTone">{{ v.riskLabel }}</span>
+          </div>
+          <p class="bio">{{ v.t.bio }}</p>
+        </div>
+      </div>
+      <div class="hero-side">
+        <leap-copy-control [trader]="v.t" [subscription]="subscription()" [allowStop]="true" (changed)="refresh()" />
+        <p class="hero-note faint">
+          <leap-icon name="users" [size]="14" />
+          {{ v.t.copiers }} {{ v.t.copiers === 1 ? 'account copies' : 'accounts copy' }} this trader
+        </p>
+      </div>
+    </section>
+
+    <!-- Performance: equity curve and every headline number in one panel -->
+    <section class="panel perf" aria-labelledby="perf-title">
+      <div class="perf-top">
+        <div class="perf-chart">
+          <div class="perf-head">
+            <div>
+              <h2 class="label" id="perf-title">Equity</h2>
+              @if (headline(); as h) {
+                <p class="equity num">{{ h.equity }}</p>
+                <p class="change num" [class]="h.tone">
+                  {{ h.delta }} ({{ h.pct }})
+                  <span class="faint">since starting with {{ v.started }} · {{ h.at }}</span>
+                </p>
+              }
+            </div>
+          </div>
+          @if (series().length > 1) {
+            <leap-price-chart
+              [points]="series()"
+              [height]="260"
+              [axes]="true"
+              [tone]="(v.t.roi ?? 0) < 0 ? 'down' : 'up'"
+              (scrub)="scrubbed.set($event)"
+            />
+          } @else {
+            <div class="chart-empty faint">Not enough history for a chart yet.</div>
+          }
+        </div>
+
+        <div class="perf-alloc">
+          <h2 class="label">Allocation</h2>
+          @if (holdings.initialLoading()) {
+            <div class="alloc-empty" aria-hidden="true"><span class="skeleton" style="width: 150px; height: 150px; border-radius: 50%"></span></div>
+          } @else if (allocation().segments.length === 0) {
+            <div class="alloc-empty faint">Nothing held yet.</div>
+          } @else {
+            <leap-allocation-donut
+              [segments]="allocation().segments"
+              idleLabel="Invested"
+              [idleValue]="allocation().invested"
+              [idleSub]="allocation().holdings + (allocation().holdings === 1 ? ' holding' : ' holdings')"
+            />
+          }
+        </div>
+      </div>
+
+      <dl class="metrics perf-metrics">
+        @for (m of v.metrics; track m.key) {
+          <div [title]="m.hint">
+            <dt>{{ m.label }}</dt>
+            <dd class="num" [class]="m.tone">{{ m.value }}</dd>
+          </div>
+        }
+      </dl>
+      <p class="foot-note faint">
+        {{ v.t.totalTrades }} filled trades, {{ v.t.closedTrades }} of them closing sells. MDD and Sharpe ratio come from the
+        daily equity curve above. Hover any number for what it means.
+      </p>
+    </section>
+
+    <!-- Portfolio -->
+    <section class="panel" aria-labelledby="portfolio-title">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title" id="portfolio-title">Portfolio</h2>
+          <p class="panel-sub">What {{ v.t.name }} holds right now, at today's prices</p>
+        </div>
+        @if (unrealised(); as u) {
+          <div class="head-stat">
+            <span class="faint">Unrealised PnL</span>
+            <strong class="num" [class]="u.tone">{{ u.value }}</strong>
+          </div>
+        }
+      </div>
+
+      @if (holdings.error(); as e) {
+        <div class="pad"><p class="state-error">{{ e.message }}</p></div>
+      } @else if (holdings.initialLoading()) {
+        <div class="pad" aria-hidden="true"><span class="skeleton" style="width: 50%"></span></div>
+        <p class="sr-only" role="status">Loading portfolio…</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Holding</th>
+                <th class="r">Quantity</th>
+                <th class="r">Avg cost</th>
+                <th class="r">Last price</th>
+                <th class="r">Market value</th>
+                <th class="r">Unrealised PnL</th>
+                <th>Weight</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of positions(); track p.instrumentId) {
+                <tr>
+                  <td>
+                    <a class="ident" [routerLink]="['/instrument', p.instrumentId]">
+                      <leap-instrument-logo [symbol]="p.symbol" [size]="32" />
+                      <span class="ident-text">
+                        <span class="sym">{{ p.symbol }}</span>
+                        <span class="faint small">{{ p.name }}</span>
+                      </span>
+                    </a>
+                  </td>
+                  <td class="r num">{{ p.quantity }}</td>
+                  <td class="r num">{{ p.avgCost }}</td>
+                  <td class="r num">{{ p.last }}</td>
+                  <td class="r num strong">{{ p.value }}</td>
+                  <td class="r num" [class]="p.tone">
+                    {{ p.pnl }}
+                    <span class="small">{{ p.pnlPct }}</span>
+                  </td>
+                  <td>
+                    <div class="weight">
+                      <span class="bar" aria-hidden="true"><i [style.width.%]="p.weight"></i></span>
+                      <span class="num small">{{ p.weightLabel }}</span>
+                    </div>
+                  </td>
+                </tr>
+              }
+              @if (cash(); as c) {
+                <tr class="cash-row">
+                  <td>
+                    <span class="ident">
+                      <span class="cash-icon"><leap-icon name="dollar" [size]="16" /></span>
+                      <span class="sym">Cash</span>
+                    </span>
+                  </td>
+                  <td colspan="3"></td>
+                  <td class="r num strong">{{ c.value }}</td>
+                  <td></td>
+                  <td>
+                    <div class="weight">
+                      <span class="bar muted" aria-hidden="true"><i [style.width.%]="c.weight"></i></span>
+                      <span class="num small">{{ c.weight.toFixed(1) }}%</span>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <!-- Trades -->
+    <section class="panel trades" aria-labelledby="trades-title">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title" id="trades-title">Trade history</h2>
+          <p class="panel-sub">Every filled order, newest first. Copiers get these trades scaled to their allocation.</p>
+        </div>
+        <div class="segmented" role="group" aria-label="Filter trades">
+          @for (f of tradeFilters; track f.key) {
+            <button type="button" [class.on]="tradeFilter() === f.key" [attr.aria-pressed]="tradeFilter() === f.key" (click)="setTradeFilter(f.key)">
+              {{ f.label }} <span class="faint">{{ tradeCounts()[f.key] }}</span>
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (trades.error(); as e) {
+        <div class="pad"><p class="state-error">{{ e.message }}</p></div>
+      } @else if (trades.initialLoading()) {
+        <div class="pad" aria-hidden="true"><span class="skeleton" style="width: 50%"></span></div>
+        <p class="sr-only" role="status">Loading trades…</p>
+      } @else if (tradeRows().rows.length === 0) {
+        <p class="none faint">No trades here yet.</p>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Filled</th>
+                <th>Trade</th>
+                <th class="r">Quantity</th>
+                <th class="r">Price</th>
+                <th class="r">Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (o of tradeRows().rows; track o.id) {
+                <tr>
+                  <td class="num faint">{{ o.when }}</td>
+                  <td>
+                    <a class="ident" [routerLink]="['/instrument', o.instrumentId]">
+                      <leap-instrument-logo [symbol]="o.symbol" [size]="30" />
+                      <span class="sym">{{ o.symbol }}</span>
+                      <span class="side" [class.buy]="o.side === 'BUY'" [class.sell]="o.side === 'SELL'">{{ o.side }}</span>
+                    </a>
+                  </td>
+                  <td class="r num">{{ o.quantity }}</td>
+                  <td class="r num">{{ o.price }}</td>
+                  <td class="r num strong">{{ o.value }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        @if (tradeRows().hidden > 0) {
+          <div class="more">
+            <button type="button" class="btn btn-secondary btn-sm" (click)="showAllTrades.set(true)">
+              Show all {{ tradeRows().total }} trades
+            </button>
+          </div>
+        }
+      }
+    </section>
+  } @else {
+    <div class="panel pad" aria-hidden="true">
+      <span class="skeleton" style="width: 30%; height: 20px"></span>
+      <span class="skeleton" style="width: 60%; margin-top: 12px"></span>
+    </div>
+    <p class="sr-only" role="status">Loading trader…</p>
+  }
+</div>

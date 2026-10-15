@@ -1,0 +1,316 @@
+@use './trader-shared';
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-3);
+
+  &:hover {
+    color: var(--accent);
+  }
+}
+
+.panel {
+  margin-bottom: 20px;
+}
+
+.small {
+  font-size: 12px;
+}
+
+/* ---- Profile -------------------------------------------------------------- */
+
+.hero {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px 32px;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 0% 0%, var(--accent-soft) 0%, transparent 55%),
+    var(--panel);
+}
+
+.hero-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 18px;
+  flex: 1 1 420px;
+  min-width: 0;
+}
+
+.hero-text {
+  min-width: 0;
+
+  h1 {
+    margin: 0;
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+.hero-handle {
+  margin: 2px 0 10px;
+  font-size: 13.5px;
+  color: var(--text-3);
+}
+
+.tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.strategy {
+  margin-right: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+.bio {
+  max-width: 640px;
+  margin: 12px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.hero-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.hero-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 12.5px;
+}
+
+/* ---- Performance ---------------------------------------------------------- */
+
+.perf {
+  padding: 20px 20px 14px;
+}
+
+/* Equity chart with the allocation donut beside it; stacked on narrow screens. */
+.perf-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+}
+
+.perf-chart {
+  min-width: 0;
+}
+
+.perf-alloc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-left: 24px;
+  border-left: 1px solid var(--border-soft);
+}
+
+.alloc-empty {
+  display: grid;
+  place-items: center;
+  min-height: 200px;
+  font-size: 13.5px;
+}
+
+.perf-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px 8px;
+}
+
+.label {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.equity {
+  margin: 4px 0 0;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.change {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+
+  .faint {
+    font-weight: 500;
+  }
+}
+
+.chart-empty {
+  display: grid;
+  place-items: center;
+  height: 260px;
+  font-size: 13.5px;
+}
+
+.perf-metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 16px;
+
+  dd {
+    font-size: 18px;
+  }
+}
+
+.foot-note {
+  margin: 10px 4px 0;
+  font-size: 12px;
+}
+
+/* ---- Portfolio ------------------------------------------------------------ */
+
+.head-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 12.5px;
+
+  strong {
+    font-size: 17px;
+  }
+}
+
+.ident {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  &:hover .sym {
+    color: var(--accent);
+  }
+}
+
+.ident-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.sym {
+  font-weight: 600;
+}
+
+.cash-icon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--panel-3);
+  color: var(--text-2);
+}
+
+.cash-row td {
+  background: var(--panel-2);
+}
+
+.weight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--panel-3);
+  overflow: hidden;
+
+  i {
+    display: block;
+    height: 100%;
+    max-width: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+  }
+
+  &.muted i {
+    background: var(--text-3);
+  }
+}
+
+/* ---- Trades --------------------------------------------------------------- */
+
+.segmented .faint {
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+.none {
+  margin: 0;
+  padding: 20px 22px;
+  font-size: 14px;
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  padding: 14px;
+  border-top: 1px solid var(--border-soft);
+}
+
+@media (max-width: 1100px) {
+  .perf-top {
+    grid-template-columns: 1fr;
+  }
+
+  .perf-alloc {
+    padding: 20px 0 0;
+    border-left: none;
+    border-top: 1px solid var(--border-soft);
+  }
+}
+
+@media (max-width: 760px) {
+  .perf-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-side {
+    align-items: flex-start;
+    width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .hero {
+    padding: 18px 16px;
+  }
+
+  .hero-main {
+    flex-direction: column;
+  }
+
+  .perf {
+    padding: 16px 12px 12px;
+  }
+}

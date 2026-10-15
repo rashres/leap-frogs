@@ -4,6 +4,7 @@ import { toApiError } from '../../core/api/api-error';
 import type { Order } from '../../core/api/models';
 import { OrdersService } from '../../core/api/orders.service';
 import { MarketStore } from '../../core/state/market.store';
+import { CopiedOrdersStore } from '../../core/state/copied-orders.store';
 import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatPrice, formatQty, formatStamp, formatUsd } from '../../shared/format';
 import { InstrumentLogo } from '../../shared/instrument-logo';
@@ -11,7 +12,7 @@ import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { Icon } from '../../shared/icon';
 import { PageHeader } from '../../shared/page-header';
 
-type Filter = 'ALL' | 'PENDING' | 'FILLED' | 'REJECTED';
+type Filter = 'ALL' | 'PENDING' | 'FILLED' | 'REJECTED' | 'COPIED';
 
 interface Step {
   readonly state: string;
@@ -37,6 +38,13 @@ interface Row {
   readonly type: string;
   readonly timeInForce: string;
   readonly expires: string;
+  /** The lead trader this order was copied from, or null for the account's own orders. */
+  readonly copiedFrom: {
+    readonly traderId: number;
+    readonly name: string;
+    readonly handle: string;
+    readonly leaderOrderId: number;
+  } | null;
   readonly steps: readonly Step[];
 }
 
@@ -55,9 +63,16 @@ export class OrdersPage {
   protected readonly portfolio = inject(PortfolioStore);
   private readonly market = inject(MarketStore);
   private readonly ordersApi = inject(OrdersService);
+  private readonly copied = inject(CopiedOrdersStore);
 
-  readonly filters: readonly Filter[] = ['ALL', 'PENDING', 'FILLED', 'REJECTED'];
-  readonly filterLabels: Record<Filter, string> = { ALL: 'All', PENDING: 'Pending', FILLED: 'Filled', REJECTED: 'Rejected' };
+  readonly filters: readonly Filter[] = ['ALL', 'PENDING', 'FILLED', 'REJECTED', 'COPIED'];
+  readonly filterLabels: Record<Filter, string> = {
+    ALL: 'All',
+    PENDING: 'Pending',
+    FILLED: 'Filled',
+    REJECTED: 'Rejected',
+    COPIED: 'Copy traded',
+  };
   readonly filter = signal<Filter>('ALL');
   readonly expanded = signal<number | null>(null);
   /** The order a cancel is in flight for, and the last cancel failure. */
@@ -67,12 +82,15 @@ export class OrdersPage {
   private readonly all = computed<Row[]>(() =>
     this.portfolio.orderList().map((o) => {
       const filled = o.status === 'COMPLETE';
+      const copy = this.copied.copiedFrom(o.orderId);
       const waiting = o.limitPrice != null ? `until ${o.symbol} reaches ${formatPrice(o.limitPrice)} or better` : 'for the market to open';
       const steps: Step[] = [
         {
           state: 'Submitted',
           at: formatStamp(o.placedTime),
-          detail: `${o.side} ${formatQty(o.quantity)} ${o.symbol} received by POST /api/accounts/${o.accountId}/orders.`,
+          detail: copy
+            ? `${o.side} ${formatQty(o.quantity)} ${o.symbol} copied from ${copy.traderName}'s order #${copy.leaderOrderId}, scaled to your allocation.`
+            : `${o.side} ${formatQty(o.quantity)} ${o.symbol} received by POST /api/accounts/${o.accountId}/orders.`,
         },
       ];
       if (filled) {
@@ -121,6 +139,7 @@ export class OrdersPage {
         type: o.limitPrice != null ? `Limit at ${formatPrice(o.limitPrice)}` : 'Market',
         timeInForce: o.timeInForce === 'GTC' ? "Good 'til cancelled" : 'Day',
         expires: o.expiresAt ? formatStamp(o.expiresAt) : '—',
+        copiedFrom: copy ? { traderId: copy.copyTraderId, name: copy.traderName, handle: copy.traderHandle, leaderOrderId: copy.leaderOrderId } : null,
         steps,
       };
     }),
@@ -135,6 +154,8 @@ export class OrdersPage {
         return all.filter((o) => o.status === 'COMPLETE');
       case 'REJECTED':
         return all.filter((o) => o.status === 'FAILED');
+      case 'COPIED':
+        return all.filter((o) => o.copiedFrom != null);
       default:
         return all;
     }
@@ -147,6 +168,7 @@ export class OrdersPage {
       PENDING: all.filter((o) => o.status === 'PENDING').length,
       FILLED: all.filter((o) => o.status === 'COMPLETE').length,
       REJECTED: all.filter((o) => o.status === 'FAILED').length,
+      COPIED: all.filter((o) => o.copiedFrom != null).length,
     };
   });
 

@@ -24,6 +24,7 @@ const NAV: readonly NavItem[] = [
   { path: '/portfolio', label: 'Portfolio', icon: 'portfolio' },
   { path: '/markets', label: 'Markets', icon: 'markets' },
   { path: '/orders', label: 'Orders', icon: 'orders' },
+  { path: '/copy-trading', label: 'Copy Trading', icon: 'copy' },
   { path: '/news', label: 'News', icon: 'news' },
   { path: '/audit', label: 'Audit', icon: 'activity' },
   { path: '/analytics', label: 'Analytics', icon: 'analytics' },
@@ -63,6 +64,9 @@ export class App {
   readonly crumbs = computed(() => {
     const path = this.url().split(/[?#]/)[0];
     if (path.startsWith('/instrument')) return { section: NAV[1], page: 'Instrument' };
+    if (path.startsWith('/copy-trading/')) {
+      return { section: NAV.find((n) => n.path === '/copy-trading')!, page: 'Lead trader' };
+    }
     return { section: NAV.find((n) => path.startsWith(n.path)) ?? NAV[0], page: null };
   });
 
