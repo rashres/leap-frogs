@@ -8,6 +8,7 @@ import { ActiveAccountService } from '../../core/state/active-account.service';
 import { MarketStore } from '../../core/state/market.store';
 import { costBasis } from '../../core/state/portfolio.store';
 import { formatPrice, formatQty, formatSignedPct, formatSignedUsd, formatStamp, formatUsd } from '../../shared/format';
+import { AllocationDonut, type DonutSegment } from '../../shared/allocation-donut';
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
@@ -19,6 +20,9 @@ type TradeFilter = 'ALL' | 'BUY' | 'SELL';
 /** Trades shown before "Show all". */
 const TRADES_SHOWN = 12;
 
+/** Donut slice colours, in fixed order. Past four holdings the rest fold into "Other". */
+const SLICE_COLORS = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', 'var(--series-4)'];
+
 /**
  * One lead trader: performance (equity curve and every headline metric),
  * their current portfolio, and their full trade history. Route /copy-trading/:id.
@@ -26,7 +30,7 @@ const TRADES_SHOWN = 12;
 @Component({
   selector: 'leap-trader-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, InstrumentLogo, PriceChart, CopyControl],
+  imports: [RouterLink, Icon, InstrumentLogo, PriceChart, CopyControl, AllocationDonut],
   templateUrl: './trader-profile-page.html',
   styleUrl: './trader-profile-page.scss',
 })
@@ -129,7 +133,39 @@ export class TraderProfilePage {
     if (!t) return null;
     const invested = this.positions().reduce((sum, p) => sum + p.sortValue, 0);
     const cash = Math.max(0, t.equity - invested);
-    return { value: formatUsd(cash), weight: t.equity > 0 ? (cash / t.equity) * 100 : 0 };
+    return { amount: cash, value: formatUsd(cash), weight: t.equity > 0 ? (cash / t.equity) * 100 : 0 };
+  });
+
+  /** Holdings by market value, largest first, then cash. */
+  readonly allocation = computed(() => {
+    const positions = this.positions().filter((p) => p.sortValue > 0);
+    const shown = positions.length <= SLICE_COLORS.length ? positions : positions.slice(0, SLICE_COLORS.length - 1);
+    const rest = positions.slice(shown.length);
+    const segments: DonutSegment[] = shown.map((p, i) => ({
+      key: p.symbol,
+      label: p.symbol,
+      sub: p.name,
+      value: p.sortValue,
+      valueLabel: p.value,
+      color: SLICE_COLORS[i],
+    }));
+    if (rest.length) {
+      const other = rest.reduce((sum, p) => sum + p.sortValue, 0);
+      segments.push({
+        key: 'other',
+        label: `Other (${rest.length})`,
+        sub: rest.map((p) => p.symbol).join(', '),
+        value: other,
+        valueLabel: formatUsd(other),
+        color: SLICE_COLORS[SLICE_COLORS.length - 1],
+      });
+    }
+    const cash = this.cash();
+    if (cash && cash.amount > 0) {
+      segments.push({ key: 'cash', label: 'Cash', sub: 'Not invested', value: cash.amount, valueLabel: cash.value, color: 'var(--series-neutral)' });
+    }
+    const invested = 100 - (cash?.weight ?? 0);
+    return { segments, invested: `${invested.toFixed(0)}%`, holdings: positions.length };
   });
 
   readonly unrealised = computed(() => {
