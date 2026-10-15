@@ -1,8 +1,11 @@
+@use './trader-shared';
+
 /* ---- Lead trader notice --------------------------------------------------- */
 
 .leader-note {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   margin-bottom: 20px;
   padding: 12px 16px;
@@ -14,23 +17,71 @@
   strong {
     font-weight: 600;
   }
+
+  .note-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+    font-weight: 600;
+  }
+
+  &:hover .note-link {
+    text-decoration: underline;
+  }
 }
 
-/* ---- Traders you copy ----------------------------------------------------- */
+/* ---- Your copy trading ---------------------------------------------------- */
 
 .mine {
-  margin-bottom: 28px;
-}
-
-.pad {
-  padding: 18px 22px;
+  margin-bottom: 32px;
 }
 
 .none {
-  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 14px;
   padding: 20px 22px;
   font-size: 14px;
   color: var(--text-3);
+
+  strong {
+    display: block;
+    color: var(--text);
+    font-weight: 600;
+  }
+}
+
+.none-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 40px;
+  margin: 0;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--border-soft);
+
+  dt {
+    font-size: 12.5px;
+    color: var(--text-3);
+  }
+
+  dd {
+    margin: 2px 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
 }
 
 .who {
@@ -38,10 +89,14 @@
   align-items: center;
   gap: 10px;
 
-  > span:last-child {
-    display: flex;
-    flex-direction: column;
+  &:hover .who-name {
+    color: var(--accent);
   }
+}
+
+.who-text {
+  display: flex;
+  flex-direction: column;
 }
 
 .who-name {
@@ -53,39 +108,15 @@
   color: var(--text-3);
 }
 
-.strong {
-  font-weight: 600;
-}
-
-.sym {
-  font-weight: 600;
-
-  &:hover {
-    color: var(--accent);
-  }
-}
-
-.side {
-  padding: 1px 7px;
-  border-radius: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-
-  &.buy {
-    color: var(--up);
-    background: var(--up-soft);
-  }
-  &.sell {
-    color: var(--down);
-    background: var(--down-soft);
-  }
-}
-
 /* ---- Leaderboard ---------------------------------------------------------- */
 
-.section-head {
-  margin-bottom: 14px;
+.board-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-bottom: 16px;
 
   p {
     margin: 2px 0 0;
@@ -102,15 +133,15 @@
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 18px;
   margin-bottom: 24px;
 }
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
   padding: 20px;
   background: var(--panel);
   border: 1px solid var(--border-soft);
@@ -118,44 +149,24 @@
   box-shadow: var(--shadow-1);
   transition:
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
 
   &:hover {
+    border-color: color-mix(in srgb, var(--accent) 40%, var(--border-soft));
     box-shadow: var(--shadow-2);
-  }
-
-  &.selected {
-    border-color: var(--accent);
+    transform: translateY(-1px);
   }
 }
 
 .sk-card {
-  min-height: 260px;
+  min-height: 320px;
 }
 
 .card-top {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.avatar {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 15px;
-  font-weight: 700;
-
-  &.sm {
-    width: 34px;
-    height: 34px;
-    font-size: 12.5px;
-  }
 }
 
 .ident {
@@ -172,127 +183,101 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+
+  a:hover {
+    color: var(--accent);
+  }
 }
 
 .handle {
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--text-3);
 }
 
 .rank {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-3);
-}
-
-.strategy {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--panel-3);
+  font-size: 12.5px;
+  font-weight: 700;
   color: var(--text-2);
+
+  &.top {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
 }
 
-.chips {
+.tags {
   display: flex;
+  align-items: center;
   flex-wrap: wrap;
   gap: 6px;
 }
 
-.chip {
-  padding: 2px 9px;
-  border-radius: 999px;
-  border: 1px solid var(--border-soft);
-  background: var(--panel-2);
-  font-size: 12px;
-  font-weight: 500;
+.strategy {
+  margin-right: 4px;
+  font-size: 13.5px;
+  font-weight: 600;
   color: var(--text-2);
 }
 
-.bio {
-  margin: 0;
-  font-size: 13.5px;
-  line-height: 1.5;
+.headline {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+
+  > div {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+.hl-label {
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-3);
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  cursor: help;
 }
 
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin: 4px 0 0;
-  padding: 12px 0;
-  border-top: 1px solid var(--border-soft);
-  border-bottom: 1px solid var(--border-soft);
-
-  dt {
-    font-size: 12px;
-    color: var(--text-3);
-  }
-
-  dd {
-    margin: 2px 0 0;
-    font-size: 15px;
-    font-weight: 600;
-  }
-
-  .big {
-    font-size: 17px;
-  }
+.hl-value {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
 }
 
-.meta {
-  margin: 0;
-  font-size: 12.5px;
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: auto;
-
-  .btn leap-icon {
-    margin-right: 6px;
-  }
-
-  .pill leap-icon {
-    margin-right: -2px;
-  }
-}
-
-.copy-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: auto;
-
-  .hint {
-    margin: 0;
-    font-size: 12.5px;
-  }
-
-  .actions {
-    margin-top: 4px;
-  }
-}
-
-.form-error {
-  margin: 0;
+.hl-sub {
   font-size: 13px;
-  color: var(--down);
+  font-weight: 600;
+  cursor: help;
 }
 
-.trades {
-  margin-bottom: 24px;
+.card-foot {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: auto;
+
+  leap-copy-control {
+    margin-left: auto;
+  }
 }
 
 @media (max-width: 560px) {
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .segmented {
+    width: 100%;
+
+    button {
+      flex: 1;
+      min-width: 0;
+    }
   }
 }
