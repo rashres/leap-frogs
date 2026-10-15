@@ -113,6 +113,49 @@ export interface OrderRequest {
   timeInForce?: TimeInForce;
 }
 
+/** CopyTraderResponse: a lead trader other accounts can copy. Money is in USD. */
+export interface CopyTrader {
+  copyTraderId: number;
+  /** The account the trader places orders from. */
+  accountId: number;
+  name: string;
+  handle: string;
+  strategy: string;
+  markets: string[];
+  bio: string;
+  riskLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  startingCapital: number;
+  equity: number;
+  returnPercent: number | null;
+  /** Percent of closing sells made above the average buy price; null before the first sell. */
+  winRate: number | null;
+  closedTrades: number;
+  totalTrades: number;
+  followers: number;
+  tradingSince: string;
+}
+
+/** CopySubscriptionResponse: an account copying a lead trader. */
+export interface CopySubscription {
+  subscriptionId: number;
+  followerAccountId: number;
+  copyTraderId: number;
+  traderName: string;
+  traderHandle: string;
+  allocation: number;
+  startedAt: string;
+  copiedOrders: number;
+}
+
+/** CopiedOrderResponse: one of the account's orders that was copied from a lead trader. */
+export interface CopiedOrder {
+  orderId: number;
+  leaderOrderId: number;
+  copyTraderId: number;
+  traderName: string;
+  traderHandle: string;
+}
+
 /** ErrorResponse, returned by every endpoint on failure. */
 export interface ErrorResponse {
   timestamp: string;
