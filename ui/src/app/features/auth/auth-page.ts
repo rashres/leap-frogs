@@ -3,6 +3,7 @@ import { Router, RouterLink } from '@angular/router';
 import { MARKET_ORDER, marketFor } from '../../core/markets/sessions';
 import { ActiveAccountService } from '../../core/state/active-account.service';
 import { MarketStore } from '../../core/state/market.store';
+import { ThemeService } from '../../core/state/theme.service';
 import { formatPrice, formatSignedPct, formatUsd } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
@@ -26,7 +27,14 @@ export class AuthPage {
   private readonly router = inject(Router);
   private readonly market = inject(MarketStore);
   private readonly dayChange = inject(DayChangeStore);
+  private readonly themes = inject(ThemeService);
   protected readonly account = inject(ActiveAccountService);
+
+  readonly theme = this.themes.theme;
+
+  toggleTheme(): void {
+    this.themes.toggle();
+  }
 
   readonly showPassword = signal(false);
   readonly submitting = signal(false);

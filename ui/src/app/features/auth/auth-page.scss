@@ -44,8 +44,28 @@
   letter-spacing: -0.04em;
 }
 
+.brand-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .brand-meta {
   font-size: 13px;
+}
+
+.theme-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--text-2);
+
+  &:hover {
+    color: var(--text);
+    background: var(--panel-3);
+    border-color: var(--border-strong);
+  }
 }
 
 .form-body {
@@ -668,6 +688,11 @@
 
   .brand-meta {
     display: none;
+  }
+
+  .theme-btn {
+    width: 34px;
+    height: 34px;
   }
 
   .form-body h1 {
