@@ -26,7 +26,9 @@ public interface CopyTradingMapper {
                                               FROM holdings h JOIN instrument i ON i.instrument_id = h.instrument_id
                                               WHERE h.account_id = ct.account_id), 0) AS equity,
                    (SELECT COUNT(*) FROM copy_subscription s
-                    WHERE s.copy_trader_id = ct.copy_trader_id AND s.stopped_at IS NULL) AS followers
+                    WHERE s.copy_trader_id = ct.copy_trader_id AND s.stopped_at IS NULL) AS followers,
+                   (SELECT COALESCE(SUM(s.allocation), 0) FROM copy_subscription s
+                    WHERE s.copy_trader_id = ct.copy_trader_id AND s.stopped_at IS NULL) AS copier_funds
             FROM copy_trader ct
             JOIN account a ON a.account_id = ct.account_id
             """;
