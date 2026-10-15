@@ -39,7 +39,12 @@ interface Row {
   readonly timeInForce: string;
   readonly expires: string;
   /** The lead trader this order was copied from, or null for the account's own orders. */
-  readonly copiedFrom: { readonly name: string; readonly handle: string; readonly leaderOrderId: number } | null;
+  readonly copiedFrom: {
+    readonly traderId: number;
+    readonly name: string;
+    readonly handle: string;
+    readonly leaderOrderId: number;
+  } | null;
   readonly steps: readonly Step[];
 }
 
@@ -134,7 +139,7 @@ export class OrdersPage {
         type: o.limitPrice != null ? `Limit at ${formatPrice(o.limitPrice)}` : 'Market',
         timeInForce: o.timeInForce === 'GTC' ? "Good 'til cancelled" : 'Day',
         expires: o.expiresAt ? formatStamp(o.expiresAt) : '—',
-        copiedFrom: copy ? { name: copy.traderName, handle: copy.traderHandle, leaderOrderId: copy.leaderOrderId } : null,
+        copiedFrom: copy ? { traderId: copy.copyTraderId, name: copy.traderName, handle: copy.traderHandle, leaderOrderId: copy.leaderOrderId } : null,
         steps,
       };
     }),

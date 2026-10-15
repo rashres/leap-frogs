@@ -154,7 +154,7 @@
                             <div>
                               <dt>Copy traded from</dt>
                               <dd>
-                                <a class="lnk" routerLink="/copy-trading">{{ from.name }} {{ from.handle }}</a>
+                                <a class="lnk" [routerLink]="['/copy-trading', from.traderId]">{{ from.name }} {{ from.handle }}</a>
                                 <span class="num faint"> · order #{{ from.leaderOrderId }}</span>
                               </dd>
                             </div>

@@ -6,34 +6,25 @@
   </leap-page-header>
 
   @if (self(); as me) {
-    <div class="leader-note" role="status">
+    <a class="leader-note" [routerLink]="['/copy-trading', me.copyTraderId]">
       <leap-icon name="users" [size]="18" />
       <span>
         You are signed in as lead trader <strong>{{ me.name }}</strong>. Every order you place is copied to your
-        {{ me.followers }} {{ me.followers === 1 ? 'follower' : 'followers' }}.
+        {{ me.copiers }} {{ me.copiers === 1 ? 'copier' : 'copiers' }}.
       </span>
-    </div>
+      <span class="note-link">View your profile <leap-icon name="chevron-right" [size]="16" /></span>
+    </a>
   }
 
   <!-- The traders the active account is copying -->
   <section class="panel mine" aria-labelledby="mine-title">
     <div class="panel-head">
       <div>
-        <h2 class="panel-title" id="mine-title">Traders you copy</h2>
-        <p class="panel-sub">
-          {{ account.active()?.name ?? 'This account' }}
-          @if (subscriptionRows().length) {
-            · {{ formatUsd(totalAllocated()) }} allocated across {{ subscriptionRows().length }}
-            {{ subscriptionRows().length === 1 ? 'trader' : 'traders' }}
-          }
-        </p>
+        <h2 class="panel-title" id="mine-title">Your copy trading</h2>
+        <p class="panel-sub">{{ account.active()?.name ?? 'This account' }}</p>
       </div>
       <a class="btn btn-secondary btn-sm" routerLink="/orders">View copied orders</a>
     </div>
-
-    @if (stopError(); as message) {
-      <div class="pad"><p class="state-error" role="alert">{{ message }}</p></div>
-    }
 
     @if (subscriptions.error(); as e) {
       <div class="pad"><p class="state-error">{{ e.message }}</p></div>
@@ -41,44 +32,60 @@
       <div class="pad" aria-hidden="true"><span class="skeleton" style="width: 40%"></span></div>
       <p class="sr-only" role="status">Loading the traders you copy…</p>
     } @else if (subscriptionRows().length === 0) {
-      <p class="none">You are not copying anyone yet. Pick a trader below to start.</p>
+      <div class="none">
+        <span class="none-icon"><leap-icon name="copy" [size]="20" /></span>
+        <span>
+          <strong>You are not copying anyone yet.</strong>
+          Pick a lead trader below and their next trades will be placed for you too.
+        </span>
+      </div>
     } @else {
+      <dl class="summary">
+        <div>
+          <dt>Allocated</dt>
+          <dd class="num">{{ copySummary().allocated }}</dd>
+        </div>
+        <div>
+          <dt>Traders copied</dt>
+          <dd class="num">{{ copySummary().traders }}</dd>
+        </div>
+        <div>
+          <dt>Orders copied</dt>
+          <dd class="num">{{ copySummary().copied }}</dd>
+        </div>
+      </dl>
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
               <th>Trader</th>
               <th class="r">Allocation</th>
+              <th class="r">Their ROI</th>
               <th>Copying since</th>
               <th class="r">Copied orders</th>
               <th><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
           <tbody>
-            @for (sub of subscriptionRows(); track sub.subscriptionId) {
+            @for (row of subscriptionRows(); track row.sub.subscriptionId) {
               <tr>
                 <td>
-                  <div class="who">
-                    <span class="avatar sm">{{ sub.initials }}</span>
-                    <span>
-                      <span class="who-name">{{ sub.traderName }}</span>
-                      <span class="who-handle">{{ sub.traderHandle }}</span>
+                  <a class="who" [routerLink]="['/copy-trading', row.sub.copyTraderId]">
+                    <span class="avatar sm">{{ row.initials }}</span>
+                    <span class="who-text">
+                      <span class="who-name">{{ row.sub.traderName }}</span>
+                      <span class="who-handle">{{ row.sub.traderHandle }}</span>
                     </span>
-                  </div>
+                  </a>
                 </td>
-                <td class="r num strong">{{ sub.allocationLabel }}</td>
-                <td class="num faint">{{ sub.since }}</td>
-                <td class="r num">{{ sub.copiedOrders }}</td>
+                <td class="r num strong">{{ row.allocation }}</td>
+                <td class="r num" [class]="row.roiTone">{{ row.roi }}</td>
+                <td class="num faint">{{ row.since }}</td>
+                <td class="r num">{{ row.sub.copiedOrders }}</td>
                 <td class="r">
-                  <button
-                    type="button"
-                    class="btn btn-secondary btn-sm"
-                    [disabled]="busy()"
-                    (click)="stop(sub.subscriptionId)"
-                    [attr.aria-label]="'Stop copying ' + sub.traderName"
-                  >
-                    Stop copying
-                  </button>
+                  @if (row.trader; as trader) {
+                    <leap-copy-control [trader]="trader" [subscription]="row.sub" [allowStop]="true" (changed)="refresh()" />
+                  }
                 </td>
               </tr>
             }
@@ -89,9 +96,18 @@
   </section>
 
   <!-- Leaderboard -->
-  <div class="section-head">
-    <h2 class="section-title">Lead traders</h2>
-    <p class="faint">Ranked by total return. Copying starts from the trader's next trade.</p>
+  <div class="board-head">
+    <div>
+      <h2 class="section-title">Lead traders</h2>
+      <p class="faint">Copying starts from the trader's next trade. Hover a number to see what it means.</p>
+    </div>
+    <div class="segmented" role="group" aria-label="Sort lead traders by">
+      @for (s of sorts; track s.key) {
+        <button type="button" [class.on]="sort() === s.key" [attr.aria-pressed]="sort() === s.key" (click)="sort.set(s.key)">
+          {{ s.label }}
+        </button>
+      }
+    </div>
   </div>
 
   @if (traders.error(); as e) {
@@ -110,147 +126,51 @@
     </div>
   } @else {
     <div class="grid">
-      @for (t of cards(); track t.copyTraderId) {
-        <article class="card" [class.selected]="selectedId() === t.copyTraderId" [attr.aria-labelledby]="'trader-' + t.copyTraderId">
+      @for (c of cards(); track c.id) {
+        <article class="card" [attr.aria-labelledby]="'trader-' + c.id">
           <header class="card-top">
-            <span class="avatar">{{ t.initials }}</span>
+            <span class="avatar">{{ c.initials }}</span>
             <div class="ident">
-              <h3 class="name" [id]="'trader-' + t.copyTraderId">{{ t.name }}</h3>
-              <span class="handle">{{ t.handle }}</span>
+              <h3 class="name" [id]="'trader-' + c.id">
+                <a [routerLink]="['/copy-trading', c.id]">{{ c.trader.name }}</a>
+              </h3>
+              <span class="handle">{{ c.trader.handle }} · since {{ c.since }}</span>
             </div>
-            <span class="rank num" [attr.aria-label]="'Rank ' + t.rank">#{{ t.rank }}</span>
+            <span class="rank num" [class.top]="c.rank <= 3" [attr.aria-label]="'Rank ' + c.rank">#{{ c.rank }}</span>
           </header>
 
-          <p class="strategy">{{ t.strategy }}</p>
-          <div class="chips">
-            @for (m of t.markets; track m) {
+          <div class="tags">
+            <span class="strategy">{{ c.trader.strategy }}</span>
+            @for (m of c.trader.markets; track m) {
               <span class="chip">{{ m }}</span>
             }
-            <span [class]="'pill pill-' + t.riskTone">{{ t.riskLabel }}</span>
+            <span [class]="'pill pill-' + c.riskTone">{{ c.riskLabel }}</span>
           </div>
 
-          <p class="bio">{{ t.bio }}</p>
+          <div class="headline">
+            <div>
+              <span class="hl-label" title="Return on investment: PnL as a percent of starting capital.">ROI</span>
+              <span class="hl-value num" [class]="c.tone">{{ c.roi }}</span>
+              <span class="hl-sub num" [class]="c.tone" title="Profit and loss: equity minus starting capital.">PnL {{ c.pnl }}</span>
+            </div>
+            <leap-sparkline [points]="c.series" [width]="128" [height]="48" />
+          </div>
 
-          <dl class="stats">
-            <div>
-              <dt>Return</dt>
-              <dd class="num big" [class]="t.returnTone">{{ t.returnLabel }}</dd>
-            </div>
-            <div>
-              <dt>Win rate</dt>
-              <dd class="num">{{ t.winRateLabel }}</dd>
-            </div>
-            <div>
-              <dt>Copiers</dt>
-              <dd class="num">{{ t.followers }}</dd>
-            </div>
-            <div>
-              <dt>Trades</dt>
-              <dd class="num">{{ t.totalTrades }}</dd>
-            </div>
-          </dl>
-          <p class="meta faint">Equity {{ t.equityLabel }} · trading since {{ t.since }}</p>
-
-          @if (copyingId() === t.copyTraderId) {
-            <form class="copy-form" (submit)="confirmCopy($event, t.copyTraderId)">
-              <label class="field-label" [for]="'alloc-' + t.copyTraderId">Amount to allocate (USD)</label>
-              <input
-                class="control num"
-                type="number"
-                min="1"
-                step="any"
-                inputmode="decimal"
-                [id]="'alloc-' + t.copyTraderId"
-                [value]="allocation()"
-                (input)="onAllocationInput($event)"
-              />
-              <p class="hint faint">Cash available {{ formatUsd(cash()) }}. Each of {{ t.name }}'s buys is copied at your allocation ÷ their equity.</p>
-              @if (formError(); as message) {
-                <p class="form-error" role="alert">{{ message }}</p>
-              }
-              <div class="actions">
-                <button type="button" class="btn btn-secondary btn-sm" (click)="closeCopy()">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm" [disabled]="busy()">
-                  {{ busy() ? 'Starting…' : 'Start copying' }}
-                </button>
+          <dl class="metrics">
+            @for (m of c.grid; track m.key) {
+              <div [title]="m.hint">
+                <dt>{{ m.label }}</dt>
+                <dd class="num" [class]="m.tone">{{ m.value }}</dd>
               </div>
-            </form>
-          } @else {
-            <div class="actions">
-              <button
-                type="button"
-                class="btn btn-secondary btn-sm"
-                [attr.aria-expanded]="selectedId() === t.copyTraderId"
-                (click)="view(t.copyTraderId)"
-              >
-                {{ selectedId() === t.copyTraderId ? 'Hide trades' : 'View trades' }}
-              </button>
-              @if (t.isSelf) {
-                <span class="pill pill-muted">This is you</span>
-              } @else if (t.following) {
-                <span class="pill pill-up"><leap-icon name="check" [size]="14" />Copying</span>
-              } @else {
-                <button type="button" class="btn btn-primary btn-sm" [disabled]="account.activeId() == null" (click)="openCopy(t)">
-                  <leap-icon name="copy" [size]="16" />Copy
-                </button>
-              }
-            </div>
-          }
+            }
+          </dl>
+
+          <footer class="card-foot">
+            <a class="btn btn-secondary btn-sm" [routerLink]="['/copy-trading', c.id]">View profile</a>
+            <leap-copy-control [trader]="c.trader" [subscription]="c.subscription" (changed)="refresh()" />
+          </footer>
         </article>
       }
     </div>
-  }
-
-  @if (selected(); as t) {
-    <section class="panel trades" aria-labelledby="trades-title">
-      <div class="panel-head">
-        <div>
-          <h2 class="panel-title" id="trades-title">{{ t.name }}'s recent trades</h2>
-          <p class="panel-sub">{{ t.strategy }} · latest filled orders</p>
-        </div>
-        <button type="button" class="icon-btn" aria-label="Close recent trades" (click)="view(t.copyTraderId)">
-          <leap-icon name="x" />
-        </button>
-      </div>
-      @if (trades.error(); as e) {
-        <div class="pad"><p class="state-error">{{ e.message }}</p></div>
-      } @else if (trades.loading() && tradeRows().length === 0) {
-        <div class="pad" aria-hidden="true"><span class="skeleton" style="width: 50%"></span></div>
-        <p class="sr-only" role="status">Loading trades…</p>
-      } @else if (tradeRows().length === 0) {
-        <p class="none">No filled trades yet.</p>
-      } @else {
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Filled</th>
-                <th>Order</th>
-                <th class="r">Quantity</th>
-                <th class="r">Price</th>
-                <th class="r">Value</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (o of tradeRows(); track o.id) {
-                <tr>
-                  <td class="num faint">{{ o.when }}</td>
-                  <td>
-                    <div class="who">
-                      <leap-instrument-logo [symbol]="o.symbol" [size]="30" />
-                      <a class="sym" [routerLink]="['/instrument', o.instrumentId]">{{ o.symbol }}</a>
-                      <span class="side" [class.buy]="o.side === 'BUY'" [class.sell]="o.side === 'SELL'">{{ o.side }}</span>
-                    </div>
-                  </td>
-                  <td class="r num">{{ o.quantity }}</td>
-                  <td class="r num">{{ o.price }}</td>
-                  <td class="r num strong">{{ o.value }}</td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
-      }
-    </section>
   }
 </div>
