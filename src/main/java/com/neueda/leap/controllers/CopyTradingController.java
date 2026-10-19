@@ -5,6 +5,7 @@ import com.neueda.leap.controllers.dto.CopySubscriptionRequest;
 import com.neueda.leap.controllers.dto.CopySubscriptionResponse;
 import com.neueda.leap.controllers.dto.CopyTraderResponse;
 import com.neueda.leap.controllers.dto.OrderResponse;
+import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.CopyTradingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -26,9 +27,11 @@ import java.util.List;
 public class CopyTradingController {
 
     private final CopyTradingService copyTradingService;
+    private final AccessControl access;
 
-    public CopyTradingController(CopyTradingService copyTradingService) {
+    public CopyTradingController(CopyTradingService copyTradingService, AccessControl access) {
         this.copyTradingService = copyTradingService;
+        this.access = access;
     }
 
     /**
@@ -83,6 +86,7 @@ public class CopyTradingController {
     })
     public List<CopySubscriptionResponse> listSubscriptions(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId) {
+        access.assertCanReadAccount(accountId);
         return copyTradingService.findSubscriptions(accountId).stream()
                 .map(CopySubscriptionResponse::from)
                 .toList();
@@ -104,6 +108,7 @@ public class CopyTradingController {
     public CopySubscriptionResponse follow(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
             @Valid @RequestBody CopySubscriptionRequest request) {
+        access.assertCanTrade(accountId);
         return CopySubscriptionResponse.from(copyTradingService.follow(accountId, request.copyTraderId(), request.allocation()));
     }
 
@@ -120,6 +125,7 @@ public class CopyTradingController {
     public void unfollow(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
             @PathVariable @Parameter(description = "The subscription to stop", example = "3") int subscriptionId) {
+        access.assertCanTrade(accountId);
         copyTradingService.unfollow(accountId, subscriptionId);
     }
 
@@ -135,6 +141,7 @@ public class CopyTradingController {
     })
     public List<CopiedOrderResponse> listCopiedOrders(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId) {
+        access.assertCanReadAccount(accountId);
         return copyTradingService.findCopiedOrders(accountId).stream()
                 .map(CopiedOrderResponse::from)
                 .toList();

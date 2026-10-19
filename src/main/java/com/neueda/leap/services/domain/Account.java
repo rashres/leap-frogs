@@ -9,6 +9,8 @@ public class Account {
     private String name;
     private String email;
     private BigDecimal cashBalance;
+    /** ACTIVE or FROZEN — frozen accounts cannot place new orders. */
+    private String status = "ACTIVE";
     private Map<Instrument, Holding> holdings;
 
     // Used by MyBatis, which creates the object first and then calls the setters.
@@ -21,6 +23,7 @@ public class Account {
         this.name = name;
         this.email = email;
         this.cashBalance = cashBalance;
+        this.status = "ACTIVE";
         this.holdings = new HashMap<>();
     }
 
@@ -54,6 +57,18 @@ public class Account {
 
     public void setCashBalance(BigDecimal cashBalance) {
         this.cashBalance = cashBalance;
+    }
+
+    public String getStatus() {
+        return status == null ? "ACTIVE" : status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public boolean isFrozen() {
+        return "FROZEN".equalsIgnoreCase(getStatus());
     }
 
     public Map<Instrument, Holding> getHoldings() {
