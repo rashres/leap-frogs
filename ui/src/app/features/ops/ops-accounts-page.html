@@ -1,0 +1,65 @@
+<leap-page-header heading="Trading accounts">
+  <span description>Search and open any account for read-only inspection.</span>
+</leap-page-header>
+
+<div class="toolbar">
+  <input
+    class="control search"
+    type="search"
+    placeholder="Search name or email"
+    [value]="q()"
+    (input)="q.set($any($event.target).value)"
+    (keydown.enter)="reload()"
+  />
+  <select class="control status" [value]="status()" (change)="status.set($any($event.target).value); reload()">
+    <option value="">All statuses</option>
+    <option value="ACTIVE">Active</option>
+    <option value="FROZEN">Frozen</option>
+  </select>
+  <button type="button" class="btn btn-secondary" (click)="reload()">
+    <leap-icon name="search" [size]="16" /> Search
+  </button>
+</div>
+
+@if (error(); as err) {
+  <p class="form-error" role="alert">{{ err }}</p>
+}
+
+@if (loading()) {
+  <p class="faint">Loading accounts…</p>
+} @else {
+  <div class="table-wrap panel">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Name</th>
+          <th>Email</th>
+          <th class="r">Cash</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (a of rows(); track a.accountId) {
+          <tr>
+            <td class="num">{{ a.accountId }}</td>
+            <td>{{ a.name }}</td>
+            <td class="dim">{{ a.email }}</td>
+            <td class="r num">{{ cash(a) }}</td>
+            <td>
+              <span class="pill" [class.frozen]="a.status === 'FROZEN'">{{ a.status ?? 'ACTIVE' }}</span>
+            </td>
+            <td class="r">
+              <a class="btn btn-sm btn-secondary" [routerLink]="['/ops/accounts', a.accountId]">Inspect</a>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="6" class="faint">No accounts match.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
