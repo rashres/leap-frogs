@@ -17,6 +17,7 @@ export interface MarketRow {
   readonly exchange: string;
   readonly market: string;
   readonly price: number | null;
+  readonly reference: number | null;
   /** Day change ending at the live price. Null without a reference and a last price. */
   readonly change: number | null;
   readonly changePct: number | null;
@@ -68,6 +69,7 @@ export class DayChangeStore {
         exchange: i.exchange,
         market: marketFor(i.exchange)?.shortLabel ?? i.exchange,
         price: last,
+        reference,
         change,
         changePct: change != null && reference ? (change / reference) * 100 : null,
         points: downsample(points, SPARK_MAX),
