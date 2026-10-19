@@ -101,65 +101,68 @@ public interface OrderMapper {
     @ResultMap("orderRow")
     List<Order> findPending();
 
-        @Select("""
-                        <script>
-                        SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
-                                   t.transaction_type, t.quantity, t.price, t.status, t.balance_updated_to, t.transaction_time,
-                                   CASE WHEN t.status = 'COMPLETE' THEN t.transaction_time END AS fulfilled_time
-                        FROM transactions t
-                        JOIN instrument i ON i.instrument_id = t.instrument_id
-                        <where>
-                                <if test='accountId != null'>
-                                        t.account_id = #{accountId}
-                                </if>
-                                <if test='startDate != null'>
-                                        AND t.transaction_time &gt;= #{startDate}
-                                </if>
-                                <if test='endDate != null'>
-                                        AND t.transaction_time &lt;= #{endDate}
-                                </if>
-                        </where>
-                        ORDER BY t.transaction_time DESC, t.transaction_id DESC
-                        LIMIT #{limit} OFFSET #{offset}
-                        </script>
-                        """)
-        @ResultMap("orderRow")
-        List<Order> findByFiltersPage(
-                        @Param("accountId") Integer accountId,
-                        @Param("startDate") LocalDateTime startDate,
-                        @Param("endDate") LocalDateTime endDate,
-                        @Param("limit") int limit,
-                        @Param("offset") long offset);
+    @Select("""
+            <script>
+            SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
+             t.transaction_type, t.quantity, t.price, t.status, t.balance_updated_to, t.transaction_time,
+             t.order_type, t.limit_price, t.time_in_force, t.expires_at,
+             CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time
+            FROM transactions t
+            JOIN instrument i ON i.instrument_id = t.instrument_id
+            <where>
+                <if test='accountId != null'>
+                    t.account_id = #{accountId}
+                </if>
+                <if test='startDate != null'>
+                    AND t.transaction_time &gt;= #{startDate}
+                </if>
+                <if test='endDate != null'>
+                    AND t.transaction_time &lt;= #{endDate}
+                </if>
+            </where>
+            ORDER BY t.transaction_time DESC, t.transaction_id DESC
+            LIMIT #{limit} OFFSET #{offset}
+            </script>
+            """)
+    @ResultMap("orderRow")
+    List<Order> findByFiltersPage(
+            @Param("accountId") Integer accountId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate,
+            @Param("limit") int limit,
+            @Param("offset") long offset);
 
-        @Select("""
-                        <script>
-                        SELECT COUNT(*)
-                        FROM transactions t
-                        <where>
-                                <if test='accountId != null'>
-                                        t.account_id = #{accountId}
-                                </if>
-                                <if test='startDate != null'>
-                                        AND t.transaction_time &gt;= #{startDate}
-                                </if>
-                                <if test='endDate != null'>
-                                        AND t.transaction_time &lt;= #{endDate}
-                                </if>
-                        </where>
-                        </script>
-                        """)
-        long countByFilters(
-                        @Param("accountId") Integer accountId,
-                        @Param("startDate") LocalDateTime startDate,
-                        @Param("endDate") LocalDateTime endDate);
+    @Select("""
+            <script>
+            SELECT COUNT(*)
+            FROM transactions t
+            <where>
+                <if test='accountId != null'>
+                    t.account_id = #{accountId}
+                </if>
+                <if test='startDate != null'>
+                    AND t.transaction_time &gt;= #{startDate}
+                </if>
+                <if test='endDate != null'>
+                    AND t.transaction_time &lt;= #{endDate}
+                </if>
+            </where>
+            </script>
+            """)
+    long countByFilters(
+            @Param("accountId") Integer accountId,
+            @Param("startDate") LocalDateTime startDate,
+            @Param("endDate") LocalDateTime endDate);
 
     /**
      * Insert a new order; the generated transaction_id is written back into order.orderId
      */
     @Insert("""
-            INSERT INTO transactions (account_id, instrument_id, transaction_type, quantity, price, status, balance_updated_to, transaction_time,
+            INSERT INTO transactions (account_id, instrument_id, symbol, transaction_type, quantity, price, status, transaction_time,
+                                      balance_updated_to,
                                       order_type, limit_price, time_in_force, expires_at, filled_at)
-            VALUES (#{account.accountId}, #{instrument.instrumentId}, #{side}, #{quantity}, #{price}, #{status}, #{balanceUpdatedTo}, #{placedTime},
+            VALUES (#{account.accountId}, #{instrument.instrumentId}, #{instrument.symbol}, #{side}, #{quantity}, #{price}, #{status}, #{placedTime},
+                    #{balanceUpdatedTo},
                     #{orderType}, #{limitPrice}, #{timeInForce}, #{expiresAt}, #{fulfilledTime})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "orderId", keyColumn = "transaction_id")

@@ -223,8 +223,10 @@ def seed(connection_string: str, wipe_first: bool) -> int:
                 conn.execute(
                     text("""
                         INSERT INTO transactions
-                            (account_id, instrument_id, transaction_type, quantity, price, status, transaction_time)
-                        VALUES (:account_id, :instrument_id, :side, :quantity, :price, :status, :at)
+                            (account_id, instrument_id, symbol, transaction_type, quantity, price, status, transaction_time)
+                        VALUES (:account_id, :instrument_id,
+                                (SELECT symbol FROM instrument WHERE instrument_id = :instrument_id),
+                                :side, :quantity, :price, :status, :at)
                     """),
                     {"account_id": account_id, **o},
                 )
