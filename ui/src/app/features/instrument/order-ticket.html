@@ -120,13 +120,17 @@
         </div>
       }
 
-      @if (rejection(); as reason) {
+      @if (lockout(); as block) {
+        <div class="reject" role="status">
+          <div class="reject-head"><span class="pill pill-down">{{ block.label }}</span></div>
+          <p>{{ block.text }}</p>
+        </div>
+      } @else if (rejection(); as reason) {
         <div class="reject" role="status">
           <div class="reject-head">
-            <span class="pill pill-down">Would be rejected</span>
+            <span class="pill pill-down">Can't place order</span>
           </div>
           <p>{{ reason }}</p>
-          <p class="reject-note faint">Submitting anyway sends it to the API, which records the rejection in your order history.</p>
         </div>
       }
 
@@ -199,13 +203,13 @@
         </p>
       }
 
-      @if (rejection(); as reason) {
+      @if (blockReason(); as reason) {
         <div class="reject">
           <div class="reject-head">
-            <span class="pill pill-down">Will be rejected</span>
+            <span class="pill pill-down">Can't place order</span>
           </div>
           <p>{{ reason }}</p>
-          <p class="reject-note faint">Confirming records the rejection in your order history.</p>
+          <p class="reject-note faint">Go back and change the order.</p>
         </div>
       } @else {
         <p class="passed faint">Passes the cash, holdings and price checks the API runs.</p>
@@ -220,7 +224,7 @@
 
       <div class="actions">
         <button type="button" class="back btn btn-secondary" (click)="back()">Back</button>
-        <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="submitting()" (click)="confirm()">
+        <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="submitting() || blockReason() != null" (click)="confirm()">
           {{ submitting() ? 'Sending…' : 'Confirm ' + (side() === 'BUY' ? 'buy' : 'sell') }}
         </button>
       </div>

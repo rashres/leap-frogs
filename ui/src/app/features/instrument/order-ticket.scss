@@ -267,7 +267,10 @@
   }
 
   &:disabled {
-    opacity: 0.45;
+    background: var(--panel-3);
+    color: var(--text-3);
+    box-shadow: none;
+    cursor: not-allowed;
   }
 
   &:focus-visible {
