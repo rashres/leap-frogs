@@ -1,7 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { map } from 'rxjs';
+import { AuthService } from '../../core/api/auth.service';
+import { toApiError } from '../../core/api/api-error';
 import { MARKET_ORDER, marketFor } from '../../core/markets/sessions';
-import { ActiveAccountService } from '../../core/state/active-account.service';
 import { MarketStore } from '../../core/state/market.store';
 import { ThemeService } from '../../core/state/theme.service';
 import { formatPrice, formatSignedPct, formatUsd } from '../../shared/format';
@@ -11,8 +14,7 @@ import { DayChangeStore } from '../portfolio/day-change.store';
 import { TickerBelt } from '../portfolio/ticker-belt';
 
 /**
- * Sign-in gateway. UI only for now — the team owns real auth —
- * so a successful submit enters the console with the selected demo account.
+ * Sign-in page. Posts to /api/auth/login (or /api/auth/admin/login for Super Admin).
  * BRD: login only (no self-serve signup).
  */
 @Component({
@@ -25,24 +27,37 @@ import { TickerBelt } from '../portfolio/ticker-belt';
 })
 export class AuthPage {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+  private readonly auth = inject(AuthService);
   private readonly market = inject(MarketStore);
   private readonly dayChange = inject(DayChangeStore);
   private readonly themes = inject(ThemeService);
-  protected readonly account = inject(ActiveAccountService);
 
   readonly theme = this.themes.theme;
-
-  toggleTheme(): void {
-    this.themes.toggle();
-  }
+  readonly admin = toSignal(this.route.data.pipe(map((d) => !!d['admin'])), { initialValue: false });
 
   readonly showPassword = signal(false);
   readonly submitting = signal(false);
   readonly error = signal<string | null>(null);
 
-  readonly email = signal('');
+  readonly username = signal('');
   readonly password = signal('');
   readonly remember = signal(true);
+
+  readonly title = computed(() =>
+    this.admin() ? 'Super Admin Sign In' : 'Login to Your Account!',
+  );
+  readonly submitLabel = computed(() => (this.admin() ? 'Sign In as Admin' : 'Login To Your Account'));
+
+  readonly demos = computed(() =>
+    this.admin()
+      ? [{ username: 'admin', label: 'Super Admin' }]
+      : [
+          { username: 'joanna', label: 'Joanna (Trader)' },
+          { username: 'priya', label: 'Priya (Analyst)' },
+          { username: 'david', label: 'David (Operations)' },
+        ],
+  );
 
   readonly sessions = computed(() => {
     const now = this.market.now();
@@ -59,7 +74,6 @@ export class AuthPage {
     });
   });
 
-  /** Top movers for the floating “fills” card. */
   readonly movers = computed(() =>
     [...this.dayChange.rows()]
       .filter((r) => r.changePct != null)
@@ -116,44 +130,43 @@ export class AuthPage {
     };
   });
 
-  readonly demoAccounts = computed(() =>
-    this.account.accounts().slice(0, 3).map((a) => ({
-      id: a.accountId,
-      name: a.name,
-      email: a.email,
-    })),
-  );
+  toggleTheme(): void {
+    this.themes.toggle();
+  }
 
   togglePassword(): void {
     this.showPassword.update((v) => !v);
   }
 
+  fillDemo(username: string): void {
+    this.username.set(username);
+    // Password is not filled from the repo — use LEAP_DEMO_PASSWORD from local .env.
+    this.password.set('');
+  }
+
   submit(event: Event): void {
     event.preventDefault();
     this.error.set(null);
-
-    const email = this.email().trim();
+    const username = this.username().trim();
     const password = this.password();
-    if (!email || !email.includes('@')) {
-      this.error.set('Enter a valid email address.');
+    if (!username) {
+      this.error.set('Enter your username.');
       return;
     }
     if (password.length < 6) {
       this.error.set('Password needs at least 6 characters.');
       return;
     }
-
     this.submitting.set(true);
-    const match = this.account.accounts().find((a) => a.email.toLowerCase() === email.toLowerCase());
-    if (match) this.account.select(match.accountId);
-    window.setTimeout(() => {
-      this.submitting.set(false);
-      void this.router.navigateByUrl('/portfolio');
-    }, 400);
-  }
-
-  enterAs(accountId: number): void {
-    this.account.select(accountId);
-    void this.router.navigateByUrl('/portfolio');
+    this.auth.login(username, password, this.admin()).subscribe({
+      next: (me) => {
+        this.submitting.set(false);
+        void this.router.navigateByUrl(me.homePath);
+      },
+      error: (err: unknown) => {
+        this.submitting.set(false);
+        this.error.set(toApiError(err).message || 'Sign in failed.');
+      },
+    });
   }
 }
