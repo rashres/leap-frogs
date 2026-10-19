@@ -116,6 +116,7 @@ export class Audit {
       quantityLabel: this.formatQty(order.quantity),
       priceLabel: this.formatPrice(order.price),
       valueLabel: this.formatUsd(order.value),
+      balanceUpdatedLabel: this.formatUsd(order.balanceUpdatedTo),
       statusLabel: this.statusLabel(order.status),
       tone: this.statusTone(order.status),
     };

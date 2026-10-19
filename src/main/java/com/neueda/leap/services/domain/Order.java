@@ -13,6 +13,7 @@ public class Order {
     private String status;
     private Instant placedTime;
     private Instant fulfilledTime;
+    private BigDecimal balanceUpdatedTo;
     // MARKET fills at the market price; LIMIT only at limitPrice or better.
     private String orderType = "MARKET";
     private BigDecimal limitPrice;
@@ -116,6 +117,14 @@ public class Order {
 
     public void setTimeInForce(String timeInForce) {
         this.timeInForce = timeInForce;
+    }
+
+    public BigDecimal getBalanceUpdatedTo() {
+        return balanceUpdatedTo;
+    }
+
+    public void setBalanceUpdatedTo(BigDecimal balanceUpdatedTo) {
+        this.balanceUpdatedTo = balanceUpdatedTo;
     }
 
     public Instant getExpiresAt() {
