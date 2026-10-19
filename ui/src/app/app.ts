@@ -71,7 +71,7 @@ export class App {
   /** Full-bleed auth pages sit outside the console shell. */
   readonly authRoute = computed(() => {
     const path = this.url().split(/[?#]/)[0];
-    return path === '/login' || path === '/admin/login';
+    return path === '/login' || path === '/admin/login' || path === '/signup';
   });
 
   /** Section and, for detail routes, the page within it. */
