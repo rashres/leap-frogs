@@ -64,6 +64,61 @@
   font-size: 16px;
 }
 
+.count {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--panel-3);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 14px;
+}
+
+.page-button {
+  display: inline-grid;
+  place-items: center;
+  min-width: 34px;
+  height: 34px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text-2);
+  font-size: 13px;
+
+  &:hover:not(:disabled) {
+    background: var(--panel-3);
+    color: var(--text);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.4;
+  }
+
+  &.current {
+    background: var(--accent);
+    color: var(--on-accent);
+    font-weight: 700;
+  }
+}
+
+.page-arrow {
+  border-color: var(--border);
+}
+
 .table-wrap {
   overflow: auto;
   border: 1px solid var(--border);

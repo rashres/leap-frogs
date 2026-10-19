@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, linkedSignal, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { catchError, combineLatest, of, switchMap } from 'rxjs';
@@ -11,6 +11,8 @@ import { formatUsd, formatStamp } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { PageHeader } from '../../shared/page-header';
+
+const ORDERS_PER_PAGE = 25;
 
 @Component({
   selector: 'leap-ops-account-detail-page',
@@ -56,12 +58,31 @@ export class OpsAccountDetailPage {
 
   readonly account = computed(() => this.bundle().account);
   readonly holdings = computed(() => this.bundle().holdings);
-  readonly orders = computed(() => this.bundle().orders.slice(0, 25));
+  /** Orders are shown a page at a time; `page` is zero-based. */
+  readonly page = linkedSignal({ source: this.id, computation: () => 0 });
+  readonly orderCount = computed(() => this.bundle().orders.length);
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.orderCount() / ORDERS_PER_PAGE)));
+  readonly orders = computed(() => {
+    const start = this.page() * ORDERS_PER_PAGE;
+    return this.bundle().orders.slice(start, start + ORDERS_PER_PAGE);
+  });
+  /** Up to five page numbers around the current one. */
+  readonly pageButtons = computed(() => {
+    const total = this.totalPages();
+    if (total <= 1) return [];
+    const first = Math.max(0, Math.min(this.page() - 2, total - 5));
+    return Array.from({ length: Math.min(5, total) }, (_, index) => first + index);
+  });
   readonly events = computed(() => this.bundle().events);
   readonly frozen = computed(() => this.account()?.status === 'FROZEN');
 
   cash(a: Account | null): string {
     return a ? formatUsd(a.cashBalance) : '—';
+  }
+
+  goToPage(page: number): void {
+    if (page < 0 || page >= this.totalPages()) return;
+    this.page.set(page);
   }
 
   stamp(value: unknown): string {
