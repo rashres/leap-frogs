@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.neueda.leap.controllers.dto.AccountResponse;
 import com.neueda.leap.controllers.dto.PortfolioValuePointResponse;
+import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.AccountService;
 import com.neueda.leap.services.PortfolioHistoryService;
 
@@ -35,10 +36,13 @@ public class AccountController {
 
     private final AccountService accountService;
     private final PortfolioHistoryService portfolioHistoryService;
+    private final AccessControl access;
 
-    public AccountController(AccountService accountService, PortfolioHistoryService portfolioHistoryService) {
+    public AccountController(AccountService accountService, PortfolioHistoryService portfolioHistoryService,
+                             AccessControl access) {
         this.accountService = accountService;
         this.portfolioHistoryService = portfolioHistoryService;
+        this.access = access;
     }
 
     /**
@@ -57,6 +61,7 @@ public class AccountController {
         )
     })
     public List<AccountResponse> getAllAccounts() {
+        access.assertCanListAllAccounts();
         return accountService.findAll().stream()
                 .map(AccountResponse::from)
                 .toList();
@@ -81,6 +86,7 @@ public class AccountController {
         )
     })
     public AccountResponse getAccount(@PathVariable @Parameter(description = "The unique identifier of the account", example = "1001") int id) {
+        access.assertCanReadAccount(id);
         return AccountResponse.from(accountService.findById(id));
     }
 
@@ -99,6 +105,7 @@ public class AccountController {
     public List<PortfolioValuePointResponse> getValueHistory(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1001") int id,
             @RequestParam(defaultValue = "1M") @Parameter(description = "One of 1D, 1W, 1M, 3M, 1Y") String range) {
+        access.assertCanReadAccount(id);
         return portfolioHistoryService.valueHistory(id, ChartRanges.parse(range)).stream()
                 .map(PortfolioValuePointResponse::from)
                 .toList();
