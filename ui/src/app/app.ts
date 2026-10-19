@@ -6,6 +6,7 @@ import { DISPLAY_ZONE, DISPLAY_ZONE_LABEL, MARKET_ORDER, marketFor, type MarketP
 import { ActiveAccountService } from './core/state/active-account.service';
 import { ApiStatusService } from './core/state/api-status.service';
 import { MarketStore } from './core/state/market.store';
+import { AuthService, type AppRole } from './core/api/auth.service';
 import { ThemeService } from './core/state/theme.service';
 import { formatTime, formatUsd } from './shared/format';
 import { Icon, type IconName } from './shared/icon';
@@ -16,16 +17,19 @@ interface NavItem {
   readonly path: string;
   readonly label: string;
   readonly icon: IconName;
+  readonly roles: readonly AppRole[];
 }
 
 const NAV: readonly NavItem[] = [
-  { path: '/portfolio', label: 'Portfolio', icon: 'portfolio' },
-  { path: '/markets', label: 'Markets', icon: 'markets' },
-  { path: '/orders', label: 'Orders', icon: 'orders' },
-  { path: '/copy-trading', label: 'Copy Trading', icon: 'copy' },
-  { path: '/news', label: 'News', icon: 'news' },
-  { path: '/audit', label: 'Audit', icon: 'activity' },
-  { path: '/analytics', label: 'Analytics', icon: 'analytics' },
+  { path: '/portfolio', label: 'Portfolio', icon: 'portfolio', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/markets', label: 'Markets', icon: 'markets', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/orders', label: 'Orders', icon: 'orders', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/copy-trading', label: 'Copy Trading', icon: 'copy', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/news', label: 'News', icon: 'news', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/ops', label: 'Operations', icon: 'activity', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
+  { path: '/ops/accounts', label: 'Accounts', icon: 'users', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
+  { path: '/audit', label: 'Audit', icon: 'activity', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
+  { path: '/analytics', label: 'Analytics', icon: 'analytics', roles: ['SUPER_ADMIN', 'BUSINESS_ANALYST'] },
 ];
 
 /** Shell layout adapted from the team's Angular app (fe/21-page-mascots, app.ts / app.html). */
@@ -43,8 +47,13 @@ export class App {
   private readonly router = inject(Router);
   private readonly themes = inject(ThemeService);
   protected readonly account = inject(ActiveAccountService);
+  protected readonly auth = inject(AuthService);
 
-  readonly nav = NAV;
+  readonly nav = computed(() => {
+    const role = this.auth.role();
+    if (!role) return [];
+    return NAV.filter((n) => n.roles.includes(role));
+  });
   readonly menuOpen = signal(false);
   readonly drawerOpen = signal(false);
   readonly collapsed = signal(readStored(SIDEBAR_KEY) === 'collapsed');
@@ -62,18 +71,36 @@ export class App {
   /** Full-bleed auth pages sit outside the console shell. */
   readonly authRoute = computed(() => {
     const path = this.url().split(/[?#]/)[0];
-    return path === '/login';
+    return path === '/login' || path === '/admin/login';
   });
 
   /** Section and, for detail routes, the page within it. */
   readonly crumbs = computed(() => {
     const path = this.url().split(/[?#]/)[0];
-    if (path.startsWith('/instrument')) return { section: NAV[1], page: 'Instrument' };
-    if (path.startsWith('/copy-trading/')) {
-      return { section: NAV.find((n) => n.path === '/copy-trading')!, page: 'Lead trader' };
+    const items = this.nav();
+    const fallback: NavItem = { path: '/', label: 'LEAP', icon: 'portfolio', roles: [] };
+    const pick = (...candidates: Array<NavItem | undefined>) =>
+      candidates.find((n) => n != null) ?? fallback;
+    if (path.startsWith('/instrument')) {
+      return { section: pick(items.find((n) => n.path === '/markets'), items[0]), page: 'Instrument' };
     }
-    return { section: NAV.find((n) => path.startsWith(n.path)) ?? NAV[0], page: null };
+    if (path.startsWith('/copy-trading/')) {
+      return { section: pick(items.find((n) => n.path === '/copy-trading'), items[0]), page: 'Lead trader' };
+    }
+    if (path.startsWith('/ops/accounts/')) {
+      return { section: pick(items.find((n) => n.path === '/ops/accounts'), items[0]), page: 'Inspect' };
+    }
+    return {
+      section: pick(
+        items.find((n) => path === n.path || path.startsWith(n.path + '/')),
+        items[0],
+      ),
+      page: null,
+    };
   });
+
+  readonly showAccountPicker = computed(() => this.auth.canPickAccount());
+  readonly userLabel = computed(() => this.auth.me()?.displayName ?? this.account.active()?.name);
 
   /** One row per market that has instruments in the database. */
   readonly sessions = computed(() => {
@@ -120,7 +147,7 @@ export class App {
     };
   });
 
-  readonly initials = computed(() => initialsOf(this.account.active()?.name));
+  readonly initials = computed(() => initialsOf(this.userLabel()));
 
   readonly accountRows = computed(() =>
     this.account.accounts().map((a) => ({
@@ -157,6 +184,11 @@ export class App {
   closeOverlays(): void {
     this.menuOpen.set(false);
     this.drawerOpen.set(false);
+  }
+
+  signOut(): void {
+    this.menuOpen.set(false);
+    this.auth.logout().subscribe();
   }
 }
 
