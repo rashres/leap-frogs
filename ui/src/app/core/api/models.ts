@@ -27,6 +27,7 @@ export interface Account {
   name: string;
   email: string;
   cashBalance: number;
+  status?: 'ACTIVE' | 'FROZEN' | string;
 }
 
 /** InstrumentResponse. lastPrice is in USD, or null until the price fetcher has run. */

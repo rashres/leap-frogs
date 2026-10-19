@@ -30,18 +30,21 @@
     </header>
 
     <div class="form-body">
-      <h1 id="auth-title">Login to Your Account!</h1>
+      <h1 id="auth-title">{{ title() }}</h1>
+      @if (admin()) {
+        <p class="form-note faint">Dedicated Super Admin entry. Other roles use the main sign-in page.</p>
+      }
 
       <form class="form" (submit)="submit($event)" novalidate>
         <label class="uline">
-          <span>Email Address</span>
+          <span>Username</span>
           <input
-            type="email"
-            name="email"
-            autocomplete="email"
-            [value]="email()"
-            (input)="email.set($any($event.target).value)"
-            placeholder="you@example.com"
+            type="text"
+            name="username"
+            autocomplete="username"
+            [value]="username()"
+            (input)="username.set($any($event.target).value)"
+            placeholder="joanna"
           />
         </label>
 
@@ -78,7 +81,11 @@
             <span class="dot" aria-hidden="true"></span>
             Remember Me
           </label>
-          <button type="button" class="text-link" disabled title="Coming with real auth">Forgot Password</button>
+          @if (!admin()) {
+            <a class="text-link" routerLink="/admin/login">Admin sign-in</a>
+          } @else {
+            <a class="text-link" routerLink="/login">User sign-in</a>
+          }
         </div>
 
         @if (error(); as err) {
@@ -86,20 +93,18 @@
         }
 
         <button type="submit" class="cta" [disabled]="submitting()">
-          {{ submitting() ? 'Opening console…' : 'Login To Your Account' }}
+          {{ submitting() ? 'Signing in…' : submitLabel() }}
         </button>
       </form>
 
-      @if (demoAccounts().length) {
-        <div class="demo">
-          <span class="demo-kicker">Demo accounts</span>
-          <div class="demo-row">
-            @for (a of demoAccounts(); track a.id) {
-              <button type="button" class="demo-btn" (click)="enterAs(a.id)">{{ a.name }}</button>
-            }
-          </div>
+      <div class="demo">
+        <span class="demo-kicker">Demo users (password from local LEAP_DEMO_PASSWORD)</span>
+        <div class="demo-row">
+          @for (d of demos(); track d.username) {
+            <button type="button" class="demo-btn" (click)="fillDemo(d.username)">{{ d.label }}</button>
+          }
         </div>
-      }
+      </div>
     </div>
   </section>
 
