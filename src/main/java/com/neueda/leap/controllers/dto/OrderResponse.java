@@ -37,6 +37,9 @@ public record OrderResponse(
                 allowableValues = {"CREATED", "PENDING", "COMPLETE", "FAILED", "CANCELLED", "EXPIRED"})
         String status,
 
+        @Schema(description = "Cash balance updated to after the order was settled", example = "120.00")
+        BigDecimal balanceUpdatedTo,
+
         @Schema(description = "Timestamp when order was placed")
         Instant placedTime,
 
@@ -77,6 +80,7 @@ public record OrderResponse(
                 order.getPrice(),
                 order.getValue(),
                 order.getStatus(),
+                order.getBalanceUpdatedTo(),
                 order.getPlacedTime(),
                 order.getFulfilledTime(),
                 order.getOrderType(),

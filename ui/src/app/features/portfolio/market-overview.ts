@@ -54,7 +54,7 @@ function formatVolume(v: Volume | null): string {
                     </div>
                   </div>
                 </td>
-                <td><leap-sparkline [points]="row.points" [width]="72" [height]="28" /></td>
+                <td><leap-sparkline [points]="row.points" [reference]="row.reference" [width]="72" [height]="28" /></td>
                 <td class="r">
                   <div class="price num">{{ row.price }}</div>
                   @if (row.delta) {
@@ -243,6 +243,7 @@ export class MarketOverview {
       symbol: r.symbol,
       name: r.name,
       points: r.points,
+      reference: r.reference,
       price: formatPrice(r.price),
       pct: r.changePct != null ? formatSignedPct(r.changePct) : null,
       delta: r.change != null ? `${r.change < 0 ? '−' : '+'}${formatPrice(Math.abs(r.change), r.price)}` : '',

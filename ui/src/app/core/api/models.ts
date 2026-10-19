@@ -27,6 +27,7 @@ export interface Account {
   name: string;
   email: string;
   cashBalance: number;
+  status?: 'ACTIVE' | 'FROZEN' | string;
 }
 
 /** InstrumentResponse. lastPrice is in USD, or null until the price fetcher has run. */
@@ -92,6 +93,8 @@ export interface Order {
   price: number;
   value: number;
   status: OrderStatus;
+  /** Cash balance updated to after the order was settled. */
+  balanceUpdatedTo: number;
   placedTime: string;
   fulfilledTime: string | null;
   orderType: OrderType;

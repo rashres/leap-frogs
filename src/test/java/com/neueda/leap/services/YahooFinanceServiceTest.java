@@ -74,6 +74,20 @@ class YahooFinanceServiceTest {
     }
 
     @Test
+    void liveAnswersExpireSooner() {
+        YahooFinanceService live = new YahooFinanceService("http://127.0.0.1:" + server.getAddress().getPort(),
+                Duration.ofMillis(500), Duration.ofSeconds(120), Duration.ofSeconds(10), Duration.ofSeconds(3600), clock);
+        live.getLive("/chart");
+        clock.advance(Duration.ofSeconds(5));
+        live.getLive("/chart");
+        assertEquals(1, calls.get());
+
+        clock.advance(Duration.ofSeconds(6));
+        live.getLive("/chart");
+        assertEquals(2, calls.get());
+    }
+
+    @Test
     void servesRecentCopyWhenRateLimited() {
         body.set("{\"v\":1}");
         yahoo.get("/x");
