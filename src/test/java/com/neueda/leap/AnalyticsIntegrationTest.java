@@ -1,6 +1,7 @@
 package com.neueda.leap;
 
 import com.neueda.leap.config.AnalyticsDatabase;
+import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.AnalyticsService;
 import com.neueda.leap.services.domain.Analytics.Filter;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.web.server.ResponseStatusException;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * under made-up symbols, so they never mix with the ETL's data, and are removed afterwards.
  */
 @SpringBootTest
-@AutoConfigureMockMvc
+@AutoConfigureMockMvc(addFilters = false)
 class AnalyticsIntegrationTest {
 
     private static final String JANUARY_2001 = "from=2001-01-01&to=2001-01-31";
@@ -38,6 +40,9 @@ class AnalyticsIntegrationTest {
 
     @Autowired
     private AnalyticsDatabase analyticsDatabase;
+
+    @MockBean
+    private AccessControl access;
 
     @Value("${analytics.datasource.url}")
     private String url;
