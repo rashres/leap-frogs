@@ -156,9 +156,9 @@ public interface OrderMapper {
      * Insert a new order; the generated transaction_id is written back into order.orderId
      */
     @Insert("""
-            INSERT INTO transactions (account_id, instrument_id, transaction_type, quantity, price, status, transaction_time,
+            INSERT INTO transactions (account_id, instrument_id, symbol, transaction_type, quantity, price, status, transaction_time,
                                       order_type, limit_price, time_in_force, expires_at, filled_at)
-            VALUES (#{account.accountId}, #{instrument.instrumentId}, #{side}, #{quantity}, #{price}, #{status}, #{placedTime},
+            VALUES (#{account.accountId}, #{instrument.instrumentId}, #{instrument.symbol}, #{side}, #{quantity}, #{price}, #{status}, #{placedTime},
                     #{orderType}, #{limitPrice}, #{timeInForce}, #{expiresAt}, #{fulfilledTime})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "orderId", keyColumn = "transaction_id")
