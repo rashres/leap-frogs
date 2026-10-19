@@ -79,6 +79,29 @@ public interface CopyTradingMapper {
             """)
     List<CopySubscription> findStopLossWatched();
 
+    /**
+     * Copies the stop-loss paused that should sell their shares. Leaves out a
+     * copy once the follower has cancelled one of its stop-loss sells: they
+     * have taken over, so it is not sold again behind their back.
+     */
+    @Select(SELECT_SUBSCRIPTION + """
+            WHERE s.stopped_at IS NULL AND s.pause_reason = 'STOP_LOSS' AND s.sell_on_stop_loss
+              AND NOT EXISTS (SELECT 1 FROM copy_trade c JOIN transactions t ON t.transaction_id = c.follower_transaction_id
+                              WHERE c.subscription_id = s.subscription_id AND c.leader_transaction_id IS NULL
+                                AND t.status = 'CANCELLED')
+            ORDER BY s.subscription_id
+            """)
+    List<CopySubscription> findStopLossSelling();
+
+    /** Followers' copies of a lead trader's order that are still pending. */
+    @Select("""
+            SELECT c.follower_transaction_id
+            FROM copy_trade c
+            JOIN transactions t ON t.transaction_id = c.follower_transaction_id
+            WHERE c.leader_transaction_id = #{leaderOrderId} AND t.status = 'PENDING'
+            """)
+    List<Integer> findPendingCopiesOf(int leaderOrderId);
+
     @Insert("""
             INSERT INTO copy_subscription (follower_account_id, copy_trader_id, allocation, max_per_trade,
                                            stop_loss_percent, sell_on_stop_loss, started_at)

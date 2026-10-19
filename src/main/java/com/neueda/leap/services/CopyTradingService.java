@@ -224,9 +224,9 @@ public class CopyTradingService {
             quantity = copiedBuyQuantity(leaderOrder.getQuantity(), subscription.getAllocation(), trader.getEquity(),
                     price, subscription.getMaxPerTrade(), subscription.getAllocation().subtract(book.committed()));
         } else {
-            // Only shares this copy bought, and never more than the follower still holds.
+            // Only shares this copy bought, and never more than the follower can sell right now.
             BigDecimal sellable = book.sellable(instrumentId)
-                    .min(heldQuantity(subscription.getFollowerAccountId(), instrumentId));
+                    .min(availableShares(subscription.getFollowerAccountId(), instrumentId));
             BigDecimal leaderHeld = heldQuantity(trader.getAccountId(), instrumentId);
             // A filled sell has already come off the trader's holding.
             BigDecimal leaderBefore = "COMPLETE".equals(leaderOrder.getStatus())
@@ -299,28 +299,51 @@ public class CopyTradingService {
     }
 
     /**
-     * Pauses each copy whose loss has reached its stop-loss and, if the follower
-     * asked for it, sells the copy's shares at market. Run by CopyStopLossProcessor.
-     * Each copy, and each sell, is its own transaction.
+     * Pauses each copy whose loss has reached its stop-loss, then sells the
+     * shares of each paused copy whose follower asked for that. Run by
+     * CopyStopLossProcessor every minute, so a stop-loss sell that expired or
+     * failed is placed again; one still pending holds its shares back, so
+     * nothing is sold twice. Each copy, and each sell, is its own transaction.
      */
     public void checkStopLosses() {
         for (CopySubscription subscription : copyTradingMapper.findStopLossWatched()) {
             try {
                 CopyBook book = bookFor(subscription.getSubscriptionId());
-                if (!hitsStopLoss(book.pnl(), subscription.getAllocation(), subscription.getStopLossPercent())) {
-                    continue;
-                }
-                if (copyTradingMapper.pauseForStopLoss(subscription.getSubscriptionId(), clock.instant()) == 0) {
-                    continue;
-                }
-                logger.info("Copy {} of account {} hit its {}% stop-loss (P/L {}), paused", subscription.getSubscriptionId(),
-                        subscription.getFollowerAccountId(), subscription.getStopLossPercent(),
-                        book.pnl().setScale(2, RoundingMode.HALF_UP));
-                if (subscription.isSellOnStopLoss()) {
-                    sellCopiedPositions(subscription, book);
+                if (hitsStopLoss(book.pnl(), subscription.getAllocation(), subscription.getStopLossPercent())
+                        && copyTradingMapper.pauseForStopLoss(subscription.getSubscriptionId(), clock.instant()) == 1) {
+                    logger.info("Copy {} of account {} hit its {}% stop-loss (P/L {}), paused", subscription.getSubscriptionId(),
+                            subscription.getFollowerAccountId(), subscription.getStopLossPercent(),
+                            book.pnl().setScale(2, RoundingMode.HALF_UP));
                 }
             } catch (RuntimeException e) {
                 logger.warn("Could not check the stop-loss of copy {}", subscription.getSubscriptionId(), e);
+            }
+        }
+        for (CopySubscription subscription : copyTradingMapper.findStopLossSelling()) {
+            try {
+                sellCopiedPositions(subscription, bookFor(subscription.getSubscriptionId()));
+            } catch (RuntimeException e) {
+                logger.warn("Could not sell for the stop-loss of copy {}", subscription.getSubscriptionId(), e);
+            }
+        }
+    }
+
+    /**
+     * Cancels followers' still-pending copies of a lead trader's order, after the
+     * trader cancelled it. Does nothing for an order nobody copied. A copy that
+     * fills or closes meanwhile is left as it is.
+     */
+    public void cancelCopies(int leaderOrderId) {
+        List<Integer> copies;
+        try {
+            copies = copyTradingMapper.findPendingCopiesOf(leaderOrderId);
+        } catch (RuntimeException e) {
+            logger.warn("Copy trading unavailable, copies of order {} not cancelled: {}", leaderOrderId, e.getMessage());
+            return;
+        }
+        for (int orderId : copies) {
+            if (orderMapper.closePending(orderId, "CANCELLED") == 1) {
+                logger.info("Cancelled order {}, a copy of cancelled order {}", orderId, leaderOrderId);
             }
         }
     }
@@ -328,7 +351,7 @@ public class CopyTradingService {
     private void sellCopiedPositions(CopySubscription subscription, CopyBook book) {
         int accountId = subscription.getFollowerAccountId();
         book.sellablePositions().forEach((instrumentId, sellable) -> {
-            BigDecimal quantity = sellable.min(heldQuantity(accountId, instrumentId));
+            BigDecimal quantity = sellable.min(availableShares(accountId, instrumentId));
             if (quantity.signum() <= 0) {
                 return;
             }
@@ -365,6 +388,12 @@ public class CopyTradingService {
     private BigDecimal heldQuantity(int accountId, int instrumentId) {
         Holding holding = holdingsMapper.findByAccountIdAndInstrumentId(accountId, instrumentId);
         return holding == null ? BigDecimal.ZERO : holding.getQuantity();
+    }
+
+    /** Shares held that no pending sell is already holding back: the most a new sell can take. */
+    private BigDecimal availableShares(int accountId, int instrumentId) {
+        return heldQuantity(accountId, instrumentId).subtract(orderMapper.reservedShares(accountId, instrumentId))
+                .max(BigDecimal.ZERO);
     }
 
     private CopyTrader traderById(int copyTraderId) {
