@@ -2,6 +2,7 @@ package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.OrderRequest;
 import com.neueda.leap.controllers.dto.OrderResponse;
+import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.CopyTradingService;
 import com.neueda.leap.services.OrderResult;
 import com.neueda.leap.services.OrderService;
@@ -30,10 +31,12 @@ public class OrderController {
 
     private final OrderService orderService;
     private final CopyTradingService copyTradingService;
+    private final AccessControl access;
 
-    public OrderController(OrderService orderService, CopyTradingService copyTradingService) {
+    public OrderController(OrderService orderService, CopyTradingService copyTradingService, AccessControl access) {
         this.orderService = orderService;
         this.copyTradingService = copyTradingService;
+        this.access = access;
     }
 
     /**
@@ -59,6 +62,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> submitOrder(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
             @Valid @RequestBody OrderRequest request) {
+        access.assertCanTrade(accountId);
         OrderResult result = orderService.placeOrder(accountId, request.instrumentId(), request.side(), request.quantity(),
                 request.orderType(), request.limitPrice(), request.timeInForce());
         // After the order is saved, so copying it can never undo it. Does nothing unless the account is a lead trader.
@@ -84,6 +88,7 @@ public class OrderController {
     public OrderResponse cancelOrder(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
             @PathVariable @Parameter(description = "The order to cancel", example = "42") int orderId) {
+        access.assertCanTrade(accountId);
         return OrderResponse.from(orderService.cancelOrder(accountId, orderId));
     }
 
@@ -98,6 +103,7 @@ public class OrderController {
     })
     public List<OrderResponse> listOrders(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId) {
+        access.assertCanReadAccount(accountId);
         return orderService.findByAccountId(accountId).stream()
                 .map(OrderResponse::from)
                 .toList();

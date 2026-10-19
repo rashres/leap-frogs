@@ -96,7 +96,7 @@ public class YahooController {
             throw badRequest("range must be one of " + RANGES + " and interval one of " + INTERVALS);
         }
         String path = "/v8/finance/chart/" + encode(symbol) + "?range=" + range + "&interval=" + interval;
-        return json(yahoo.get(path));
+        return json("1m".equals(interval) ? yahoo.getLive(path) : yahoo.get(path));
     }
 
     /**

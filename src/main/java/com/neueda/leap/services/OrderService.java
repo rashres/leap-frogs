@@ -55,6 +55,9 @@ public class OrderService {
     public OrderResult placeOrder(int accountId, int instrumentId, String side, BigDecimal quantity,
                                   String orderType, BigDecimal limitPrice, String timeInForce) {
         Account account = accountService.findById(accountId);
+        if (account.isFrozen()) {
+            throw new InvalidOrderException("Account is frozen; new orders are not allowed");
+        }
         Instrument instrument = instrumentService.findById(instrumentId);
 
         String normalizedSide = side == null ? null : side.trim().toUpperCase();
