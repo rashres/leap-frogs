@@ -50,6 +50,10 @@
           <dd class="num">{{ copySummary().traders }}</dd>
         </div>
         <div>
+          <dt>Copy P/L</dt>
+          <dd class="num" [class]="copySummary().pnlTone">{{ copySummary().pnl }}</dd>
+        </div>
+        <div>
           <dt>Orders copied</dt>
           <dd class="num">{{ copySummary().copied }}</dd>
         </div>
@@ -60,6 +64,8 @@
             <tr>
               <th>Trader</th>
               <th class="r">Allocation</th>
+              <th class="r">Invested</th>
+              <th class="r">Your P/L</th>
               <th class="r">Their ROI</th>
               <th>Copying since</th>
               <th class="r">Copied orders</th>
@@ -78,7 +84,17 @@
                     </span>
                   </a>
                 </td>
-                <td class="r num strong">{{ row.allocation }}</td>
+                <td class="r num strong">
+                  {{ row.allocation }}
+                  @if (row.limits) {
+                    <span class="sub-line faint">{{ row.limits }}</span>
+                  }
+                </td>
+                <td class="r num">
+                  {{ row.invested }}
+                  <span class="sub-line faint">{{ row.budgetLeft }} left</span>
+                </td>
+                <td class="r num" [class]="row.pnlTone">{{ row.pnl }}</td>
                 <td class="r num" [class]="row.roiTone">{{ row.roi }}</td>
                 <td class="num faint">{{ row.since }}</td>
                 <td class="r num">{{ row.sub.copiedOrders }}</td>

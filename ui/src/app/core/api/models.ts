@@ -158,15 +158,42 @@ export interface CopySubscription {
   copyTraderId: number;
   traderName: string;
   traderHandle: string;
+  /** USD budget: copied buys stop once the copy's positions (at cost) plus pending buys reach it. */
   allocation: number;
+  /** Most a single copied buy may cost, or null for no cap. */
+  maxPerTrade: number | null;
+  /** Loss, in percent of the allocation, that pauses the copy; null for none. */
+  stopLossPercent: number | null;
+  sellOnStopLoss: boolean;
+  /** Paused copies skip the trader's buys but still copy their sells. */
+  paused: boolean;
+  pauseReason: 'USER' | 'STOP_LOSS' | null;
+  pausedAt: string | null;
   startedAt: string;
   copiedOrders: number;
+  /** What the copy's shares still held cost. */
+  invested: number;
+  /** The copy's shares at the latest prices. */
+  marketValue: number;
+  /** Realized plus unrealized profit or loss of the copy. */
+  pnl: number;
+  /** Allocation not yet used by held or pending copied buys. */
+  budgetLeft: number;
+}
+
+/** What a follower chooses for one copy (POST and PUT copy-subscriptions). */
+export interface CopySettings {
+  allocation: number;
+  maxPerTrade: number | null;
+  stopLossPercent: number | null;
+  sellOnStopLoss: boolean;
 }
 
 /** CopiedOrderResponse: one of the account's orders that was copied from a lead trader. */
 export interface CopiedOrder {
   orderId: number;
-  leaderOrderId: number;
+  /** Null for a sell placed by the copy's stop-loss. */
+  leaderOrderId: number | null;
   copyTraderId: number;
   traderName: string;
   traderHandle: string;

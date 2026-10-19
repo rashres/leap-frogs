@@ -43,7 +43,8 @@ interface Row {
     readonly traderId: number;
     readonly name: string;
     readonly handle: string;
-    readonly leaderOrderId: number;
+    /** Null for a sell placed by the copy's stop-loss. */
+    readonly leaderOrderId: number | null;
   } | null;
   readonly steps: readonly Step[];
 }
@@ -89,7 +90,9 @@ export class OrdersPage {
           state: 'Submitted',
           at: formatStamp(o.placedTime),
           detail: copy
-            ? `${o.side} ${formatQty(o.quantity)} ${o.symbol} copied from ${copy.traderName}'s order #${copy.leaderOrderId}, scaled to your allocation.`
+            ? copy.leaderOrderId != null
+              ? `${o.side} ${formatQty(o.quantity)} ${o.symbol} copied from ${copy.traderName}'s order #${copy.leaderOrderId}, scaled to your allocation.`
+              : `${o.side} ${formatQty(o.quantity)} ${o.symbol} placed by the stop-loss on your copy of ${copy.traderName}.`
             : `${o.side} ${formatQty(o.quantity)} ${o.symbol} received by POST /api/accounts/${o.accountId}/orders.`,
         },
       ];
