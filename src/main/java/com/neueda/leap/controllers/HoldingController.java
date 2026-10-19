@@ -1,6 +1,7 @@
 package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.HoldingResponse;
+import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.HoldingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,9 +22,11 @@ import java.util.List;
 public class HoldingController {
 
     private final HoldingService holdingService;
+    private final AccessControl access;
 
-    public HoldingController(HoldingService holdingService) {
+    public HoldingController(HoldingService holdingService, AccessControl access) {
         this.holdingService = holdingService;
+        this.access = access;
     }
 
     /**
@@ -36,6 +39,7 @@ public class HoldingController {
         @ApiResponse(responseCode = "404", description = "Account not found")
     })
     public List<HoldingResponse> getHoldings(@PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId) {
+        access.assertCanReadAccount(accountId);
         return holdingService.findByAccountId(accountId).stream()
                 .map(HoldingResponse::from)
                 .toList();

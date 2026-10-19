@@ -1,9 +1,14 @@
 <a class="skip-link" href="#main">Skip to main content</a>
 
+@if (authRoute()) {
+  <main id="main" tabindex="-1">
+    <router-outlet />
+  </main>
+} @else {
 <div class="shell" [class.collapsed]="collapsed()" [class.drawer-open]="drawerOpen()">
   <aside class="sidebar" id="sidebar" aria-label="Sidebar">
     <div class="side-top">
-      <a class="brand" routerLink="/portfolio" aria-label="LEAP — go to Portfolio">
+      <a class="brand" [routerLink]="auth.me()?.homePath ?? '/login'" aria-label="LEAP home">
         <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
           <rect width="32" height="32" rx="9" fill="var(--accent)" />
           <path
@@ -25,7 +30,7 @@
     <nav class="side-nav" aria-label="Main">
       <p class="side-label">Main menu</p>
       <ul>
-        @for (item of nav; track item.path) {
+        @for (item of nav(); track item.path) {
           @let active = crumbs().section.path === item.path;
           <li>
             <a
@@ -111,7 +116,7 @@
           <i class="src-dot" aria-hidden="true"></i><span class="src-label">{{ source().label }}</span>
         </button>
 
-        <span class="clock num" aria-label="Local time"><leap-icon name="clock" [size]="16" />{{ clock() }}</span>
+        <span class="clock num" aria-label="Central time"><leap-icon name="clock" [size]="16" />{{ clock() }}</span>
 
         <button
           type="button"
@@ -131,43 +136,52 @@
             (click)="menuOpen.set(!menuOpen())"
             [attr.aria-expanded]="menuOpen()"
             aria-haspopup="menu"
-            [attr.aria-label]="'Signed in as ' + (account.active()?.name ?? 'no account') + '. Switch account'"
-            [attr.title]="account.active()?.name ?? 'No account'"
+            [attr.aria-label]="'Signed in as ' + (userLabel() ?? 'user')"
+            [attr.title]="userLabel() ?? 'Account'"
           >
             <span class="avatar">{{ initials() }}</span>
             <span class="account-text">
-              <span class="account-name">{{ account.active()?.name ?? 'No account' }}</span>
-              <span class="account-mail">{{ account.active()?.email ?? '' }}</span>
+              <span class="account-name">{{ userLabel() ?? 'Account' }}</span>
+              <span class="account-mail">{{ auth.me()?.role ?? account.active()?.email ?? '' }}</span>
             </span>
             <leap-icon name="chevron-down" [size]="16" class="caret" />
           </button>
 
           @if (menuOpen()) {
             <div class="menu-backdrop" (click)="menuOpen.set(false)"></div>
-            <div class="menu" role="menu" aria-label="Switch account">
-              <p class="menu-head">Switch account</p>
-              @for (row of accountRows(); track row.id) {
-                <button
-                  type="button"
-                  role="menuitemradio"
-                  class="menu-item"
-                  [class.on]="row.active"
-                  [attr.aria-checked]="row.active"
-                  (click)="choose(row.id)"
-                >
-                  <span class="mini-avatar">{{ row.initials }}</span>
-                  <span class="who">
-                    <span class="who-name">{{ row.name }}</span>
-                    <span class="who-mail">{{ row.email }}</span>
-                  </span>
-                  <span class="who-cash num">{{ row.cash }}</span>
-                  @if (row.active) {
-                    <leap-icon name="check" [size]="16" class="who-check" />
-                  }
-                </button>
-              } @empty {
-                <p class="menu-empty">{{ account.error()?.message ?? 'No accounts in the database.' }}</p>
+            <div class="menu" role="menu" aria-label="Account menu">
+              @if (showAccountPicker()) {
+                <p class="menu-head">Switch account</p>
+                @for (row of accountRows(); track row.id) {
+                  <button
+                    type="button"
+                    role="menuitemradio"
+                    class="menu-item"
+                    [class.on]="row.active"
+                    [attr.aria-checked]="row.active"
+                    (click)="choose(row.id)"
+                  >
+                    <span class="mini-avatar">{{ row.initials }}</span>
+                    <span class="who">
+                      <span class="who-name">{{ row.name }}</span>
+                      <span class="who-mail">{{ row.email }}</span>
+                    </span>
+                    <span class="who-cash num">{{ row.cash }}</span>
+                    @if (row.active) {
+                      <leap-icon name="check" [size]="16" class="who-check" />
+                    }
+                  </button>
+                } @empty {
+                  <p class="menu-empty">{{ account.error()?.message ?? 'No accounts in the database.' }}</p>
+                }
+              } @else {
+                <p class="menu-head">{{ auth.me()?.displayName }}</p>
+                <p class="menu-empty">{{ auth.me()?.role }}</p>
               }
+              <button type="button" class="menu-item menu-signout" (click)="signOut()">
+                <leap-icon name="arrow-left" [size]="16" />
+                <span class="who"><span class="who-name">Sign out</span></span>
+              </button>
             </div>
           }
         </div>
@@ -179,3 +193,4 @@
     </main>
   </div>
 </div>
+}

@@ -41,6 +41,7 @@ public class YahooFinanceService {
     private final String baseUrl;
     private final Duration timeout;
     private final Duration fresh;
+    private final Duration liveFresh;
     private final Duration staleLimit;
     private final Clock clock;
     private final Map<String, Entry> cache = new ConcurrentHashMap<>();
@@ -50,15 +51,21 @@ public class YahooFinanceService {
             @Value("${yahoo.base-url:https://query2.finance.yahoo.com}") String baseUrl,
             @Value("${yahoo.timeout-ms:5000}") long timeoutMs,
             @Value("${yahoo.cache-ttl-seconds:120}") long cacheTtlSeconds,
+            @Value("${yahoo.live-cache-ttl-seconds:10}") long liveCacheTtlSeconds,
             @Value("${yahoo.stale-limit-seconds:3600}") long staleLimitSeconds) {
         this(baseUrl, Duration.ofMillis(timeoutMs), Duration.ofSeconds(cacheTtlSeconds),
-                Duration.ofSeconds(staleLimitSeconds), Clock.systemUTC());
+                Duration.ofSeconds(liveCacheTtlSeconds), Duration.ofSeconds(staleLimitSeconds), Clock.systemUTC());
     }
 
     YahooFinanceService(String baseUrl, Duration timeout, Duration fresh, Duration staleLimit, Clock clock) {
+        this(baseUrl, timeout, fresh, fresh, staleLimit, clock);
+    }
+
+    YahooFinanceService(String baseUrl, Duration timeout, Duration fresh, Duration liveFresh, Duration staleLimit, Clock clock) {
         this.baseUrl = baseUrl.replaceAll("/+$", "");
         this.timeout = timeout;
         this.fresh = fresh;
+        this.liveFresh = liveFresh;
         this.staleLimit = staleLimit;
         this.clock = clock;
         this.http = HttpClient.newBuilder()
@@ -74,18 +81,23 @@ public class YahooFinanceService {
      *                                 502 for any other upstream failure, each only when no cached copy is recent enough
      */
     public String get(String pathAndQuery) {
-        return get(pathAndQuery, false);
+        return get(pathAndQuery, false, fresh);
+    }
+
+    /** As {@link #get}, but cached only briefly, for intraday data a live chart polls. */
+    public String getLive(String pathAndQuery) {
+        return get(pathAndQuery, false, liveFresh);
     }
 
     /** As {@link #get}, for Yahoo's RSS feeds, which answer XML instead of JSON. */
     public String getXml(String pathAndQuery) {
-        return get(pathAndQuery, true);
+        return get(pathAndQuery, true, fresh);
     }
 
-    private String get(String pathAndQuery, boolean xml) {
+    private String get(String pathAndQuery, boolean xml, Duration freshFor) {
         Instant now = clock.instant();
         Entry cached = cache.get(pathAndQuery);
-        if (cached != null && cached.fetchedAt().plus(fresh).isAfter(now)) {
+        if (cached != null && cached.fetchedAt().plus(freshFor).isAfter(now)) {
             return cached.body();
         }
         try {

@@ -2,6 +2,7 @@ package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.WatchlistRequest;
 import com.neueda.leap.controllers.dto.WatchlistResponse;
+import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.WatchlistService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -21,9 +22,11 @@ import org.springframework.web.bind.annotation.*;
 public class WatchlistController {
 
     private final WatchlistService watchlistService;
+    private final AccessControl access;
 
-    public WatchlistController(WatchlistService watchlistService) {
+    public WatchlistController(WatchlistService watchlistService, AccessControl access) {
         this.watchlistService = watchlistService;
+        this.access = access;
     }
 
     /**
@@ -37,6 +40,7 @@ public class WatchlistController {
     })
     public WatchlistResponse getWatchlist(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId) {
+        access.assertCanReadAccount(accountId);
         return new WatchlistResponse(accountId, watchlistService.findInstrumentIds(accountId));
     }
 
@@ -54,6 +58,7 @@ public class WatchlistController {
     public WatchlistResponse replaceWatchlist(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
             @Valid @RequestBody WatchlistRequest request) {
+        access.assertCanTrade(accountId);
         return new WatchlistResponse(accountId, watchlistService.replace(accountId, request.instrumentIds()));
     }
 }
