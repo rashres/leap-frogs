@@ -82,6 +82,12 @@
 .rail {
   position: sticky;
   top: calc(var(--topbar-h) + 24px);
+  /* Fit the window and scroll inside, so the order button never sits below the fold. */
+  max-height: calc(100dvh - var(--topbar-h) - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  border-radius: var(--radius-lg);
 }
 
 /* ---- Price and chart ------------------------------------------------------ */
@@ -329,6 +335,8 @@ dd {
   .rail {
     order: 1;
     position: static;
+    max-height: none;
+    overflow: visible;
   }
 }
 
