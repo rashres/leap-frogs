@@ -1,0 +1,17 @@
+meta {
+  name: Get API info
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.service: eq Leap Frogs Trading API
+  res.body.status: eq UP
+}

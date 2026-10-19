@@ -1,0 +1,15 @@
+meta {
+  name: Get portfolio value history
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/accounts/1/value-history?range=1M
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

@@ -1,0 +1,27 @@
+meta {
+  name: Submit invalid order
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/accounts/1/orders
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body {
+  {
+    "instrumentId": 1,
+    "side": "BUY",
+    "quantity": -1
+  }
+}
+
+assert {
+  res.status: eq 400
+}

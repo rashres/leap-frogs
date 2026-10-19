@@ -1,0 +1,15 @@
+meta {
+  name: List account orders
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/accounts/1/orders
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+}

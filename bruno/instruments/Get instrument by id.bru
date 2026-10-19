@@ -1,0 +1,16 @@
+meta {
+  name: Get instrument by id
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/instruments/1
+  body: none
+  auth: none
+}
+
+assert {
+  res.status: eq 200
+  res.body.instrumentId: eq 1
+}

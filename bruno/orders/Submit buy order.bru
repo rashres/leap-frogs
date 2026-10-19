@@ -1,0 +1,31 @@
+meta {
+  name: Submit buy order
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/accounts/1/orders
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body {
+  {
+    "instrumentId": 1,
+    "side": "BUY",
+    "quantity": 1
+  }
+}
+
+assert {
+  res.status: eq 201
+  res.body.accountId: eq 1
+  res.body.instrumentId: eq 1
+  res.body.side: eq BUY
+  res.body.status: eq COMPLETE
+}
