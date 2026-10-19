@@ -92,6 +92,8 @@ export interface Order {
   price: number;
   value: number;
   status: OrderStatus;
+  /** Cash balance updated to after the order was settled. */
+  balanceUpdatedTo: number;
   placedTime: string;
   fulfilledTime: string | null;
   orderType: OrderType;
