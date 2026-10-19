@@ -6,6 +6,25 @@ and price comes from the database through `/api`. There is no fixture data.
 
 ## Run it
 
+## Demo users (RBAC)
+
+Apply schema + seed once (against the operational DB):
+
+```bash
+psql -h localhost -p 8100 -U postgres -d leapfrogsdb -f database/rbac-schema.sql
+psql -h localhost -p 8100 -U postgres -d leapfrogsdb -f database/rbac-seed.sql
+```
+
+Use the shared demo password from `LEAP_DEMO_PASSWORD` in your local `.env`
+(repo-root `.env.example`). Do not commit that value.
+
+| Username | Role               | Sign-in URL        | Lands on    |
+|----------|--------------------|--------------------|-------------|
+| `admin`  | SUPER_ADMIN        | `/admin/login`     | Portfolio   |
+| `joanna` | TRADER             | `/login`           | Portfolio   |
+| `priya`  | BUSINESS_ANALYST   | `/login`           | Analytics   |
+| `david`  | TRADING_OPERATIONS | `/login`           | Operations  |
+
 Start the API first (port 8081; see the repo-root README for the database), then:
 
 ```bash
