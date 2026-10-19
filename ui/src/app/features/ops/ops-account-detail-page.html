@@ -1,0 +1,119 @@
+<a class="back" routerLink="/ops/accounts"><leap-icon name="arrow-left" [size]="16" /> All accounts</a>
+
+@if (account(); as a) {
+  <leap-page-header [heading]="a.name">
+    <span description>{{ a.email }} · Account #{{ a.accountId }}</span>
+  </leap-page-header>
+
+  <div class="status-bar">
+    <span class="pill" [class.frozen]="frozen()">{{ a.status ?? 'ACTIVE' }}</span>
+    <span class="cash num">Cash {{ cash(a) }}</span>
+    @if (frozen()) {
+      <button type="button" class="btn btn-secondary" [disabled]="busy()" (click)="unfreeze()">Unfreeze account</button>
+    } @else {
+      <button type="button" class="btn btn-secondary" (click)="confirmFreeze.set(true)">Freeze account</button>
+    }
+  </div>
+
+  @if (flash(); as msg) {
+    <p class="flash">{{ msg }}</p>
+  }
+  @if (error(); as err) {
+    <p class="form-error" role="alert">{{ err }}</p>
+  }
+
+  @if (confirmFreeze()) {
+    <div class="confirm panel">
+      <h3>Freeze this account?</h3>
+      <p class="dim">New orders will be rejected. Existing holdings and pending orders are unchanged.</p>
+      <label class="field">
+        <span class="field-label">Reason (required)</span>
+        <input class="control" [value]="reason()" (input)="reason.set($any($event.target).value)" placeholder="Suspicious activity…" />
+      </label>
+      <div class="actions">
+        <button type="button" class="btn btn-secondary" (click)="confirmFreeze.set(false)">Cancel</button>
+        <button type="button" class="btn btn-primary" [disabled]="busy()" (click)="freeze()">Confirm freeze</button>
+      </div>
+    </div>
+  }
+
+  <section class="block">
+    <h2>Holdings</h2>
+    <div class="table-wrap panel">
+      <table>
+        <thead>
+          <tr>
+            <th>Symbol</th>
+            <th class="r">Qty</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (h of holdings(); track h.instrumentId) {
+            <tr>
+              <td class="sym">
+                <leap-instrument-logo [symbol]="h.symbol" [size]="22" />
+                {{ h.symbol }}
+              </td>
+              <td class="r num">{{ h.quantity }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="2" class="faint">No holdings.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Recent orders</h2>
+    <div class="table-wrap panel">
+      <table>
+        <thead>
+          <tr>
+            <th>When</th>
+            <th>Side</th>
+            <th>Symbol</th>
+            <th class="r">Qty</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (o of orders(); track o.orderId) {
+            <tr>
+              <td class="num">{{ stamp(o.placedTime) }}</td>
+              <td>{{ o.side }}</td>
+              <td>{{ o.symbol }}</td>
+              <td class="r num">{{ o.quantity }}</td>
+              <td>{{ o.status }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="faint">No orders.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Status events</h2>
+    <ul class="events">
+      @for (e of events(); track $index) {
+        <li>
+          <strong>{{ e['action'] }}</strong>
+          <span class="dim"> by {{ e['actorUsername'] }} · {{ stamp(e['occurredAt']) }}</span>
+          @if (e['reason']) {
+            <p>{{ e['reason'] }}</p>
+          }
+        </li>
+      } @empty {
+        <li class="faint">No freeze/unfreeze events yet.</li>
+      }
+    </ul>
+  </section>
+} @else {
+  <p class="faint">Loading account…</p>
+}
