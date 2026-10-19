@@ -49,11 +49,11 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf
                         .csrfTokenRepository(csrfRepo)
                         .csrfTokenRequestHandler(requestHandler)
-                        .ignoringRequestMatchers("/auth/login", "/auth/admin/login"))
+                        .ignoringRequestMatchers("/auth/login", "/auth/admin/login", "/auth/register"))
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/admin/login").permitAll()
+                        .requestMatchers("/auth/login", "/auth/admin/login", "/auth/register").permitAll()
                         .requestMatchers("/health", "/", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // Public market tape for the sign-in page (read-only).
                         .requestMatchers(HttpMethod.GET, "/instruments", "/instruments/**", "/yahoo/**").permitAll()

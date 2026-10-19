@@ -1,7 +1,9 @@
 package com.neueda.leap.mappers;
 
 import com.neueda.leap.services.domain.Account;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Options;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.Param;
@@ -27,6 +29,13 @@ public interface AccountMapper {
             ORDER BY account_id
             """)
     List<Account> search(@Param("q") String q, @Param("status") String status);
+
+    @Select("SELECT EXISTS (SELECT 1 FROM account WHERE lower(email) = lower(#{email}))")
+    boolean existsByEmail(String email);
+
+    @Insert("INSERT INTO account (name, email, cash_balance) VALUES (#{name}, #{email}, #{cashBalance})")
+    @Options(useGeneratedKeys = true, keyProperty = "accountId", keyColumn = "account_id")
+    void insert(Account account);
 
     /**
      * Update account cash balance

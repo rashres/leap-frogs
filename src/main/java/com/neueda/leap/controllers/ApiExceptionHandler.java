@@ -6,6 +6,7 @@ import com.neueda.leap.services.InvalidCopyTradeException;
 import com.neueda.leap.services.InvalidOrderException;
 import com.neueda.leap.services.InvalidWatchlistException;
 import com.neueda.leap.services.OrderNotCancellableException;
+import com.neueda.leap.services.RegistrationConflictException;
 import com.neueda.leap.services.ResourceNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -63,6 +64,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(InvalidCopyTradeException.class)
     public ResponseEntity<ErrorResponse> handleInvalidCopyTrade(InvalidCopyTradeException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(RegistrationConflictException.class)
+    public ResponseEntity<ErrorResponse> handleRegistrationConflict(RegistrationConflictException ex, HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
     }
 
     @ExceptionHandler(OrderNotCancellableException.class)

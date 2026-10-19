@@ -2,9 +2,11 @@ package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.LoginRequest;
 import com.neueda.leap.controllers.dto.MeResponse;
+import com.neueda.leap.controllers.dto.RegisterRequest;
 import com.neueda.leap.security.AppRole;
 import com.neueda.leap.security.LeapUserPrincipal;
 import com.neueda.leap.services.AccessDeniedException;
+import com.neueda.leap.services.RegistrationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,13 +30,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/auth")
-@Tag(name = "Auth", description = "Sign in and session")
+@Tag(name = "Auth", description = "Sign in, sign up and session")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final RegistrationService registrationService;
 
-    public AuthController(AuthenticationManager authenticationManager) {
+    public AuthController(AuthenticationManager authenticationManager, RegistrationService registrationService) {
         this.authenticationManager = authenticationManager;
+        this.registrationService = registrationService;
     }
 
     @PostMapping("/login")
@@ -49,6 +53,18 @@ public class AuthController {
             throw new AccessDeniedException("Use the Super Admin sign-in page");
         }
         return MeResponse.from(principal);
+    }
+
+    @PostMapping("/register")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Sign up as a trader",
+            description = "Creates a trading account and a TRADER login for it, then signs in. "
+                        + "409 if the username or email is already taken.")
+    public MeResponse register(@Valid @RequestBody RegisterRequest body,
+                               HttpServletRequest request,
+                               HttpServletResponse response) {
+        String username = registrationService.register(body.name(), body.email(), body.username(), body.password());
+        return MeResponse.from(authenticate(username, body.password(), request, response));
     }
 
     @PostMapping("/admin/login")
