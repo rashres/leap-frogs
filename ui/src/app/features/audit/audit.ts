@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, of } from 'rxjs';
 import { AuditService } from '../../core/api/audit.service';
 import { ApiError, toApiError } from '../../core/api/api-error';
-import type { AuditOrderPage, Order } from '../../core/api/models';
-import { ActiveAccountService } from '../../core/state/active-account.service';
+import type { Account, AuditOrderPage, Order } from '../../core/api/models';
+import { OpsService } from '../../core/api/ops.service';
 import { Icon } from '../../shared/icon';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { PageHeader } from '../../shared/page-header';
@@ -16,10 +18,24 @@ import { formatPrice, formatQty, formatStamp, formatUsd } from '../../shared/for
   styleUrl: './audit.scss',
 })
 export class Audit {
-  protected readonly account = inject(ActiveAccountService);
   private readonly auditApi = inject(AuditService);
+  private readonly opsApi = inject(OpsService);
 
-  readonly accountId = signal('');
+  /** Every trading account, for the account search suggestions. */
+  readonly accounts = toSignal(this.opsApi.search().pipe(catchError(() => of([] as Account[]))), { initialValue: [] as Account[] });
+  /** What is typed in the account search box. */
+  readonly accountQuery = signal('');
+  /** The account the search resolves to: a "#12" / "12" id, or an exact name or email. Empty means all accounts. */
+  readonly accountId = computed(() => {
+    const query = this.accountQuery().trim();
+    if (!query) return '';
+    const id = /^#?(\d+)$/.exec(query)?.[1] ?? /#(\d+)$/.exec(query)?.[1];
+    if (id) return id;
+    const lower = query.toLowerCase();
+    const matches = this.accounts().filter((a) => a.name.toLowerCase() === lower || a.email?.toLowerCase() === lower);
+    return matches.length === 1 ? String(matches[0].accountId) : null;
+  });
+  readonly accountUnmatched = computed(() => this.accountId() === null);
   readonly startDate = signal('');
   readonly endDate = signal('');
   readonly page = signal<AuditOrderPage | null>(null);
@@ -38,6 +54,7 @@ export class Audit {
   }
 
   load(page = 0): void {
+    if (this.accountUnmatched()) return;
     this.loading.set(true);
     this.error.set(null);
     this.auditApi
@@ -61,7 +78,7 @@ export class Audit {
   }
 
   setAccount(event: Event): void {
-    this.accountId.set((event.target as HTMLSelectElement).value);
+    this.accountQuery.set((event.target as HTMLInputElement).value);
   }
 
   setStartDate(event: Event): void {
@@ -73,7 +90,7 @@ export class Audit {
   }
 
   clearFilters(): void {
-    this.accountId.set('');
+    this.accountQuery.set('');
     this.startDate.set('');
     this.endDate.set('');
     this.load();

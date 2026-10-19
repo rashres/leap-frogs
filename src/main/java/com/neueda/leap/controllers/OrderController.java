@@ -78,7 +78,8 @@ public class OrderController {
      */
     @PostMapping("/{orderId}/cancel")
     @Operation(summary = "Cancel a pending order",
-            description = "Cancels a PENDING order and releases the cash or shares it was holding back.")
+            description = "Cancels a PENDING order and releases the cash or shares it was holding back. "
+                        + "For a lead trader, followers' copies of the order that are still pending are cancelled too.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Order cancelled",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = OrderResponse.class))),
@@ -89,7 +90,10 @@ public class OrderController {
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
             @PathVariable @Parameter(description = "The order to cancel", example = "42") int orderId) {
         access.assertCanTrade(accountId);
-        return OrderResponse.from(orderService.cancelOrder(accountId, orderId));
+        OrderResponse response = OrderResponse.from(orderService.cancelOrder(accountId, orderId));
+        // A lead trader's cancel also cancels the copies of it still pending for followers.
+        copyTradingService.cancelCopies(orderId);
+        return response;
     }
 
     /**

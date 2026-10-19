@@ -16,7 +16,18 @@ CREATE TABLE copy_subscription (
     subscription_id     SERIAL PRIMARY KEY,
     follower_account_id INT NOT NULL REFERENCES account(account_id),
     copy_trader_id      INT NOT NULL REFERENCES copy_trader(copy_trader_id),
+    -- Budget for this copy: copied buys stop once the copied positions held
+    -- (at cost) plus pending copied buys reach it.
     allocation          NUMERIC(18,2) NOT NULL CHECK (allocation > 0),
+    -- Most a single copied buy may cost; NULL for no cap.
+    max_per_trade       NUMERIC(18,2) CHECK (max_per_trade > 0),
+    -- Pause copying once this copy has lost this percent of its allocation; NULL for none.
+    stop_loss_percent   NUMERIC(5,2) CHECK (stop_loss_percent > 0 AND stop_loss_percent <= 100),
+    -- Also sell this copy's shares when the stop-loss pauses it.
+    sell_on_stop_loss   BOOLEAN NOT NULL DEFAULT false,
+    -- While paused, the trader's buys are not copied; their sells still are.
+    paused_at           TIMESTAMPTZ,
+    pause_reason        VARCHAR(10) CHECK (pause_reason IN ('USER', 'STOP_LOSS')),
     started_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
     stopped_at          TIMESTAMPTZ
 );
@@ -27,9 +38,13 @@ CREATE UNIQUE INDEX uq_copy_subscription_active
 CREATE INDEX idx_copy_subscription_trader
     ON copy_subscription(copy_trader_id);
 
+-- Every follower order placed by a copy. A copy's shares are worked out from
+-- its own filled orders here, so a copied sell never touches shares the
+-- follower bought themselves or through another copy.
 CREATE TABLE copy_trade (
     follower_transaction_id INT PRIMARY KEY REFERENCES transactions(transaction_id),
-    leader_transaction_id   INT NOT NULL REFERENCES transactions(transaction_id),
+    -- NULL for a sell placed by the copy's stop-loss rather than copied from the trader.
+    leader_transaction_id   INT REFERENCES transactions(transaction_id),
     subscription_id         INT NOT NULL REFERENCES copy_subscription(subscription_id)
 );
 

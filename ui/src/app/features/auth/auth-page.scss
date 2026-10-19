@@ -100,6 +100,18 @@
 .form {
   display: grid;
   gap: 28px;
+
+  /* Sign-up has more fields; tighter spacing keeps the button in view. */
+  &.compact {
+    gap: 20px;
+  }
+}
+
+/* "New to LEAP? Create an account" under the button. */
+.switch {
+  margin: -6px 0 0;
+  text-align: center;
+  font-size: 13.5px;
 }
 
 .uline {

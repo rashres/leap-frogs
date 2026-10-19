@@ -13,218 +13,228 @@
 
   <div class="body">
     @if (step() === 'edit') {
-      <div class="choice">
-        <span class="label" id="type-label">Order type</span>
-        <div class="segmented" role="group" aria-labelledby="type-label">
-          <button type="button" [class.on]="!isLimit()" [attr.aria-pressed]="!isLimit()" (click)="setOrderType('MARKET')">Market</button>
-          <button type="button" [class.on]="isLimit()" [attr.aria-pressed]="isLimit()" (click)="setOrderType('LIMIT')">Limit</button>
+      <div class="step">
+        <div class="choice">
+          <span class="label" id="type-label">Order type</span>
+          <div class="segmented" role="group" aria-labelledby="type-label">
+            <button type="button" [class.on]="!isLimit()" [attr.aria-pressed]="!isLimit()" (click)="setOrderType('MARKET')">Market</button>
+            <button type="button" [class.on]="isLimit()" [attr.aria-pressed]="isLimit()" (click)="setOrderType('LIMIT')">Limit</button>
+          </div>
         </div>
-      </div>
 
-      <div class="row">
-        <span class="label">Indicative price</span>
-        <span class="value">
-          @if (price() != null) {
-            <leap-live-price [value]="price()" />
-            <span class="faint ccy">USD</span>
+        <div class="row">
+          <span class="label">Indicative price</span>
+          <span class="value">
+            @if (price() != null) {
+              <leap-live-price [value]="price()" />
+              <span class="faint ccy">USD</span>
+            } @else {
+              <span class="faint">—</span>
+            }
+          </span>
+        </div>
+        <p class="note faint">
+          @if (isLimit()) {
+            A limit order only fills at your price or better, at the market price when it fills.
           } @else {
-            <span class="faint">—</span>
+            Latest price from the price feed. The API fills your order at the price it holds when the order arrives,
+            which may differ.
           }
-        </span>
-      </div>
-      <p class="note faint">
-        @if (isLimit()) {
-          A limit order only fills at your price or better, at the market price when it fills.
-        } @else {
-          Latest price from the price feed. The API fills your order at the price it holds when the order arrives,
-          which may differ.
-        }
-      </p>
+        </p>
 
-      @if (isLimit()) {
+        @if (isLimit()) {
+          <label class="field">
+            <span class="label">Limit price (USD) — {{ side() === 'BUY' ? 'most you will pay' : 'least you will accept' }}</span>
+            <div class="input-wrap" [class.bad]="limitInvalid()">
+              <input
+                type="text"
+                inputmode="decimal"
+                placeholder="0.00"
+                [value]="limitText()"
+                (input)="onLimit($event)"
+                autocomplete="off"
+                [attr.aria-invalid]="limitInvalid()"
+              />
+            </div>
+          </label>
+
+          <div class="choice">
+            <span class="label" id="tif-label">Good for</span>
+            <div class="segmented" role="group" aria-labelledby="tif-label">
+              <button type="button" [class.on]="timeInForce() === 'DAY'" [attr.aria-pressed]="timeInForce() === 'DAY'" (click)="setTimeInForce('DAY')">
+                Day
+              </button>
+              <button type="button" [class.on]="timeInForce() === 'GTC'" [attr.aria-pressed]="timeInForce() === 'GTC'" (click)="setTimeInForce('GTC')">
+                Until cancelled
+              </button>
+            </div>
+          </div>
+        }
+
         <label class="field">
-          <span class="label">Limit price (USD) — {{ side() === 'BUY' ? 'most you will pay' : 'least you will accept' }}</span>
-          <div class="input-wrap" [class.bad]="limitInvalid()">
+          <span class="label">Quantity</span>
+          <div class="input-wrap" [class.bad]="quantityInvalid()">
             <input
               type="text"
               inputmode="decimal"
-              placeholder="0.00"
-              [value]="limitText()"
-              (input)="onLimit($event)"
+              placeholder="0"
+              [value]="quantityText()"
+              (input)="onQuantity($event)"
               autocomplete="off"
-              [attr.aria-invalid]="limitInvalid()"
+              [attr.aria-label]="'Quantity of ' + instrument().symbol + ' to ' + side().toLowerCase()"
+              [attr.aria-invalid]="quantityInvalid()"
             />
+            <button type="button" class="max" (click)="useMax()" aria-label="Use maximum quantity">MAX</button>
           </div>
         </label>
 
-        <div class="choice">
-          <span class="label" id="tif-label">Good for</span>
-          <div class="segmented" role="group" aria-labelledby="tif-label">
-            <button type="button" [class.on]="timeInForce() === 'DAY'" [attr.aria-pressed]="timeInForce() === 'DAY'" (click)="setTimeInForce('DAY')">
-              Day
-            </button>
-            <button type="button" [class.on]="timeInForce() === 'GTC'" [attr.aria-pressed]="timeInForce() === 'GTC'" (click)="setTimeInForce('GTC')">
-              Until cancelled
-            </button>
-          </div>
-        </div>
-      }
-
-      <label class="field">
-        <span class="label">Quantity</span>
-        <div class="input-wrap" [class.bad]="quantityInvalid()">
-          <input
-            type="text"
-            inputmode="decimal"
-            placeholder="0"
-            [value]="quantityText()"
-            (input)="onQuantity($event)"
-            autocomplete="off"
-            [attr.aria-label]="'Quantity of ' + instrument().symbol + ' to ' + side().toLowerCase()"
-            [attr.aria-invalid]="quantityInvalid()"
-          />
-          <button type="button" class="max" (click)="useMax()" aria-label="Use maximum quantity">MAX</button>
-        </div>
-      </label>
-
-      <div class="meta faint">
-        @if (side() === 'BUY') {
-          <span>{{ cashText() }} USD available</span>
-          @if (reservedCash() > 0) {
-            <span class="dot">·</span>
-            <span>{{ reservedCashText() }} held for pending orders</span>
+        <div class="meta faint">
+          @if (side() === 'BUY') {
+            <span>{{ cashText() }} USD available</span>
+            @if (reservedCash() > 0) {
+              <span class="dot">·</span>
+              <span>{{ reservedCashText() }} held for pending orders</span>
+            }
+          } @else {
+            <span>{{ heldText() }} {{ instrument().symbol }} available</span>
           }
-        } @else {
-          <span>{{ heldText() }} {{ instrument().symbol }} available</span>
-        }
-        <span class="dot">·</span>
-        <span>Up to 6dp</span>
-      </div>
-
-      <div class="row total">
-        <span class="label">{{ totalQualifier() }} {{ side() === 'BUY' ? 'cost' : 'proceeds' }}</span>
-        <span class="value num strong">{{ consideration() != null ? considerationText() : '—' }}</span>
-      </div>
-
-      @if (outcome(); as text) {
-        <div class="waits" role="status">
-          <span class="pill pill-accent">Will be pending</span>
-          <p>{{ text }}</p>
+          <span class="dot">·</span>
+          <span>Up to 6dp</span>
         </div>
-      }
 
-      @if (limitInvalid()) {
-        <div class="reject" role="status">
-          <div class="reject-head"><span class="pill pill-warn">Invalid</span></div>
-          <p>Enter a limit price above 0 with at most 6 decimal places, for example 180 or 179.50.</p>
+        <div class="row total">
+          <span class="label">{{ totalQualifier() }} {{ side() === 'BUY' ? 'cost' : 'proceeds' }}</span>
+          <span class="value num strong">{{ consideration() != null ? considerationText() : '—' }}</span>
         </div>
-      }
 
-      @if (rejection(); as reason) {
-        <div class="reject" role="status">
-          <div class="reject-head">
-            <span class="pill pill-down">Would be rejected</span>
+        @if (outcome(); as text) {
+          <div class="waits" role="status">
+            <span class="pill pill-accent">Will be pending</span>
+            <p>{{ text }}</p>
           </div>
-          <p>{{ reason }}</p>
-          <p class="reject-note faint">Submitting anyway sends it to the API, which records the rejection in your order history.</p>
+        }
+
+        @if (limitInvalid()) {
+          <div class="reject" role="status">
+            <div class="reject-head"><span class="pill pill-warn">Invalid</span></div>
+            <p>Enter a limit price above 0 with at most 6 decimal places, for example 180 or 179.50.</p>
+          </div>
+        }
+
+        @if (lockout(); as block) {
+          <div class="reject" role="status">
+            <div class="reject-head"><span class="pill pill-down">{{ block.label }}</span></div>
+            <p>{{ block.text }}</p>
+          </div>
+        } @else if (rejection(); as reason) {
+          <div class="reject" role="status">
+            <div class="reject-head">
+              <span class="pill pill-down">Can't place order</span>
+            </div>
+            <p>{{ reason }}</p>
+          </div>
+        }
+
+        @if (quantityInvalid()) {
+          <div class="reject" role="status">
+            <div class="reject-head"><span class="pill pill-warn">Invalid</span></div>
+            <p>Enter a positive number with at most 6 decimal places, for example 10 or 0.25.</p>
+          </div>
+        }
+
+        @if (account.activeId() == null) {
+          <p class="note faint">Pick an account from the avatar in the header to trade.</p>
+        }
+
+        <div class="submit-bar">
+          <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="!canSubmit()" (click)="review()">
+            Review {{ side() === 'BUY' ? 'buy' : 'sell' }} order
+          </button>
         </div>
-      }
-
-      @if (quantityInvalid()) {
-        <div class="reject" role="status">
-          <div class="reject-head"><span class="pill pill-warn">Invalid</span></div>
-          <p>Enter a positive number with at most 6 decimal places, for example 10 or 0.25.</p>
-        </div>
-      }
-
-      @if (account.activeId() == null) {
-        <p class="note faint">Pick an account from the avatar in the header to trade.</p>
-      }
-
-      <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="!canSubmit()" (click)="review()">
-        Review {{ side() === 'BUY' ? 'buy' : 'sell' }} order
-      </button>
+      </div>
     } @else {
-      @let r = reviewed()!;
+      <div class="step">
+        @let r = reviewed()!;
 
-      <div class="review-head">
-        <span class="pill pill-accent">Confirm</span>
-        <span class="faint">Check this before it is sent</span>
-      </div>
+        <div class="review-head">
+          <span class="pill pill-accent">Confirm</span>
+          <span class="faint">Check this before it is sent</span>
+        </div>
 
-      <dl class="summary">
-        <div>
-          <dt>Account</dt>
-          <dd>{{ account.active()?.name }}</dd>
-        </div>
-        <div>
-          <dt>Action</dt>
-          <dd [class.up]="side() === 'BUY'" [class.down]="side() === 'SELL'">
-            {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ instrument().symbol }}
-          </dd>
-        </div>
-        <div>
-          <dt>Quantity</dt>
-          <dd class="num">{{ r.quantity }}</dd>
-        </div>
-        <div>
-          <dt>Type</dt>
-          <dd class="num">{{ r.type }}</dd>
-        </div>
-        @if (isLimit()) {
+        <dl class="summary">
           <div>
-            <dt>Good for</dt>
-            <dd>{{ r.timeInForce }}</dd>
+            <dt>Account</dt>
+            <dd>{{ account.active()?.name }}</dd>
+          </div>
+          <div>
+            <dt>Action</dt>
+            <dd [class.up]="side() === 'BUY'" [class.down]="side() === 'SELL'">
+              {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ instrument().symbol }}
+            </dd>
+          </div>
+          <div>
+            <dt>Quantity</dt>
+            <dd class="num">{{ r.quantity }}</dd>
+          </div>
+          <div>
+            <dt>Type</dt>
+            <dd class="num">{{ r.type }}</dd>
+          </div>
+          @if (isLimit()) {
+            <div>
+              <dt>Good for</dt>
+              <dd>{{ r.timeInForce }}</dd>
+            </div>
+          }
+          <div>
+            <dt>Market price reviewed</dt>
+            <dd class="num">{{ r.priceText }}</dd>
+          </div>
+          <div>
+            <dt>Settles in</dt>
+            <dd>USD</dd>
+          </div>
+          <div class="grand">
+            <dt>{{ totalQualifier() }} {{ side() === 'BUY' ? 'total cost' : 'total proceeds' }}</dt>
+            <dd class="num">{{ r.consideration }}</dd>
+          </div>
+        </dl>
+
+        @if (drift(); as d) {
+          <p class="drift" role="status">
+            Price has moved
+            <strong class="num" [class.up]="!d.negative" [class.down]="d.negative">{{ d.text }}</strong>
+            since you opened this review. The fill uses the API's latest price, not the one above.
+          </p>
+        }
+
+        @if (blockReason(); as reason) {
+          <div class="reject">
+            <div class="reject-head">
+              <span class="pill pill-down">Can't place order</span>
+            </div>
+            <p>{{ reason }}</p>
+            <p class="reject-note faint">Go back and change the order.</p>
+          </div>
+        } @else {
+          <p class="passed faint">Passes the cash, holdings and price checks the API runs.</p>
+        }
+
+        @if (outcome(); as text) {
+          <div class="waits">
+            <span class="pill pill-accent">Will be pending</span>
+            <p>{{ text }}</p>
           </div>
         }
-        <div>
-          <dt>Market price reviewed</dt>
-          <dd class="num">{{ r.priceText }}</dd>
-        </div>
-        <div>
-          <dt>Settles in</dt>
-          <dd>USD</dd>
-        </div>
-        <div class="grand">
-          <dt>{{ totalQualifier() }} {{ side() === 'BUY' ? 'total cost' : 'total proceeds' }}</dt>
-          <dd class="num">{{ r.consideration }}</dd>
-        </div>
-      </dl>
 
-      @if (drift(); as d) {
-        <p class="drift" role="status">
-          Price has moved
-          <strong class="num" [class.up]="!d.negative" [class.down]="d.negative">{{ d.text }}</strong>
-          since you opened this review. The fill uses the API's latest price, not the one above.
-        </p>
-      }
-
-      @if (rejection(); as reason) {
-        <div class="reject">
-          <div class="reject-head">
-            <span class="pill pill-down">Will be rejected</span>
-          </div>
-          <p>{{ reason }}</p>
-          <p class="reject-note faint">Confirming records the rejection in your order history.</p>
+        <div class="actions submit-bar">
+          <button type="button" class="back btn btn-secondary" (click)="back()">Back</button>
+          <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="submitting() || blockReason() != null" (click)="confirm()">
+            {{ submitting() ? 'Sending…' : 'Confirm ' + (side() === 'BUY' ? 'buy' : 'sell') }}
+          </button>
         </div>
-      } @else {
-        <p class="passed faint">Passes the cash, holdings and price checks the API runs.</p>
-      }
-
-      @if (outcome(); as text) {
-        <div class="waits">
-          <span class="pill pill-accent">Will be pending</span>
-          <p>{{ text }}</p>
-        </div>
-      }
-
-      <div class="actions">
-        <button type="button" class="back btn btn-secondary" (click)="back()">Back</button>
-        <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="submitting()" (click)="confirm()">
-          {{ submitting() ? 'Sending…' : 'Confirm ' + (side() === 'BUY' ? 'buy' : 'sell') }}
-        </button>
+        <p class="escape faint">Press Esc to go back without sending.</p>
       </div>
-      <p class="escape faint">Press Esc to go back without sending.</p>
     }
 
     @if (error(); as e) {

@@ -1,9 +1,9 @@
 package com.neueda.leap.services.domain;
 
-/** Links a follower's order to the lead trader's order it copied. */
+/** Links a follower's order to the lead trader's order it copied (null for a stop-loss sell). */
 public class CopiedOrder {
     private int orderId;
-    private int leaderOrderId;
+    private Integer leaderOrderId;
     private int copyTraderId;
     private String traderName;
     private String traderHandle;
@@ -16,11 +16,11 @@ public class CopiedOrder {
         this.orderId = orderId;
     }
 
-    public int getLeaderOrderId() {
+    public Integer getLeaderOrderId() {
         return leaderOrderId;
     }
 
-    public void setLeaderOrderId(int leaderOrderId) {
+    public void setLeaderOrderId(Integer leaderOrderId) {
         this.leaderOrderId = leaderOrderId;
     }
 

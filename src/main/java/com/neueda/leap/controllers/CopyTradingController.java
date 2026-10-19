@@ -1,6 +1,7 @@
 package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.CopiedOrderResponse;
+import com.neueda.leap.controllers.dto.CopySettingsRequest;
 import com.neueda.leap.controllers.dto.CopySubscriptionRequest;
 import com.neueda.leap.controllers.dto.CopySubscriptionResponse;
 import com.neueda.leap.controllers.dto.CopyTraderResponse;
@@ -109,7 +110,28 @@ public class CopyTradingController {
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
             @Valid @RequestBody CopySubscriptionRequest request) {
         access.assertCanTrade(accountId);
-        return CopySubscriptionResponse.from(copyTradingService.follow(accountId, request.copyTraderId(), request.allocation()));
+        return CopySubscriptionResponse.from(copyTradingService.follow(accountId, request.copyTraderId(), request.settings()));
+    }
+
+    /**
+     * PUT /api/accounts/{accountId}/copy-subscriptions/{subscriptionId}
+     */
+    @PutMapping("/accounts/{accountId}/copy-subscriptions/{subscriptionId}")
+    @Operation(summary = "Change a copy's settings, or pause / resume it",
+            description = "Replaces the copy's allocation, max per trade, stop-loss and pause state. "
+                        + "A paused copy skips the trader's buys but still copies their sells. "
+                        + "A copy paused by its stop-loss cannot resume while still past it.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Settings saved"),
+        @ApiResponse(responseCode = "400", description = "Invalid settings, allocation too large, or resuming past the stop-loss"),
+        @ApiResponse(responseCode = "404", description = "Account not found, or no such active subscription")
+    })
+    public CopySubscriptionResponse updateSettings(
+            @PathVariable @Parameter(description = "The unique identifier of the account", example = "1") int accountId,
+            @PathVariable @Parameter(description = "The subscription to change", example = "3") int subscriptionId,
+            @Valid @RequestBody CopySettingsRequest request) {
+        access.assertCanTrade(accountId);
+        return CopySubscriptionResponse.from(copyTradingService.updateSettings(accountId, subscriptionId, request.settings()));
     }
 
     /**

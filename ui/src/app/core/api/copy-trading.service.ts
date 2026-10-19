@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { CopiedOrder, CopySubscription, CopyTrader, Order } from './models';
+import type { CopiedOrder, CopySettings, CopySubscription, CopyTrader, Order } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class CopyTradingService {
@@ -29,8 +29,16 @@ export class CopyTradingService {
   }
 
   /** Starts copying; 400 when the allocation is too large or the trader is already copied. */
-  follow(accountId: number, copyTraderId: number, allocation: number): Observable<CopySubscription> {
-    return this.http.post<CopySubscription>(`/api/accounts/${accountId}/copy-subscriptions`, { copyTraderId, allocation });
+  follow(accountId: number, copyTraderId: number, settings: CopySettings): Observable<CopySubscription> {
+    return this.http.post<CopySubscription>(`/api/accounts/${accountId}/copy-subscriptions`, { copyTraderId, ...settings });
+  }
+
+  /**
+   * Replaces a copy's settings and pause state. 400 when the allocation is too
+   * large, or when resuming a copy that is still past its stop-loss.
+   */
+  updateSettings(accountId: number, subscriptionId: number, settings: CopySettings & { paused: boolean }): Observable<CopySubscription> {
+    return this.http.put<CopySubscription>(`/api/accounts/${accountId}/copy-subscriptions/${subscriptionId}`, settings);
   }
 
   unfollow(accountId: number, subscriptionId: number): Observable<void> {

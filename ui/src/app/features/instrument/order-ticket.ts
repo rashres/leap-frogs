@@ -35,8 +35,9 @@ interface Placed {
  * Buy / sell ticket with a review step, adapted from the team's Angular app
  * (fe/21-page-mascots, features/instrument/order-ticket). Confirming sends
  * POST /api/accounts/{id}/orders; the API decides the fill price and the outcome.
- * A market order fills now while the market is open; a limit order fills only
- * at its limit or better. Anything that cannot fill yet waits as Pending.
+ * A market order fills now; a limit order fills only at its limit or better and
+ * waits as Pending until then. The submit button is greyed out while the market
+ * is closed, the account is frozen, or there is not enough cash or shares.
  */
 @Component({
   selector: 'leap-order-ticket',
@@ -127,11 +128,26 @@ export class OrderTicket {
     return null;
   });
 
+  /** Reasons no order can go in right now, whatever the quantity. */
+  readonly lockout = computed<{ label: string; text: string } | null>(() => {
+    if (this.account.active()?.status === 'FROZEN') {
+      return { label: 'Account frozen', text: 'This account is frozen, so it cannot place new orders.' };
+    }
+    if (!this.marketOpen()) {
+      return { label: 'Market closed', text: `The market is closed (${this.sessionHours()}). You can trade when it opens.` };
+    }
+    return null;
+  });
+
+  /** Why the order cannot be placed, if it cannot; greys out the submit buttons. */
+  readonly blockReason = computed(() => this.lockout()?.text ?? this.rejection());
+
   readonly canSubmit = computed(
     () =>
       (this.quantity() ?? 0) > 0 &&
       (!this.isLimit() || this.limitPrice() != null) &&
       this.account.activeId() != null &&
+      this.blockReason() == null &&
       !this.submitting(),
   );
 
@@ -145,14 +161,10 @@ export class OrderTicket {
 
   /** What happens on confirm, in a sentence. */
   readonly outcome = computed(() => {
-    if (this.fillsNow()) return null;
+    // A closed market blocks the order outright (see lockout), so there is nothing to wait for.
+    if (this.fillsNow() || !this.marketOpen()) return null;
     const symbol = this.instrument().symbol;
     const expiry = this.timeInForce() === 'DAY' ? 'If it has not filled by the close, it expires.' : 'It stays open until it fills or you cancel it.';
-    if (!this.marketOpen()) {
-      const limit = this.limitPrice();
-      const when = limit != null ? `once the market opens and ${symbol} is ${this.side() === 'BUY' ? 'at or below' : 'at or above'} ${formatPrice(limit)}` : 'when the market opens';
-      return `The market is closed (${this.sessionHours()}). This order will wait as Pending and fill ${when}. ${expiry}`;
-    }
     return `${symbol} is ${this.side() === 'BUY' ? 'above' : 'below'} your limit, so this order will wait as Pending until it reaches ${formatPrice(this.limitPrice())}. ${expiry}`;
   });
 
@@ -287,7 +299,7 @@ export class OrderTicket {
   confirm(): void {
     const quantity = this.quantity();
     const accountId = this.account.activeId();
-    if (!quantity || accountId == null || this.submitting()) return;
+    if (!quantity || accountId == null || this.submitting() || this.blockReason() != null) return;
 
     const confirmedPrice = this.reviewedPrice();
     this.submitting.set(true);

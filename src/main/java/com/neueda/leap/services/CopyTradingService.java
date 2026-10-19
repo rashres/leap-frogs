@@ -76,9 +76,12 @@ public class CopyTradingService {
                 .toList();
     }
 
+    /** The account's active copies, each with its position and profit or loss. */
     public List<CopySubscription> findSubscriptions(int accountId) {
         accountService.findById(accountId);
-        return copyTradingMapper.findActiveByFollower(accountId);
+        List<CopySubscription> subscriptions = copyTradingMapper.findActiveByFollower(accountId);
+        subscriptions.forEach(this::withPerformance);
+        return subscriptions;
     }
 
     public List<CopiedOrder> findCopiedOrders(int accountId) {
@@ -91,26 +94,78 @@ public class CopyTradingService {
      * follower does not buy into the trader's existing positions.
      */
     @Transactional
-    public CopySubscription follow(int accountId, int copyTraderId, BigDecimal allocation) {
+    public CopySubscription follow(int accountId, int copyTraderId, CopySettings settings) {
         Account account = accountService.findById(accountId);
         CopyTrader trader = traderById(copyTraderId);
         if (trader.getAccountId() == accountId) {
             throw new InvalidCopyTradeException("An account cannot copy its own trades");
         }
-        if (allocation == null || allocation.signum() <= 0) {
-            throw new InvalidCopyTradeException("allocation must be greater than 0");
-        }
-        if (allocation.compareTo(account.getCashBalance()) > 0) {
-            throw new InvalidCopyTradeException("Allocation " + allocation + " is more than the cash balance " + account.getCashBalance());
+        validate(settings);
+        if (settings.allocation().compareTo(account.getCashBalance()) > 0) {
+            throw new InvalidCopyTradeException("Allocation " + settings.allocation() + " is more than the cash balance "
+                    + account.getCashBalance());
         }
         boolean alreadyCopying = copyTradingMapper.findActiveByFollower(accountId).stream()
                 .anyMatch(s -> s.getCopyTraderId() == copyTraderId);
         if (alreadyCopying) {
             throw new InvalidCopyTradeException("Already copying " + trader.getName());
         }
-        CopySubscription subscription = new CopySubscription(accountId, copyTraderId, allocation, clock.instant());
+        CopySubscription subscription = new CopySubscription(accountId, copyTraderId, settings, clock.instant());
         copyTradingMapper.insertSubscription(subscription);
-        return copyTradingMapper.findSubscriptionById(subscription.getSubscriptionId());
+        return withPerformance(copyTradingMapper.findSubscriptionById(subscription.getSubscriptionId()));
+    }
+
+    /**
+     * Changes an active copy's settings, and pauses or resumes it. A copy the
+     * stop-loss paused cannot resume while its loss is still past the stop-loss.
+     */
+    @Transactional
+    public CopySubscription updateSettings(int accountId, int subscriptionId, CopySettings settings) {
+        Account account = accountService.findById(accountId);
+        CopySubscription subscription = copyTradingMapper.findSubscriptionById(subscriptionId);
+        if (subscription == null || subscription.getFollowerAccountId() != accountId || subscription.getStoppedAt() != null) {
+            throw new ResourceNotFoundException("Copy subscription", subscriptionId);
+        }
+        validate(settings);
+        CopyBook book = bookFor(subscriptionId);
+        // Money already in this copy's positions came out of the cash balance, so it counts towards what may be allocated.
+        BigDecimal mostAllowed = account.getCashBalance().add(book.committed());
+        if (settings.allocation().compareTo(mostAllowed) > 0) {
+            throw new InvalidCopyTradeException("Allocation " + settings.allocation() + " is more than the cash balance plus what this copy has invested ("
+                    + mostAllowed.setScale(2, RoundingMode.HALF_UP) + ")");
+        }
+        if (!settings.paused() && hitsStopLoss(book.pnl(), settings.allocation(), settings.stopLossPercent())) {
+            throw new InvalidCopyTradeException("This copy has already lost more than its stop-loss; lower or clear the stop-loss to resume");
+        }
+
+        subscription.setAllocation(settings.allocation());
+        subscription.setMaxPerTrade(settings.maxPerTrade());
+        subscription.setStopLossPercent(settings.stopLossPercent());
+        subscription.setSellOnStopLoss(settings.sellOnStopLoss());
+        if (!settings.paused()) {
+            subscription.setPausedAt(null);
+            subscription.setPauseReason(null);
+        } else if (!subscription.isPaused()) {
+            subscription.setPausedAt(clock.instant());
+            subscription.setPauseReason("USER");
+        }
+        if (copyTradingMapper.updateSettings(subscription) == 0) {
+            throw new ResourceNotFoundException("Copy subscription", subscriptionId);
+        }
+        return withPerformance(copyTradingMapper.findSubscriptionById(subscriptionId));
+    }
+
+    private static void validate(CopySettings settings) {
+        if (settings.allocation() == null || settings.allocation().signum() <= 0) {
+            throw new InvalidCopyTradeException("allocation must be greater than 0");
+        }
+        if (settings.maxPerTrade() != null && settings.maxPerTrade().signum() <= 0) {
+            throw new InvalidCopyTradeException("maxPerTrade must be greater than 0");
+        }
+        BigDecimal stopLoss = settings.stopLossPercent();
+        if (stopLoss != null && (stopLoss.signum() <= 0 || stopLoss.compareTo(BigDecimal.valueOf(100)) > 0)) {
+            throw new InvalidCopyTradeException("stopLossPercent must be greater than 0 and at most 100");
+        }
     }
 
     /** Stops copying. Orders already copied stay as they are. */
@@ -156,13 +211,37 @@ public class CopyTradingService {
     }
 
     private void copyTo(CopySubscription subscription, CopyTrader trader, Order leaderOrder) {
-        BigDecimal quantity = copiedQuantity(subscription, trader, leaderOrder);
+        int instrumentId = leaderOrder.getInstrument().getInstrumentId();
+        CopyBook book = bookFor(subscription.getSubscriptionId());
+        BigDecimal quantity;
+        if (leaderOrder.isBuy()) {
+            if (subscription.isPaused()) {
+                logger.info("Copy {} is paused, order {} not copied", subscription.getSubscriptionId(), leaderOrder.getOrderId());
+                return;
+            }
+            // What the trader's order is priced at: the limit if it has one, else its fill or placement price.
+            BigDecimal price = leaderOrder.isLimit() ? leaderOrder.getLimitPrice() : leaderOrder.getPrice();
+            quantity = copiedBuyQuantity(leaderOrder.getQuantity(), subscription.getAllocation(), trader.getEquity(),
+                    price, subscription.getMaxPerTrade(), subscription.getAllocation().subtract(book.committed()));
+        } else {
+            // Only shares this copy bought, and never more than the follower can sell right now.
+            BigDecimal sellable = book.sellable(instrumentId)
+                    .min(availableShares(subscription.getFollowerAccountId(), instrumentId));
+            BigDecimal leaderHeld = heldQuantity(trader.getAccountId(), instrumentId);
+            // A filled sell has already come off the trader's holding.
+            BigDecimal leaderBefore = "COMPLETE".equals(leaderOrder.getStatus())
+                    ? leaderHeld.add(leaderOrder.getQuantity())
+                    : leaderHeld;
+            quantity = copiedSellQuantity(sellable, leaderOrder.getQuantity(), leaderBefore);
+        }
         if (quantity.signum() <= 0) {
+            logger.info("Order {} not copied to copy {}: nothing to {}", leaderOrder.getOrderId(),
+                    subscription.getSubscriptionId(), leaderOrder.isBuy() ? "buy within its limits" : "sell");
             return;
         }
-        OrderResult result = orderService.placeOrder(subscription.getFollowerAccountId(),
-                leaderOrder.getInstrument().getInstrumentId(), leaderOrder.getSide(), quantity,
-                leaderOrder.getOrderType(), leaderOrder.getLimitPrice(), leaderOrder.getTimeInForce());
+        OrderResult result = orderService.placeOrder(subscription.getFollowerAccountId(), instrumentId,
+                leaderOrder.getSide(), quantity, leaderOrder.getOrderType(), leaderOrder.getLimitPrice(),
+                leaderOrder.getTimeInForce());
         copyTradingMapper.insertCopyTrade(result.order().getOrderId(), leaderOrder.getOrderId(),
                 subscription.getSubscriptionId());
         logger.info("Copied order {} to account {} as order {} ({})", leaderOrder.getOrderId(),
@@ -170,38 +249,151 @@ public class CopyTradingService {
     }
 
     /**
-     * A buy is scaled by allocation / the trader's equity. A sell closes the
-     * same share of the follower's position as the trader closed of theirs.
+     * Shares a copy buys: the trader's order scaled by allocation / the trader's
+     * equity, then cut so it costs no more than maxPerTrade (when set) and what
+     * is left of the allocation.
+     *
+     * @param price      what one share is expected to cost, or null if unknown (no cost caps applied)
+     * @param budgetLeft allocation minus what the copy already holds at cost and has pending
      */
-    private BigDecimal copiedQuantity(CopySubscription subscription, CopyTrader trader, Order leaderOrder) {
-        int instrumentId = leaderOrder.getInstrument().getInstrumentId();
-        if (leaderOrder.isBuy()) {
-            if (trader.getEquity() == null || trader.getEquity().signum() <= 0) {
-                return BigDecimal.ZERO;
-            }
-            return leaderOrder.getQuantity().multiply(subscription.getAllocation())
-                    .divide(trader.getEquity(), QUANTITY_SCALE, RoundingMode.DOWN);
-        }
-
-        BigDecimal followerHeld = heldQuantity(subscription.getFollowerAccountId(), instrumentId);
-        BigDecimal leaderHeld = heldQuantity(trader.getAccountId(), instrumentId);
-        // A filled sell has already come off the trader's holding.
-        BigDecimal leaderBefore = "COMPLETE".equals(leaderOrder.getStatus())
-                ? leaderHeld.add(leaderOrder.getQuantity())
-                : leaderHeld;
-        if (followerHeld.signum() <= 0 || leaderBefore.signum() <= 0) {
+    static BigDecimal copiedBuyQuantity(BigDecimal leaderQuantity, BigDecimal allocation, BigDecimal leaderEquity,
+                                        BigDecimal price, BigDecimal maxPerTrade, BigDecimal budgetLeft) {
+        if (leaderEquity == null || leaderEquity.signum() <= 0) {
             return BigDecimal.ZERO;
         }
-        if (leaderOrder.getQuantity().compareTo(leaderBefore) >= 0) {
-            return followerHeld; // the trader closed the whole position
+        BigDecimal quantity = leaderQuantity.multiply(allocation).divide(leaderEquity, 8, RoundingMode.DOWN);
+        if (price != null && price.signum() > 0) {
+            BigDecimal spend = budgetLeft.max(BigDecimal.ZERO);
+            if (maxPerTrade != null) {
+                spend = spend.min(maxPerTrade);
+            }
+            quantity = quantity.min(spend.divide(price, 8, RoundingMode.DOWN));
         }
-        return followerHeld.multiply(leaderOrder.getQuantity())
-                .divide(leaderBefore, QUANTITY_SCALE, RoundingMode.DOWN);
+        return quantity.setScale(QUANTITY_SCALE, RoundingMode.DOWN);
+    }
+
+    /**
+     * Shares a copy sells: the same share of its copied position as the trader
+     * sold of theirs, or all of it when the trader closed the position.
+     *
+     * @param sellable     copied shares the copy can sell
+     * @param leaderBefore the trader's holding before this sell
+     */
+    static BigDecimal copiedSellQuantity(BigDecimal sellable, BigDecimal leaderSold, BigDecimal leaderBefore) {
+        if (sellable.signum() <= 0 || leaderBefore.signum() <= 0) {
+            return BigDecimal.ZERO;
+        }
+        if (leaderSold.compareTo(leaderBefore) >= 0) {
+            return sellable;
+        }
+        return sellable.multiply(leaderSold).divide(leaderBefore, QUANTITY_SCALE, RoundingMode.DOWN);
+    }
+
+    /** Whether a copy's profit or loss has reached its stop-loss; never without a stop-loss. */
+    static boolean hitsStopLoss(BigDecimal pnl, BigDecimal allocation, BigDecimal stopLossPercent) {
+        if (stopLossPercent == null || pnl.signum() >= 0) {
+            return false;
+        }
+        BigDecimal limit = allocation.multiply(stopLossPercent).divide(BigDecimal.valueOf(100), 8, RoundingMode.HALF_UP);
+        return pnl.negate().compareTo(limit) >= 0;
+    }
+
+    /**
+     * Pauses each copy whose loss has reached its stop-loss, then sells the
+     * shares of each paused copy whose follower asked for that. Run by
+     * CopyStopLossProcessor every minute, so a stop-loss sell that expired or
+     * failed is placed again; one still pending holds its shares back, so
+     * nothing is sold twice. Each copy, and each sell, is its own transaction.
+     */
+    public void checkStopLosses() {
+        for (CopySubscription subscription : copyTradingMapper.findStopLossWatched()) {
+            try {
+                CopyBook book = bookFor(subscription.getSubscriptionId());
+                if (hitsStopLoss(book.pnl(), subscription.getAllocation(), subscription.getStopLossPercent())
+                        && copyTradingMapper.pauseForStopLoss(subscription.getSubscriptionId(), clock.instant()) == 1) {
+                    logger.info("Copy {} of account {} hit its {}% stop-loss (P/L {}), paused", subscription.getSubscriptionId(),
+                            subscription.getFollowerAccountId(), subscription.getStopLossPercent(),
+                            book.pnl().setScale(2, RoundingMode.HALF_UP));
+                }
+            } catch (RuntimeException e) {
+                logger.warn("Could not check the stop-loss of copy {}", subscription.getSubscriptionId(), e);
+            }
+        }
+        for (CopySubscription subscription : copyTradingMapper.findStopLossSelling()) {
+            try {
+                sellCopiedPositions(subscription, bookFor(subscription.getSubscriptionId()));
+            } catch (RuntimeException e) {
+                logger.warn("Could not sell for the stop-loss of copy {}", subscription.getSubscriptionId(), e);
+            }
+        }
+    }
+
+    /**
+     * Cancels followers' still-pending copies of a lead trader's order, after the
+     * trader cancelled it. Does nothing for an order nobody copied. A copy that
+     * fills or closes meanwhile is left as it is.
+     */
+    public void cancelCopies(int leaderOrderId) {
+        List<Integer> copies;
+        try {
+            copies = copyTradingMapper.findPendingCopiesOf(leaderOrderId);
+        } catch (RuntimeException e) {
+            logger.warn("Copy trading unavailable, copies of order {} not cancelled: {}", leaderOrderId, e.getMessage());
+            return;
+        }
+        for (int orderId : copies) {
+            if (orderMapper.closePending(orderId, "CANCELLED") == 1) {
+                logger.info("Cancelled order {}, a copy of cancelled order {}", orderId, leaderOrderId);
+            }
+        }
+    }
+
+    private void sellCopiedPositions(CopySubscription subscription, CopyBook book) {
+        int accountId = subscription.getFollowerAccountId();
+        book.sellablePositions().forEach((instrumentId, sellable) -> {
+            BigDecimal quantity = sellable.min(availableShares(accountId, instrumentId));
+            if (quantity.signum() <= 0) {
+                return;
+            }
+            try {
+                transactionTemplate.executeWithoutResult(status -> {
+                    OrderResult result = orderService.placeOrder(accountId, instrumentId, "SELL", quantity,
+                            "MARKET", null, "DAY");
+                    copyTradingMapper.insertCopyTrade(result.order().getOrderId(), null, subscription.getSubscriptionId());
+                    logger.info("Stop-loss of copy {} sold {} of instrument {} as order {} ({})",
+                            subscription.getSubscriptionId(), quantity, instrumentId, result.order().getOrderId(),
+                            result.order().getStatus());
+                });
+            } catch (RuntimeException e) {
+                logger.warn("Stop-loss of copy {} could not sell instrument {}", subscription.getSubscriptionId(),
+                        instrumentId, e);
+            }
+        });
+    }
+
+    private CopyBook bookFor(int subscriptionId) {
+        return CopyBook.of(copyTradingMapper.findLedger(subscriptionId));
+    }
+
+    private CopySubscription withPerformance(CopySubscription subscription) {
+        CopyBook book = bookFor(subscription.getSubscriptionId());
+        subscription.setPerformance(
+                book.invested().setScale(2, RoundingMode.HALF_UP),
+                book.marketValue().setScale(2, RoundingMode.HALF_UP),
+                book.pnl().setScale(2, RoundingMode.HALF_UP),
+                subscription.getAllocation().subtract(book.committed()).max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP));
+        return subscription;
     }
 
     private BigDecimal heldQuantity(int accountId, int instrumentId) {
         Holding holding = holdingsMapper.findByAccountIdAndInstrumentId(accountId, instrumentId);
         return holding == null ? BigDecimal.ZERO : holding.getQuantity();
+    }
+
+    /** Shares held that no pending sell is already holding back: the most a new sell can take. */
+    private BigDecimal availableShares(int accountId, int instrumentId) {
+        return heldQuantity(accountId, instrumentId).subtract(orderMapper.reservedShares(accountId, instrumentId))
+                .max(BigDecimal.ZERO);
     }
 
     private CopyTrader traderById(int copyTraderId) {

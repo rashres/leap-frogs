@@ -33,9 +33,37 @@
       <h1 id="auth-title">{{ title() }}</h1>
       @if (admin()) {
         <p class="form-note faint">Dedicated Super Admin entry. Other roles use the main sign-in page.</p>
+      } @else if (signup()) {
+        <p class="form-note faint">Opens a trading account in your name. You can sign in with it straight away.</p>
       }
 
-      <form class="form" (submit)="submit($event)" novalidate>
+      <form class="form" [class.compact]="signup()" (submit)="submit($event)" novalidate>
+        @if (signup()) {
+          <label class="uline">
+            <span>Full name</span>
+            <input
+              type="text"
+              name="name"
+              autocomplete="name"
+              [value]="name()"
+              (input)="name.set($any($event.target).value)"
+              placeholder="Sam Rivera"
+            />
+          </label>
+
+          <label class="uline">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              autocomplete="email"
+              [value]="email()"
+              (input)="email.set($any($event.target).value)"
+              placeholder="sam@example.com"
+            />
+          </label>
+        }
+
         <label class="uline">
           <span>Username</span>
           <input
@@ -44,7 +72,7 @@
             autocomplete="username"
             [value]="username()"
             (input)="username.set($any($event.target).value)"
-            placeholder="joanna"
+            [placeholder]="signup() ? 'sam.rivera' : 'joanna'"
           />
         </label>
 
@@ -54,7 +82,7 @@
             <input
               [type]="showPassword() ? 'text' : 'password'"
               name="password"
-              autocomplete="current-password"
+              [attr.autocomplete]="signup() ? 'new-password' : 'current-password'"
               [value]="password()"
               (input)="password.set($any($event.target).value)"
               placeholder="••••••••"
@@ -70,41 +98,63 @@
           </div>
         </label>
 
-        <div class="row-actions">
-          <label class="check">
+        @if (signup()) {
+          <label class="uline">
+            <span>Confirm password</span>
             <input
-              type="checkbox"
-              name="remember"
-              [checked]="remember()"
-              (change)="remember.set($any($event.target).checked)"
+              [type]="showPassword() ? 'text' : 'password'"
+              name="confirm-password"
+              autocomplete="new-password"
+              [value]="confirmPassword()"
+              (input)="confirmPassword.set($any($event.target).value)"
+              placeholder="••••••••"
             />
-            <span class="dot" aria-hidden="true"></span>
-            Remember Me
           </label>
-          @if (!admin()) {
-            <a class="text-link" routerLink="/admin/login">Admin sign-in</a>
-          } @else {
-            <a class="text-link" routerLink="/login">User sign-in</a>
-          }
-        </div>
+        } @else {
+          <div class="row-actions">
+            <label class="check">
+              <input
+                type="checkbox"
+                name="remember"
+                [checked]="remember()"
+                (change)="remember.set($any($event.target).checked)"
+              />
+              <span class="dot" aria-hidden="true"></span>
+              Remember Me
+            </label>
+            @if (!admin()) {
+              <a class="text-link" routerLink="/admin/login">Admin sign-in</a>
+            } @else {
+              <a class="text-link" routerLink="/login">User sign-in</a>
+            }
+          </div>
+        }
 
         @if (error(); as err) {
           <p class="form-error" role="alert">{{ err }}</p>
         }
 
         <button type="submit" class="cta" [disabled]="submitting()">
-          {{ submitting() ? 'Signing in…' : submitLabel() }}
+          {{ submitting() ? busyLabel() : submitLabel() }}
         </button>
+
+        @if (signup()) {
+          <p class="switch faint">Already have an account? <a class="text-link bold" routerLink="/login">Sign in</a></p>
+        } @else if (!admin()) {
+          <p class="switch faint">New to LEAP? <a class="text-link bold" routerLink="/signup">Create an account</a></p>
+        }
       </form>
 
-      <div class="demo">
-        <span class="demo-kicker">Demo users (password from local LEAP_DEMO_PASSWORD)</span>
-        <div class="demo-row">
-          @for (d of demos(); track d.username) {
-            <button type="button" class="demo-btn" (click)="fillDemo(d.username)">{{ d.label }}</button>
-          }
+      @if (!signup()) {
+        <div class="demo">
+          <span class="demo-kicker">Demo users (password from local LEAP_DEMO_PASSWORD)</span>
+          <div class="demo-row">
+            @for (d of demos(); track d.username) {
+              <button type="button" class="demo-btn" (click)="fillDemo(d.username)">{{ d.label }}</button>
+            }
+          </div>
         </div>
-      </div>
+      }
     </div>
   </section>
 

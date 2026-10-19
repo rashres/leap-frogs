@@ -155,7 +155,11 @@
                               <dt>Copy traded from</dt>
                               <dd>
                                 <a class="lnk" [routerLink]="['/copy-trading', from.traderId]">{{ from.name }} {{ from.handle }}</a>
-                                <span class="num faint"> · order #{{ from.leaderOrderId }}</span>
+                                @if (from.leaderOrderId != null) {
+                                  <span class="num faint"> · order #{{ from.leaderOrderId }}</span>
+                                } @else {
+                                  <span class="faint"> · stop-loss sell</span>
+                                }
                               </dd>
                             </div>
                           }

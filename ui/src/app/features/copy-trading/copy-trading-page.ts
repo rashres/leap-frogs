@@ -78,15 +78,28 @@ export class CopyTradingPage {
       roiTone: signTone(traders.get(s.copyTraderId)?.roi),
       initials: initials(s.traderName),
       allocation: formatUsd(s.allocation),
+      limits: [
+        s.maxPerTrade != null ? `max ${formatUsd(s.maxPerTrade)}/trade` : '',
+        s.stopLossPercent != null ? `stop-loss ${s.stopLossPercent}%` : '',
+      ]
+        .filter(Boolean)
+        .join(' · '),
+      invested: formatUsd(s.invested),
+      budgetLeft: formatUsd(s.budgetLeft),
+      pnl: formatSignedUsd(s.pnl),
+      pnlTone: signTone(s.pnl),
       since: formatStamp(s.startedAt),
     }));
   });
 
   readonly copySummary = computed(() => {
     const subs = this.subscriptions.data() ?? [];
+    const pnl = subs.reduce((sum, s) => sum + (s.pnl ?? 0), 0);
     return {
       allocated: formatUsd(subs.reduce((sum, s) => sum + s.allocation, 0)),
       traders: subs.length,
+      pnl: formatSignedUsd(pnl),
+      pnlTone: signTone(pnl),
       copied: subs.reduce((sum, s) => sum + s.copiedOrders, 0),
     };
   });

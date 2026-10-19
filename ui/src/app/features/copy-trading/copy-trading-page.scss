@@ -63,6 +63,14 @@
   color: var(--accent);
 }
 
+/* A smaller second line under a table figure, e.g. a copy's limits. */
+.sub-line {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  font-weight: 500;
+}
+
 .summary {
   display: flex;
   flex-wrap: wrap;

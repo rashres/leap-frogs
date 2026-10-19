@@ -13,9 +13,14 @@ import { InstrumentLogo } from '../../shared/instrument-logo';
 import { DayChangeStore } from '../portfolio/day-change.store';
 import { TickerBelt } from '../portfolio/ticker-belt';
 
+/** Usernames the API accepts: 3 to 32 letters, numbers, dots, dashes or underscores. */
+const USERNAME = /^[A-Za-z0-9._-]{3,32}$/;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 /**
- * Sign-in page. Posts to /api/auth/login (or /api/auth/admin/login for Super Admin).
- * BRD: login only (no self-serve signup).
+ * Sign-in and sign-up page. Sign-in posts to /api/auth/login (or
+ * /api/auth/admin/login for Super Admin). Sign-up (route data `signup`) posts
+ * to /api/auth/register, which opens a trading account with a TRADER login.
  */
 @Component({
   selector: 'leap-auth-page',
@@ -35,19 +40,26 @@ export class AuthPage {
 
   readonly theme = this.themes.theme;
   readonly admin = toSignal(this.route.data.pipe(map((d) => !!d['admin'])), { initialValue: false });
+  readonly signup = toSignal(this.route.data.pipe(map((d) => !!d['signup'])), { initialValue: false });
 
   readonly showPassword = signal(false);
   readonly submitting = signal(false);
   readonly error = signal<string | null>(null);
 
+  readonly name = signal('');
+  readonly email = signal('');
   readonly username = signal('');
   readonly password = signal('');
+  readonly confirmPassword = signal('');
   readonly remember = signal(true);
 
   readonly title = computed(() =>
-    this.admin() ? 'Super Admin Sign In' : 'Login to Your Account!',
+    this.signup() ? 'Create Your Account' : this.admin() ? 'Super Admin Sign In' : 'Login to Your Account!',
   );
-  readonly submitLabel = computed(() => (this.admin() ? 'Sign In as Admin' : 'Login To Your Account'));
+  readonly submitLabel = computed(() =>
+    this.signup() ? 'Create Account' : this.admin() ? 'Sign In as Admin' : 'Login To Your Account',
+  );
+  readonly busyLabel = computed(() => (this.signup() ? 'Creating account…' : 'Signing in…'));
 
   readonly demos = computed(() =>
     this.admin()
@@ -147,6 +159,10 @@ export class AuthPage {
   submit(event: Event): void {
     event.preventDefault();
     this.error.set(null);
+    if (this.signup()) {
+      this.register();
+      return;
+    }
     const username = this.username().trim();
     const password = this.password();
     if (!username) {
@@ -166,6 +182,43 @@ export class AuthPage {
       error: (err: unknown) => {
         this.submitting.set(false);
         this.error.set(toApiError(err).message || 'Sign in failed.');
+      },
+    });
+  }
+
+  private register(): void {
+    const details = {
+      name: this.name().trim(),
+      email: this.email().trim(),
+      username: this.username().trim(),
+      password: this.password(),
+    };
+    const problem = !details.name
+      ? 'Enter your name.'
+      : !EMAIL.test(details.email)
+        ? 'Enter a valid email address.'
+        : !USERNAME.test(details.username)
+          ? 'Username must be 3 to 32 letters, numbers, dots, dashes or underscores.'
+          : details.password.length < 8
+            ? 'Password needs at least 8 characters.'
+            : details.password !== this.confirmPassword()
+              ? 'The passwords do not match.'
+              : null;
+    if (problem) {
+      this.error.set(problem);
+      return;
+    }
+    this.submitting.set(true);
+    this.auth.register(details).subscribe({
+      next: (me) => {
+        this.submitting.set(false);
+        void this.router.navigateByUrl(me.homePath);
+      },
+      error: (err: unknown) => {
+        this.submitting.set(false);
+        const e = toApiError(err);
+        const fieldMessage = Object.values(e.fieldErrors)[0];
+        this.error.set(fieldMessage || e.message || 'Could not create the account.');
       },
     });
   }

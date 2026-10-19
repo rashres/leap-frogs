@@ -198,6 +198,14 @@ Postgres only runs the initialization files when its volume is first created.
 The operational and copy-trading schemas are loaded automatically for a fresh
 volume. Existing databases are not changed automatically.
 
+If copy trading fails with a missing `max_per_trade`, `stop_loss_percent` or
+`paused_at` column, add the copy settings columns to your existing database
+(safe to run more than once):
+
+```bash
+docker exec -i leap-frogs-postgres psql -U postgres -d leapfrogsdb < database/copy-trading-settings.sql
+```
+
 Do not run `docker compose down -v` unless you intend to delete the database
 volume and all of its data.
 
