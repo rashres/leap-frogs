@@ -32,6 +32,8 @@ CREATE TABLE transactions (
     transaction_id     SERIAL PRIMARY KEY,
     account_id            INT NOT NULL REFERENCES account(account_id),
     instrument_id           INT NOT NULL REFERENCES instrument(instrument_id),
+    -- Copy of instrument.symbol, so the table reads on its own. Written with every insert.
+    symbol             VARCHAR(20) NOT NULL,
     transaction_type   VARCHAR(4) NOT NULL CHECK (transaction_type IN ('BUY', 'SELL')),
     quantity           NUMERIC(18,6) NOT NULL CHECK (quantity > 0),
     -- The fill price once COMPLETE. While PENDING, the market price when the
