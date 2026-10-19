@@ -32,7 +32,8 @@ function envLocal(name) {
   return undefined;
 }
 
-const target = process.env.LEAP_API_URL || 'http://localhost:8081';
+// Prefer 127.0.0.1 over localhost so Node does not try ::1 first (Spring often binds IPv4 only).
+const target = process.env.LEAP_API_URL || 'http://127.0.0.1:8081';
 const newsApiKey = envLocal('LEAP_NEWSAPI_KEY');
 
 if (!newsApiKey) {
