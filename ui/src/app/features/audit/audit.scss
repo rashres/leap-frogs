@@ -16,10 +16,29 @@
 	gap: 8px;
 }
 
+.field-hint {
+	display: block;
+	margin-top: 6px;
+	color: var(--down);
+	font-size: 12px;
+}
+
 .result-summary {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
 	margin: 14px 2px 0;
 	color: var(--text-3);
 	font-size: 13px;
+
+	strong {
+		color: var(--text);
+		font-weight: 600;
+	}
+
+	.dot {
+		opacity: 0.5;
+	}
 }
 
 .state-panel {

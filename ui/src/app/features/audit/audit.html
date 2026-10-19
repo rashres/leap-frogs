@@ -6,12 +6,25 @@
 	<section class="toolbar panel" aria-label="Audit filters">
 		<label class="filter-field">
 			<span class="field-label">Account</span>
-			<select class="control" [value]="accountId()" (change)="setAccount($event)">
-				<option value="">All accounts</option>
-				@for (item of account.accounts(); track item.accountId) {
-					<option [value]="item.accountId">{{ item.name }} · #{{ item.accountId }}</option>
+			<input
+				class="control"
+				type="search"
+				list="audit-accounts"
+				placeholder="All accounts — search name, email or #ID"
+				autocomplete="off"
+				[value]="accountQuery()"
+				(input)="setAccount($event)"
+				(keydown.enter)="load()"
+				[attr.aria-invalid]="accountUnmatched()"
+			/>
+			<datalist id="audit-accounts">
+				@for (item of accounts(); track item.accountId) {
+					<option [value]="item.name + ' · #' + item.accountId">{{ item.email }}</option>
 				}
-			</select>
+			</datalist>
+			@if (accountUnmatched()) {
+				<span class="field-hint">No account matches. Pick one from the list or type its #ID.</span>
+			}
 		</label>
 
 		<label class="filter-field">
@@ -25,7 +38,7 @@
 		</label>
 
 		<div class="filter-actions">
-			<button type="button" class="btn btn-primary" [disabled]="loading()" (click)="load()">
+			<button type="button" class="btn btn-primary" [disabled]="loading() || accountUnmatched()" (click)="load()">
 				<leap-icon name="search" [size]="16" />Apply
 			</button>
 			<button type="button" class="btn btn-ghost" [disabled]="loading()" (click)="clearFilters()">
@@ -42,7 +55,14 @@
 		<p class="sr-only" role="status">Loading audit orders…</p>
 	} @else if (page(); as result) {
 		<p class="result-summary" role="status">
-			{{ result.totalElements }} {{ result.totalElements === 1 ? 'order' : 'orders' }} found.
+			<span><strong class="num">{{ result.totalElements }}</strong> {{ result.totalElements === 1 ? 'order' : 'orders' }} in total</span>
+			@if (rows().length > 0) {
+				<span class="dot">·</span>
+				<span>
+					<strong class="num">{{ rows().length }}</strong> on this page
+					<span class="faint num">({{ result.page * result.size + 1 }}–{{ result.page * result.size + rows().length }}, page {{ result.page + 1 }} of {{ result.totalPages }})</span>
+				</span>
+			}
 		</p>
 		@if (rows().length === 0) {
 			<section class="panel empty-state">
