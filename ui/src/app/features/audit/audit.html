@@ -62,6 +62,7 @@
 								<th class="r">Quantity</th>
 								<th class="r">Price</th>
 								<th class="r">Value</th>
+								<th class="r">Balance updated</th>
 								<th>Status</th>
 							</tr>
 						</thead>
@@ -79,6 +80,7 @@
 									<td class="r num">{{ order.quantityLabel }}</td>
 									<td class="r num">{{ order.priceLabel }}</td>
 									<td class="r num strong">{{ order.valueLabel }}</td>
+									<td class="r num">{{ order.balanceUpdatedLabel }}</td>
 									<td><span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.statusLabel }}</span></td>
 								</tr>
 							}

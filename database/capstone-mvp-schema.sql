@@ -45,6 +45,8 @@ CREATE TABLE transactions (
                        CHECK (status IN ('PENDING', 'COMPLETE', 'FAILED', 'CANCELLED', 'EXPIRED')),
     -- When the order was placed.
     transaction_time   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- What the account balance was updated to; NULL until the order settles.
+    balance_updated_to   NUMERIC(18,2) CHECK (balance_updated_to >= 0),
     -- MARKET fills at the market price; LIMIT only at limit_price or better.
     order_type         VARCHAR(6) NOT NULL DEFAULT 'MARKET' CHECK (order_type IN ('MARKET', 'LIMIT')),
     limit_price        NUMERIC(18,6) CHECK (limit_price > 0),

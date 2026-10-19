@@ -213,6 +213,8 @@ public class OrderService {
         int instrumentId = order.getInstrument().getInstrumentId();
         BigDecimal currentQuantity = currentHoldingQuantity(accountId, instrumentId);
         accountService.updateBalance(order.getValue(), account, order.getSide());
+        order.setBalanceUpdatedTo(account.getCashBalance());
+        orderMapper.updateBalanceUpdatedTo(order.getOrderId(), order.getBalanceUpdatedTo());
         BigDecimal newQuantity = order.isBuy()
                 ? currentQuantity.add(order.getQuantity())
                 : currentQuantity.subtract(order.getQuantity());
