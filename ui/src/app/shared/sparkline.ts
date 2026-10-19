@@ -41,6 +41,7 @@ let nextId = 0;
 export class Sparkline {
   protected readonly gradientId = `spark-${nextId++}`;
   readonly points = input.required<readonly PricePoint[]>();
+  readonly reference = input<number | null>(null);
   readonly width = input(96);
   readonly height = input(30);
 
@@ -56,10 +57,11 @@ export class Sparkline {
     const xs = values.map((_, i) => (i / (values.length - 1)) * w);
     const ys = values.map((v) => pad + (h - 2 * pad) * (1 - (v - min) / span));
     const line = xs.map((x, i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ');
+    const reference = this.reference() ?? values[0];
     return {
       line,
       area: `${line} L${w},${h} L0,${h} Z`,
-      colour: values[values.length - 1] >= values[0] ? 'var(--chart-up)' : 'var(--chart-down)',
+      colour: values[values.length - 1] >= reference ? 'var(--chart-up)' : 'var(--chart-down)',
     };
   });
 }

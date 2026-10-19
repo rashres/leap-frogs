@@ -1,5 +1,6 @@
 package com.neueda.leap.controllers;
 
+import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.AnalyticsService;
 import com.neueda.leap.services.AnalyticsService.Interval;
 import com.neueda.leap.services.domain.Analytics.*;
@@ -39,9 +40,11 @@ public class AnalyticsController {
     private static final int MAX_LIMIT = 100;
 
     private final AnalyticsService analytics;
+    private final AccessControl access;
 
-    public AnalyticsController(AnalyticsService analytics) {
+    public AnalyticsController(AnalyticsService analytics, AccessControl access) {
         this.analytics = analytics;
+        this.access = access;
     }
 
     /** GET /api/analytics/summary?from=2026-07-01&to=2026-09-30 */
@@ -51,6 +54,7 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) String symbol) {
+        access.assertCanAccessAnalytics();
         return analytics.summary(filter(from, to, symbol));
     }
 
@@ -62,6 +66,7 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) String symbol,
             @RequestParam(defaultValue = "day") @Parameter(description = "day, week or month") String interval) {
+        access.assertCanAccessAnalytics();
         return analytics.volume(filter(from, to, symbol), interval(interval));
     }
 
@@ -73,6 +78,7 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) String symbol,
             @RequestParam(defaultValue = "10") @Parameter(description = "1 to 100") int limit) {
+        access.assertCanAccessAnalytics();
         if (limit < 1 || limit > MAX_LIMIT) {
             throw badRequest("limit must be 1 to " + MAX_LIMIT);
         }
@@ -86,6 +92,7 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) String symbol) {
+        access.assertCanAccessAnalytics();
         return analytics.markets(filter(from, to, symbol));
     }
 
@@ -96,6 +103,7 @@ public class AnalyticsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
             @RequestParam(required = false) String symbol) {
+        access.assertCanAccessAnalytics();
         return analytics.clients(filter(from, to, symbol));
     }
 

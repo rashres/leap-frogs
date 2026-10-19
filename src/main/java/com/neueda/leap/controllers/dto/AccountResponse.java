@@ -17,13 +17,17 @@ public record AccountResponse(
         String email,
         
         @Schema(description = "Current cash balance in the account", example = "50000.00")
-        BigDecimal cashBalance
+        BigDecimal cashBalance,
+
+        @Schema(description = "Operational status", example = "ACTIVE", allowableValues = {"ACTIVE", "FROZEN"})
+        String status
 ) {
     public static AccountResponse from(Account account) {
         return new AccountResponse(
                 account.getAccountId(),
                 account.getName(),
                 account.getEmail(),
-                account.getCashBalance());
+                account.getCashBalance(),
+                account.getStatus());
     }
 }

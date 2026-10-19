@@ -24,7 +24,7 @@ public interface OrderMapper {
     // Rows before filled_at existed filled at transaction_time.
     String SELECT_ORDER = """
             SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
-                   t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,
+                   t.transaction_type, t.quantity, t.price, t.status, t.balance_updated_to, t.transaction_time,
                    t.order_type, t.limit_price, t.time_in_force, t.expires_at,
                    CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time
             FROM transactions t
@@ -53,6 +53,7 @@ public interface OrderMapper {
         @Result(property = "expiresAt", column = "expires_at"),
         // Must come before "status": setStatus("COMPLETE") only fills fulfilledTime when it is still empty.
         @Result(property = "fulfilledTime", column = "fulfilled_time"),
+        @Result(property = "balanceUpdatedTo", column = "balance_updated_to"),
         @Result(property = "status", column = "status")
     })
     List<Order> findByAccountId(int accountId);
@@ -69,7 +70,7 @@ public interface OrderMapper {
     @Select("""
             <script>
             SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
-                   t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,
+                   t.transaction_type, t.quantity, t.price, t.status, t.balance_updated_to, t.transaction_time,
                    t.order_type, t.limit_price, t.time_in_force, t.expires_at,
                    CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time
             FROM transactions t
@@ -103,9 +104,9 @@ public interface OrderMapper {
     @Select("""
             <script>
             SELECT t.transaction_id, t.account_id, t.instrument_id, i.symbol,
-                   t.transaction_type, t.quantity, t.price, t.status, t.transaction_time,
-                   t.order_type, t.limit_price, t.time_in_force, t.expires_at,
-                   CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time
+             t.transaction_type, t.quantity, t.price, t.status, t.balance_updated_to, t.transaction_time,
+             t.order_type, t.limit_price, t.time_in_force, t.expires_at,
+             CASE WHEN t.status = 'COMPLETE' THEN COALESCE(t.filled_at, t.transaction_time) END AS fulfilled_time
             FROM transactions t
             JOIN instrument i ON i.instrument_id = t.instrument_id
             <where>
@@ -158,12 +159,20 @@ public interface OrderMapper {
      */
     @Insert("""
             INSERT INTO transactions (account_id, instrument_id, symbol, transaction_type, quantity, price, status, transaction_time,
+                                      balance_updated_to,
                                       order_type, limit_price, time_in_force, expires_at, filled_at)
             VALUES (#{account.accountId}, #{instrument.instrumentId}, #{instrument.symbol}, #{side}, #{quantity}, #{price}, #{status}, #{placedTime},
+                    #{balanceUpdatedTo},
                     #{orderType}, #{limitPrice}, #{timeInForce}, #{expiresAt}, #{fulfilledTime})
             """)
     @Options(useGeneratedKeys = true, keyProperty = "orderId", keyColumn = "transaction_id")
     void insertOrder(Order order);
+
+    @Update("""
+            UPDATE transactions SET balance_updated_to = #{balanceUpdatedTo}
+            WHERE transaction_id = #{orderId} AND status = 'COMPLETE'
+            """)
+    int updateBalanceUpdatedTo(@Param("orderId") int orderId, @Param("balanceUpdatedTo") BigDecimal balanceUpdatedTo);
 
     /**
      * Cash the account's pending buys are holding back: each at its limit price,
