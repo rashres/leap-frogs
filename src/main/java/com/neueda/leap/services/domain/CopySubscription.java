@@ -5,8 +5,9 @@ import java.time.Instant;
 
 /**
  * An account copying a lead trader. Each new trade the leader places is copied
- * at allocation / leader equity of its size. Stopped subscriptions keep their
- * row (stoppedAt set) so earlier copied orders still say where they came from.
+ * at allocation / leader equity of its size, within the copy's settings.
+ * Stopped subscriptions keep their row (stoppedAt set) so earlier copied orders
+ * still say where they came from.
  */
 public class CopySubscription {
     private int subscriptionId;
@@ -15,18 +16,101 @@ public class CopySubscription {
     private String traderName;
     private String traderHandle;
     private BigDecimal allocation;
+    private BigDecimal maxPerTrade;
+    private BigDecimal stopLossPercent;
+    private boolean sellOnStopLoss;
+    private Instant pausedAt;
+    /** USER or STOP_LOSS while paused, otherwise null. */
+    private String pauseReason;
     private Instant startedAt;
     private Instant stoppedAt;
     private int copiedOrders;
 
+    // Worked out from the copy's own orders (CopyBook); not stored.
+    private BigDecimal invested;
+    private BigDecimal marketValue;
+    private BigDecimal pnl;
+    private BigDecimal budgetLeft;
+
     public CopySubscription() {
     }
 
-    public CopySubscription(int followerAccountId, int copyTraderId, BigDecimal allocation, Instant startedAt) {
+    public CopySubscription(int followerAccountId, int copyTraderId, CopySettings settings, Instant startedAt) {
         this.followerAccountId = followerAccountId;
         this.copyTraderId = copyTraderId;
-        this.allocation = allocation;
+        this.allocation = settings.allocation();
+        this.maxPerTrade = settings.maxPerTrade();
+        this.stopLossPercent = settings.stopLossPercent();
+        this.sellOnStopLoss = settings.sellOnStopLoss();
         this.startedAt = startedAt;
+    }
+
+    public boolean isPaused() {
+        return pausedAt != null;
+    }
+
+    public BigDecimal getMaxPerTrade() {
+        return maxPerTrade;
+    }
+
+    public void setMaxPerTrade(BigDecimal maxPerTrade) {
+        this.maxPerTrade = maxPerTrade;
+    }
+
+    public BigDecimal getStopLossPercent() {
+        return stopLossPercent;
+    }
+
+    public void setStopLossPercent(BigDecimal stopLossPercent) {
+        this.stopLossPercent = stopLossPercent;
+    }
+
+    public boolean isSellOnStopLoss() {
+        return sellOnStopLoss;
+    }
+
+    public void setSellOnStopLoss(boolean sellOnStopLoss) {
+        this.sellOnStopLoss = sellOnStopLoss;
+    }
+
+    public Instant getPausedAt() {
+        return pausedAt;
+    }
+
+    public void setPausedAt(Instant pausedAt) {
+        this.pausedAt = pausedAt;
+    }
+
+    public String getPauseReason() {
+        return pauseReason;
+    }
+
+    public void setPauseReason(String pauseReason) {
+        this.pauseReason = pauseReason;
+    }
+
+    public BigDecimal getInvested() {
+        return invested;
+    }
+
+    public BigDecimal getMarketValue() {
+        return marketValue;
+    }
+
+    public BigDecimal getPnl() {
+        return pnl;
+    }
+
+    public BigDecimal getBudgetLeft() {
+        return budgetLeft;
+    }
+
+    /** Fills in the copy's position and profit or loss from its book. */
+    public void setPerformance(BigDecimal invested, BigDecimal marketValue, BigDecimal pnl, BigDecimal budgetLeft) {
+        this.invested = invested;
+        this.marketValue = marketValue;
+        this.pnl = pnl;
+        this.budgetLeft = budgetLeft;
     }
 
     public int getSubscriptionId() {

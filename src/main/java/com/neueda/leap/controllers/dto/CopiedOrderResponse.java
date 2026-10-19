@@ -8,8 +8,8 @@ public record CopiedOrderResponse(
         @Schema(description = "The follower's order", example = "812")
         int orderId,
 
-        @Schema(description = "The lead trader's order it copied", example = "809")
-        int leaderOrderId,
+        @Schema(description = "The lead trader's order it copied; null for a sell placed by the copy's stop-loss", example = "809")
+        Integer leaderOrderId,
 
         @Schema(description = "The lead trader", example = "1")
         int copyTraderId,
