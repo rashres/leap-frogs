@@ -45,7 +45,7 @@ that column at the moment they are created.
 ### Database Layer (`database/`)
 - **leapfrogsdb** - Source database (accounts, transactions, instruments)
 - **leap_analytics** - Target database (aggregated analytics tables)
-- Schema files: `capstone-mvp-schema.sql`, `capstone-analytics-schema.sql`
+- Schema files: `capstone-mvp-schema.sql`, `capstone-analytics-schema.sql`, `rbac-schema.sql`, `rbac-seed.sql`
 
 ### ETL Pipeline (`etl/`)
 Extract → Transform → Load trading data into analytics database.
@@ -98,6 +98,22 @@ pip install psycopg2-binary pandas matplotlib python-dotenv
 docker-compose up -d
 # Wait ~10-30 seconds for Postgres to be healthy
 ```
+
+### 3b. Role-based access (RBAC)
+After the operational schema exists, apply users/roles and demo identities once:
+```bash
+psql -h localhost -p 8100 -U postgres -d leapfrogsdb -f database/rbac-schema.sql
+psql -h localhost -p 8100 -U postgres -d leapfrogsdb -f database/rbac-seed.sql
+```
+Seeded users share the local demo password from `LEAP_DEMO_PASSWORD` in your `.env`
+(see `.env.example`). That value must match the BCrypt hashes in `database/rbac-seed.sql`.
+
+| Username | Role | Sign-in |
+|----------|------|---------|
+| `admin` | SUPER_ADMIN (exactly one) | http://localhost:4200/admin/login |
+| `joanna` | TRADER (own account only) | http://localhost:4200/login |
+| `priya` | BUSINESS_ANALYST | http://localhost:4200/login → Analytics |
+| `david` | TRADING_OPERATIONS | http://localhost:4200/login → Operations |
 
 ### 4. Fetch Market Prices
 ```bash
