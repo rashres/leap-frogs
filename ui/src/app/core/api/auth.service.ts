@@ -53,6 +53,16 @@ export class AuthService {
     );
   }
 
+  /** Creates a trader login with a new trading account and signs in. 409 if the username or email is taken. */
+  register(details: { name: string; email: string; username: string; password: string }): Observable<Me> {
+    return this.http.post<Me>('/api/auth/register', details, { withCredentials: true }).pipe(
+      tap((me) => {
+        this.meSignal.set(me);
+        this.loadedSignal.set(true);
+      }),
+    );
+  }
+
   logout(): Observable<void> {
     return this.http.post<void>('/api/auth/logout', {}, { withCredentials: true }).pipe(
       tap(() => {

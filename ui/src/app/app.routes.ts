@@ -17,7 +17,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/auth-page').then((m) => m.AuthPage),
     data: { admin: true },
   },
-  { path: 'signup', redirectTo: 'login' },
+  {
+    path: 'signup',
+    title: 'Create account — LEAP',
+    canActivate: [guestOnly],
+    loadComponent: () => import('./features/auth/auth-page').then((m) => m.AuthPage),
+    data: { admin: false, signup: true },
+  },
+  { path: 'register', redirectTo: 'signup' },
   {
     path: 'portfolio',
     title: 'Portfolio — LEAP',
