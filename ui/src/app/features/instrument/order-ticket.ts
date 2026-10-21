@@ -179,10 +179,11 @@ export class OrderTicket {
     const quantity = this.quantity();
     if (!quantity) return null;
     const limit = this.limitPrice();
-    const at = this.fillsNow() ? price : (limit ?? price);
+    const currentPrice = this.price();
+    const at = this.fillsNow() ? currentPrice : (limit ?? currentPrice);
     return {
       quantity: formatQty(quantity),
-      priceText: formatPrice(price),
+      priceText: formatPrice(currentPrice),
       type: this.isLimit() ? `Limit at ${formatPrice(limit)}` : 'Market',
       timeInForce: this.timeInForce() === 'DAY' ? 'Day' : "Good 'til cancelled",
       consideration: at != null ? formatUsd(at * quantity) : '—',
