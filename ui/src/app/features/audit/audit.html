@@ -84,11 +84,12 @@
 								<th class="r">Value</th>
 								<th class="r">Balance updated</th>
 								<th>Status</th>
+								<th><span class="sr-only">Details</span></th>
 							</tr>
 						</thead>
 						<tbody>
 							@for (order of rows(); track order.orderId) {
-								<tr>
+								<tr class="row" [class.open]="expanded() === order.orderId" (click)="toggle(order.orderId)">
 									<td class="num faint">{{ order.submitted }}</td>
 									<td class="num">#{{ order.accountId }}</td>
 									<td>
@@ -102,7 +103,50 @@
 									<td class="r num strong">{{ order.valueLabel }}</td>
 									<td class="r num">{{ order.balanceUpdatedLabel }}</td>
 									<td><span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.statusLabel }}</span></td>
+									<td class="r">
+										<button type="button" class="chev" (click)="toggleFromButton($event, order.orderId)" [attr.aria-expanded]="expanded() === order.orderId" [attr.aria-label]="(expanded() === order.orderId ? 'Hide' : 'Show') + ' details for order #' + order.orderId">
+											<leap-icon name="chevron-down" [size]="18" />
+										</button>
+									</td>
 								</tr>
+
+								@if (expanded() === order.orderId) {
+									<tr class="detail-row">
+										<td colspan="9">
+											<div class="detail">
+												<div class="detail-card">
+													<h3>Lifecycle</h3>
+													<ol class="timeline">
+														@for (step of order.steps; track $index) {
+															<li>
+																<div class="step-top"><span class="step-state">{{ step.state }}</span><span class="num faint">{{ step.at }}</span></div>
+																<p class="faint">{{ step.detail }}</p>
+															</li>
+														}
+													</ol>
+												</div>
+												<div class="detail-card">
+													<h3>Recorded facts</h3>
+													<dl>
+														<div><dt>Order</dt><dd class="num">#{{ order.orderId }}</dd></div>
+														<div><dt>Account</dt><dd class="num">#{{ order.accountId }}</dd></div>
+														<div><dt>Instrument</dt><dd>{{ order.symbol }} · #{{ order.instrumentId }}</dd></div>
+														<div><dt>Type</dt><dd class="num">{{ order.orderType }}</dd></div>
+														<div><dt>Good for</dt><dd>{{ order.timeInForce }}</dd></div>
+														@if (order.status === 'PENDING') {
+															<div><dt>Expires</dt><dd class="num">{{ order.expiresAt ? formatStamp(order.expiresAt) : '—' }}</dd></div>
+														}
+														<div><dt>Price</dt><dd class="num">{{ order.priceLabel }}</dd></div>
+														<div><dt>Value</dt><dd class="num">{{ order.valueLabel }}</dd></div>
+														<div><dt>Balance updated to</dt><dd class="num">{{ order.balanceUpdatedLabel }}</dd></div>
+														<div><dt>Fulfilled</dt><dd class="num">{{ order.fulfilledTime ? formatStamp(order.fulfilledTime) : '—' }}</dd></div>
+														<div><dt>Status in database</dt><dd><code class="code">{{ order.status }}</code></dd></div>
+													</dl>
+												</div>
+											</div>
+										</td>
+									</tr>
+								}
 							}
 						</tbody>
 					</table>
