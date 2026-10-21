@@ -187,7 +187,7 @@
             </div>
           }
           <div>
-            <dt>Market price reviewed</dt>
+            <dt>Current market price</dt>
             <dd class="num">{{ r.priceText }}</dd>
           </div>
           <div>
@@ -204,7 +204,7 @@
           <p class="drift" role="status">
             Price has moved
             <strong class="num" [class.up]="!d.negative" [class.down]="d.negative">{{ d.text }}</strong>
-            since you opened this review. The fill uses the API's latest price, not the one above.
+            since you opened this review. Prices update to reflect the latest available price, so the final execution price may differ.
           </p>
         }
 
