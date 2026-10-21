@@ -10,6 +10,12 @@ import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { PageHeader } from '../../shared/page-header';
 import { formatPrice, formatQty, formatStamp, formatUsd } from '../../shared/format';
 
+interface Step {
+  readonly state: string;
+  readonly at: string;
+  readonly detail: string;
+}
+
 @Component({
   selector: 'leap-audit',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -41,6 +47,7 @@ export class Audit {
   readonly page = signal<AuditOrderPage | null>(null);
   readonly loading = signal(false);
   readonly error = signal<ApiError | null>(null);
+  readonly expanded = signal<number | null>(null);
   readonly rows = computed(() => this.page()?.orders.map((order) => this.toRow(order)) ?? []);
   readonly pageButtons = computed(() => {
     const result = this.page();
@@ -102,6 +109,15 @@ export class Audit {
     this.load(page);
   }
 
+  toggle(orderId: number): void {
+    this.expanded.update((current) => (current === orderId ? null : orderId));
+  }
+
+  toggleFromButton(event: Event, orderId: number): void {
+    event.stopPropagation();
+    this.toggle(orderId);
+  }
+
   formatStamp(value: string): string {
     return formatStamp(value);
   }
@@ -127,6 +143,43 @@ export class Audit {
   }
 
   private toRow(order: Order) {
+    const filled = order.status === 'COMPLETE';
+    const waiting = order.limitPrice != null ? `until ${this.formatPrice(order.limitPrice)} or better` : 'for the market to open';
+    const steps: Step[] = [
+      {
+        state: 'Submitted',
+        at: this.formatStamp(order.placedTime),
+        detail: `${order.side} ${this.formatQty(order.quantity)} ${order.symbol} recorded for account #${order.accountId}.`,
+      },
+    ];
+    if (filled) {
+      const waited = order.fulfilledTime != null && Date.parse(order.fulfilledTime) - Date.parse(order.placedTime) > 1000;
+      steps.push({
+        state: waited ? 'Pending → Filled' : 'Submitted → Filled',
+        at: order.fulfilledTime ? this.formatStamp(order.fulfilledTime) : '',
+        detail: `Executed at ${this.formatPrice(order.price)}; cash and holdings updated.`,
+      });
+    } else if (order.status === 'FAILED') {
+      steps.push({
+        state: 'Submitted → Rejected',
+        at: this.formatStamp(order.placedTime),
+        detail: 'Failed the cash or holdings check. The rejection reason is not stored in the audit record.',
+      });
+    } else if (order.status === 'PENDING') {
+      steps.push({
+        state: 'Pending',
+        at: this.formatStamp(order.placedTime),
+        detail: `Waiting ${waiting}. ${order.expiresAt ? `Expires ${this.formatStamp(order.expiresAt)}.` : 'Open until filled or cancelled.'}`,
+      });
+    } else if (order.status === 'CANCELLED') {
+      steps.push({ state: 'Pending → Cancelled', at: '', detail: 'Cancelled before it filled; nothing was traded.' });
+    } else if (order.status === 'EXPIRED') {
+      steps.push({
+        state: 'Pending → Expired',
+        at: order.expiresAt ? this.formatStamp(order.expiresAt) : '',
+        detail: 'A day order that did not fill before its session closed; nothing was traded.',
+      });
+    }
     return {
       ...order,
       submitted: this.formatStamp(order.placedTime),
@@ -136,6 +189,7 @@ export class Audit {
       balanceUpdatedLabel: this.formatUsd(order.balanceUpdatedTo),
       statusLabel: this.statusLabel(order.status),
       tone: this.statusTone(order.status),
+      steps,
     };
   }
 
