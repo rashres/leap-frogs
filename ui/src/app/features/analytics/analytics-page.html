@@ -39,15 +39,51 @@
       <span class="field-label">To</span>
       <input class="control" type="date" [value]="to() ?? ''" [min]="from() ?? ''" [max]="today" (change)="setTo($any($event.target).value)" />
     </label>
-    <label class="field grow">
-      <span class="field-label">Instrument</span>
-      <select class="control" [value]="symbol() ?? ''" (change)="setSymbol($any($event.target).value)">
-        <option value="">All instruments</option>
-        @for (o of instrumentOptions(); track o.symbol) {
-          <option [value]="o.symbol" [selected]="symbol() === o.symbol">{{ o.symbol }} — {{ o.name }}</option>
+    <div class="field grow">
+      <label class="field-label" for="analytics-instrument-search">Instrument</label>
+      <div class="instrument-picker">
+        <div class="instrument-search">
+          <input
+            id="analytics-instrument-search"
+            class="control"
+            type="search"
+            placeholder="Search symbol or name"
+            autocomplete="off"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-controls="analytics-instrument-options"
+            [attr.aria-expanded]="instrumentSuggestionsOpen() && !!instrumentSearch().trim()"
+            [value]="instrumentSearch()"
+            (input)="searchInstruments($any($event.target).value)"
+            (focus)="instrumentSuggestionsOpen.set(true)"
+            (blur)="instrumentSuggestionsOpen.set(false)"
+            (change)="setSymbol($any($event.target).value)"
+          />
+          @if (symbol() || instrumentSearch()) {
+            <button type="button" class="btn btn-ghost btn-sm" (click)="setSymbol('')">All instruments</button>
+          }
+        </div>
+        @if (instrumentSuggestionsOpen() && instrumentSearch().trim()) {
+          <div id="analytics-instrument-options" class="instrument-suggestions" role="listbox" aria-label="Matching instruments">
+            @for (o of filteredInstrumentOptions(); track o.symbol) {
+              <button
+                type="button"
+                class="instrument-suggestion"
+                role="option"
+                [attr.aria-selected]="symbol() === o.symbol"
+                (mousedown)="$event.preventDefault()"
+                (click)="setSymbol(o.symbol)"
+              >
+                <strong>{{ o.symbol }}</strong>
+                <span>{{ o.name }}</span>
+              </button>
+            } @empty {
+              <p class="instrument-suggestion-empty" role="status">No matching instruments</p>
+            }
+          </div>
         }
-      </select>
-    </label>
+      </div>
+    </div>
     <div class="field end">
       <button type="button" class="btn btn-ghost btn-sm" (click)="reset()" [disabled]="preset() === 'ALL' && !symbol()">Reset</button>
     </div>
