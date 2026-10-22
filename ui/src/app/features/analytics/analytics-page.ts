@@ -46,6 +46,7 @@ export class AnalyticsPage {
   readonly to = signal<string | null>(null);
   readonly symbol = signal<string | null>(null);
   readonly instrumentSearch = signal('');
+  readonly instrumentSuggestionsOpen = signal(false);
   readonly interval = signal<AnalyticsInterval>('week');
   readonly showAll = signal(false);
 
@@ -202,11 +203,17 @@ export class AnalyticsPage {
     this.to.set(value || null);
   }
 
+  searchInstruments(value: string): void {
+    this.instrumentSearch.set(value);
+    this.instrumentSuggestionsOpen.set(true);
+  }
+
   setSymbol(value: string): void {
     const query = value.trim();
     if (!query) {
       this.instrumentSearch.set('');
       this.symbol.set(null);
+      this.instrumentSuggestionsOpen.set(false);
       this.showAll.set(false);
       return;
     }
@@ -219,12 +226,14 @@ export class AnalyticsPage {
 
     this.instrumentSearch.set(match.symbol);
     this.symbol.set(match.symbol);
+    this.instrumentSuggestionsOpen.set(false);
     this.showAll.set(false);
   }
 
   reset(): void {
     this.instrumentSearch.set('');
     this.symbol.set(null);
+    this.instrumentSuggestionsOpen.set(false);
     this.choosePreset('ALL');
   }
 
