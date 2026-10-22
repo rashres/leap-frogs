@@ -45,6 +45,7 @@ export class AnalyticsPage {
   readonly from = signal<string | null>(null);
   readonly to = signal<string | null>(null);
   readonly symbol = signal<string | null>(null);
+  readonly instrumentSearch = signal('');
   readonly interval = signal<AnalyticsInterval>('week');
   readonly showAll = signal(false);
 
@@ -63,6 +64,14 @@ export class AnalyticsPage {
   readonly instrumentOptions = computed(() =>
     [...this.market.instruments()].sort((a, b) => a.symbol.localeCompare(b.symbol)).map((i) => ({ symbol: i.symbol, name: i.name })),
   );
+  readonly filteredInstrumentOptions = computed(() => {
+    const query = this.instrumentSearch().trim().toLocaleLowerCase();
+    const options = this.instrumentOptions();
+    if (!query) return options;
+    return options.filter(({ symbol, name }) =>
+      symbol.toLocaleLowerCase().includes(query) || name.toLocaleLowerCase().includes(query),
+    );
+  });
 
   /** "1 Jul 2026 – 13 Oct 2026", or "All time". */
   readonly rangeText = computed(() => {
@@ -194,11 +203,27 @@ export class AnalyticsPage {
   }
 
   setSymbol(value: string): void {
-    this.symbol.set(value || null);
+    const query = value.trim();
+    if (!query) {
+      this.instrumentSearch.set('');
+      this.symbol.set(null);
+      this.showAll.set(false);
+      return;
+    }
+
+    const match = this.instrumentOptions().find((option) =>
+      option.symbol.toLocaleLowerCase() === query.toLocaleLowerCase() ||
+      option.name.toLocaleLowerCase() === query.toLocaleLowerCase(),
+    );
+    if (!match) return;
+
+    this.instrumentSearch.set(match.symbol);
+    this.symbol.set(match.symbol);
     this.showAll.set(false);
   }
 
   reset(): void {
+    this.instrumentSearch.set('');
     this.symbol.set(null);
     this.choosePreset('ALL');
   }

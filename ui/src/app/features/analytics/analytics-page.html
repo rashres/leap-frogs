@@ -47,11 +47,12 @@
         list="analytics-instrument-options"
         placeholder="Search symbol or name"
         aria-label="Search instruments; clear to show all"
-        [value]="symbol() ?? ''"
+        [value]="instrumentSearch()"
+        (input)="instrumentSearch.set($any($event.target).value)"
         (change)="setSymbol($any($event.target).value)"
       />
       <datalist id="analytics-instrument-options">
-        @for (o of instrumentOptions(); track o.symbol) {
+        @for (o of filteredInstrumentOptions(); track o.symbol) {
           <option [value]="o.symbol" [label]="o.name"></option>
         }
       </datalist>
