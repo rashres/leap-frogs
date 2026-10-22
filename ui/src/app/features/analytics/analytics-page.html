@@ -41,12 +41,20 @@
     </label>
     <label class="field grow">
       <span class="field-label">Instrument</span>
-      <select class="control" [value]="symbol() ?? ''" (change)="setSymbol($any($event.target).value)">
-        <option value="">All instruments</option>
+      <input
+        class="control"
+        type="search"
+        list="analytics-instrument-options"
+        placeholder="Search symbol or name"
+        aria-label="Search instruments; clear to show all"
+        [value]="symbol() ?? ''"
+        (change)="setSymbol($any($event.target).value)"
+      />
+      <datalist id="analytics-instrument-options">
         @for (o of instrumentOptions(); track o.symbol) {
-          <option [value]="o.symbol" [selected]="symbol() === o.symbol">{{ o.symbol }} — {{ o.name }}</option>
+          <option [value]="o.symbol" [label]="o.name"></option>
         }
-      </select>
+      </datalist>
     </label>
     <div class="field end">
       <button type="button" class="btn btn-ghost btn-sm" (click)="reset()" [disabled]="preset() === 'ALL' && !symbol()">Reset</button>
