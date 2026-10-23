@@ -5,7 +5,7 @@
  * Sentiment is a count of matched words (see core/news/sentiment.ts). Each
  * headline can show the words it matched and why it was filed under a stock,
  * and stocks are ordered by how much was written about them, never by score.
- * The one exception is the pond in the detailed view, which places stocks by
+ * The one exception is the pond, which places stocks by
  * net tone on purpose (see news-pond.ts).
  */
 
@@ -23,15 +23,12 @@ import { ago, dayLabel, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format'
 import { NewsPond } from './news-pond';
 
 type Mood = 'all' | SentimentLabel;
-/** Simple: one plain list. Detailed: the pond, top stories and tone columns too. */
-type View = 'simple' | 'detailed';
 type Order = 'newest' | 'tone';
 
 /** One row of equal cards across the page. */
 const TOP_STORIES = 4;
 const PAGE = 30;
 const COLUMN_PAGE = 10;
-const VIEW_KEY = 'leap.news.view';
 const ORDER_KEY = 'leap.news.order';
 /** Tone columns always read Negative | Neutral | Positive. */
 const COLUMN_ORDER: readonly SentimentLabel[] = ['negative', 'neutral', 'positive'];
@@ -57,11 +54,8 @@ export class NewsPage {
   readonly mood = signal<Mood>('all');
   readonly query = signal('');
   readonly limit = signal(PAGE);
-  readonly view = signal<View>(readStored(VIEW_KEY) === 'simple' ? 'simple' : 'detailed');
   readonly order = signal<Order>(readStored(ORDER_KEY) === 'tone' ? 'tone' : 'newest');
-  readonly simple = computed(() => this.view() === 'simple');
-  /** Tone columns only exist in the detailed view; simple is always one list. */
-  readonly byTone = computed(() => !this.simple() && this.order() === 'tone');
+  readonly byTone = computed(() => this.order() === 'tone');
   readonly columnLimit = signal<Record<SentimentLabel, number>>(freshColumnLimit());
   /** Stories whose picture failed to load; they fall back to a logo tile. */
   readonly broken = signal<ReadonlySet<string>>(new Set());
@@ -149,7 +143,7 @@ export class NewsPage {
 
   /** Newest stories with a working picture, as one row of equal cards; the rest follow as a list. */
   readonly topStories = computed(() => {
-    if (this.simple() || this.query().trim()) return [];
+    if (this.query().trim()) return [];
     const items = this.filtered();
     if (items.length < 3) return [];
     const broken = this.broken();
@@ -207,15 +201,6 @@ export class NewsPage {
     };
   });
 
-  readonly sourceText = computed(() => {
-    const source = this.news.servedBy();
-    if (!source) return null;
-    const name = source === 'newsapi' ? 'NewsAPI.org' : 'Yahoo Finance';
-    this.now();
-    const at = this.news.fetchedAt();
-    return at ? `${name} · updated ${ago(at)}` : name;
-  });
-
   constructor() {
     // The sweep query is built from the database instruments, so wait for them.
     let swept = false;
@@ -258,11 +243,6 @@ export class NewsPage {
 
   showMoreIn(label: SentimentLabel): void {
     this.columnLimit.update((limits) => ({ ...limits, [label]: limits[label] + COLUMN_PAGE }));
-  }
-
-  setView(view: View): void {
-    this.view.set(view);
-    writeStored(VIEW_KEY, view);
   }
 
   setOrder(order: Order): void {

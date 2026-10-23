@@ -230,12 +230,6 @@ import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
       .row.compact .title {
         font-size: 13.5px;
       }
-      .row.simple .side .sent {
-        min-width: 112px;
-        padding: 5px 12px;
-        font-size: 14px;
-        font-weight: 600;
-      }
       @media (max-width: 640px) {
         .row:not(.compact) {
           grid-template-columns: 56px minmax(0, 1fr);
@@ -260,8 +254,8 @@ export class HeadlineRow {
   readonly item = input.required<AttributedNewsItem>();
   /** The stock the page is filtered to, so its chip shows as active. */
   readonly selected = input<number | null>(null);
-  /** `compact` for a tone column (no picture, summary or tone badge); `simple` for a bigger tone badge. */
-  readonly variant = input<'full' | 'compact' | 'simple'>('full');
+  /** `compact` for a tone column: no picture, summary or tone badge. */
+  readonly variant = input<'full' | 'compact'>('full');
   readonly pickStock = output<number>();
 
   protected readonly open = signal(false);

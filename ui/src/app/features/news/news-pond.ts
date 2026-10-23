@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { SentimentLabel, StockSentiment } from '../../core/news/news';
+import { Icon } from '../../shared/icon';
 import { MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
 
 /**
@@ -92,6 +93,16 @@ function drawPad(cx: number, cy: number, r: number, rot: number): { outline: str
   return { outline, veins, shine: { x, y } };
 }
 
+const COLLAPSED_KEY = 'lilypad.news.pondCollapsed';
+
+function readCollapsed(): boolean {
+  try {
+    return localStorage.getItem(COLLAPSED_KEY) === 'yes';
+  } catch {
+    return false;
+  }
+}
+
 const signed = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}`;
 
 interface Pad {
@@ -119,6 +130,7 @@ interface Pad {
 @Component({
   selector: 'leap-news-pond',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [Icon],
   template: `
     <section class="pond" aria-label="The pond: where every stock sits">
       <div class="head">
@@ -126,16 +138,26 @@ interface Pad {
           <ng-content select="[pondTitle]" />
         </div>
         <div class="keys">
-          <span class="key"><i class="pk"></i>Size = headlines</span>
-          <span class="key"><i class="pk low"></i>Faded = under {{ low }}</span>
-          <div class="segmented" role="group" aria-label="Pond view">
-            <button type="button" [class.on]="view() === 'pond'" [attr.aria-pressed]="view() === 'pond'" (click)="view.set('pond')">Pond</button>
-            <button type="button" [class.on]="view() === 'table'" [attr.aria-pressed]="view() === 'table'" (click)="view.set('table')">Table</button>
-          </div>
+          @if (!collapsed()) {
+            <span class="key"><i class="pk"></i>Size = headlines</span>
+            <span class="key"><i class="pk low"></i>Faded = under {{ low }}</span>
+            <div class="segmented" role="group" aria-label="Pond view">
+              <button type="button" [class.on]="view() === 'pond'" [attr.aria-pressed]="view() === 'pond'" (click)="view.set('pond')">Pond</button>
+              <button type="button" [class.on]="view() === 'table'" [attr.aria-pressed]="view() === 'table'" (click)="view.set('table')">Table</button>
+            </div>
+          }
+          <button type="button" class="btn btn-secondary btn-sm collapse" (click)="toggle()"
+                  [attr.aria-expanded]="!collapsed()" aria-controls="pond-body">
+            <leap-icon name="chevron-down" [size]="16" class="chev" [class.up]="!collapsed()" />
+            {{ collapsed() ? 'Show pond' : 'Hide pond' }}
+          </button>
         </div>
       </div>
 
-      @if (pads().length === 0) {
+      <div id="pond-body">
+      @if (collapsed()) {
+        <!-- Folded away: only the title and the stats below show. -->
+      } @else if (pads().length === 0) {
         <p class="none faint">No stock has headlines yet, so the pond is empty.</p>
       } @else if (view() === 'pond') {
         <div class="svg-wrap">
@@ -202,16 +224,19 @@ interface Pad {
           </table>
         </div>
       }
+      </div>
 
       <!-- The page's stats, lined up under the zones. -->
       <ng-content />
 
-      <p class="foot faint">
-        Net tone = (positive − negative) ÷ headlines. Within ±0.10 counts as neutral.
-        @if (silent().length > 0) {
-          Not shown, no headlines: {{ silent().join(', ') }}.
-        }
-      </p>
+      @if (!collapsed()) {
+        <p class="foot faint">
+          Net tone = (positive − negative) ÷ headlines. Within ±0.10 counts as neutral.
+          @if (silent().length > 0) {
+            Not shown, no headlines: {{ silent().join(', ') }}.
+          }
+        </p>
+      }
     </section>
   `,
   styles: [
@@ -440,6 +465,17 @@ interface Pad {
         font-size: 12px;
         border-top: 1px solid var(--border-soft);
       }
+      .collapse {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .chev {
+        transition: transform 0.2s ease;
+      }
+      .chev.up {
+        transform: rotate(180deg);
+      }
     `,
   ],
 })
@@ -450,6 +486,18 @@ export class NewsPond {
   readonly pickStock = output<number>();
 
   readonly view = signal<'pond' | 'table'>('pond');
+  /** Pond folded away, remembered between visits. */
+  readonly collapsed = signal(readCollapsed());
+
+  toggle(): void {
+    const next = !this.collapsed();
+    this.collapsed.set(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, next ? 'yes' : 'no');
+    } catch {
+      /* Storage disabled: the choice lasts for this visit. */
+    }
+  }
 
   protected readonly w = W;
   protected readonly h = H;
