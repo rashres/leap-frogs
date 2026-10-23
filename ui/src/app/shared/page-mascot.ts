@@ -8,10 +8,10 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 export type MascotName = 'portfolio' | 'markets' | 'news' | 'orders';
 
 const ALT: Record<MascotName, string> = {
-  portfolio: 'The LEAP frog',
-  markets: 'The LEAP frog holding a coin',
-  news: 'The LEAP frog reading a newspaper',
-  orders: 'The LEAP frog carrying a parcel',
+  portfolio: 'The LilyPad frog',
+  markets: 'The LilyPad frog holding a coin',
+  news: 'The LilyPad frog reading a newspaper',
+  orders: 'The LilyPad frog carrying a parcel',
 };
 
 @Component({

@@ -1,19 +1,12 @@
 <div class="auth">
   <section class="pane form-pane" aria-labelledby="auth-title">
     <header class="brand-row">
-      <a class="brand" routerLink="/login" aria-label="LEAP Console">
+      <a class="brand" routerLink="/login" aria-label="LilyPad Console">
         <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-          <rect width="32" height="32" rx="8" fill="var(--text)" />
-          <path
-            d="M7 21 L13 14 L18 18 L25 9"
-            stroke="var(--panel)"
-            stroke-width="2.8"
-            fill="none"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        <span class="brand-name">LEAP</span>
+            <path d="M16 16 L21.92 3.31 A14 14 0 1 0 29.16 11.21 Z" fill="#4cb84a" />
+            <path d="M16 16 L28.22 11.55 A13 13 0 0 0 21.49 4.22 Z" fill="#8f8f8f" transform="translate(2.2 -1.4)" />
+          </svg>
+        <span class="brand-name">LilyPad</span>
       </a>
       <div class="brand-actions">
         <span class="brand-meta faint">Multi-market console</span>
@@ -141,7 +134,7 @@
         @if (signup()) {
           <p class="switch faint">Already have an account? <a class="text-link bold" routerLink="/login">Sign in</a></p>
         } @else if (!admin()) {
-          <p class="switch faint">New to LEAP? <a class="text-link bold" routerLink="/signup">Create an account</a></p>
+          <p class="switch faint">New to LilyPad? <a class="text-link bold" routerLink="/signup">Create an account</a></p>
         }
       </form>
 

@@ -201,7 +201,7 @@ export class YahooNewsProvider implements NewsProvider {
       response = await fetch(url);
     } catch {
       throw new NewsUnavailable(
-        'The fallback news feed could not be reached. Headlines come through the LEAP API, so check that it is running.',
+        'The fallback news feed could not be reached. Headlines come through the LilyPad server, so check that it is running.',
       );
     }
 

@@ -3,20 +3,6 @@
     <span description>Live</span>
     <!-- Each item lands straight in the header's actions row, which spaces them. -->
     <ng-container ngProjectAs="[actions]">
-      <div class="segmented" role="group" aria-label="Page view, saved for next time">
-        <button type="button" [class.on]="simple()" [attr.aria-pressed]="simple()" (click)="setView('simple')"
-                title="One plain list with big tone labels">Simple</button>
-        <button type="button" [class.on]="!simple()" [attr.aria-pressed]="!simple()" (click)="setView('detailed')"
-                title="The pond, top stories and tone columns">Detailed</button>
-      </div>
-      @if (sourceText(); as text) {
-        <span class="pill pill-muted" [attr.title]="news.fellBackBecause() ?? 'Where these headlines come from'">
-          <leap-icon name="globe" [size]="14" />{{ text }}
-        </span>
-      }
-      @if (news.fellBackBecause(); as reason) {
-        <span class="pill pill-warn" [attr.title]="reason"><leap-icon name="alert" [size]="14" />Backup source</span>
-      }
       <button type="button" class="btn btn-secondary btn-sm" (click)="reload()" [disabled]="loading()">
         <leap-icon name="refresh" [size]="16" [class.spin]="loading()" />
         {{ loading() ? 'Loading…' : 'Refresh' }}
@@ -48,7 +34,7 @@
     </div>
     <p class="sr-only" role="status">Gathering headlines…</p>
   } @else {
-    <!-- News sentiment. Detailed: the pond, with the stats as its base. Simple: the stats alone. -->
+    <!-- News sentiment: the pond (which can be folded away), with the stats as its base. -->
     <ng-template #heading>
       <h2 class="mood-title" id="mood-title">News sentiment</h2>
       <p class="verdict">{{ verdict() }}</p>
@@ -56,7 +42,7 @@
 
     <!-- One frog per sentiment, in zone order: red negative, grey neutral, green positive. -->
     <ng-template #frogs>
-      <ul class="frogs" [class.zoned]="!simple()">
+      <ul class="frogs zoned">
         @for (t of tones(); track t.key) {
           <li [class.lead]="t.key === leadTone()" [class]="'z-' + t.key">
             <img class="frog" [src]="t.image" alt="" width="56" height="57" />
@@ -70,35 +56,28 @@
     </ng-template>
 
     <section class="mood panel" aria-labelledby="mood-title">
-      @if (simple()) {
-        <div class="mood-body">
-          <ng-container [ngTemplateOutlet]="heading" />
-          <ng-container [ngTemplateOutlet]="frogs" />
-        </div>
-      } @else {
-        <leap-news-pond [rows]="board()" [selected]="selected()" (pickStock)="pick($event)">
-          <div pondTitle><ng-container [ngTemplateOutlet]="heading" /></div>
-          <ng-container [ngTemplateOutlet]="frogs" />
-          <dl class="facts">
-            <div>
-              <dt>Headlines</dt>
-              <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
-            </div>
-            <div>
-              <dt>Stocks in the news</dt>
-              <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
-            </div>
-            <div>
-              <dt>Most written about</dt>
-              <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
-            </div>
-            <div>
-              <dt>Latest</dt>
-              <dd><span class="v">{{ stats().newest }}</span></dd>
-            </div>
-          </dl>
-        </leap-news-pond>
-      }
+      <leap-news-pond [rows]="board()" [selected]="selected()" (pickStock)="pick($event)">
+        <div pondTitle><ng-container [ngTemplateOutlet]="heading" /></div>
+        <ng-container [ngTemplateOutlet]="frogs" />
+        <dl class="facts">
+          <div>
+            <dt>Headlines</dt>
+            <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
+          </div>
+          <div>
+            <dt>Stocks in the news</dt>
+            <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
+          </div>
+          <div>
+            <dt>Most written about</dt>
+            <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
+          </div>
+          <div>
+            <dt>Latest</dt>
+            <dd><span class="v">{{ stats().newest }}</span></dd>
+          </div>
+        </dl>
+      </leap-news-pond>
     </section>
 
     <!-- Stock chips -->
@@ -127,12 +106,10 @@
     <!-- Filters -->
     <div class="toolbar">
       <div class="tb-left">
-        @if (!simple()) {
-          <div class="segmented" role="group" aria-label="Reading order, saved for next time">
-            <button type="button" [class.on]="order() === 'tone'" [attr.aria-pressed]="order() === 'tone'" (click)="setOrder('tone')">By tone</button>
-            <button type="button" [class.on]="order() === 'newest'" [attr.aria-pressed]="order() === 'newest'" (click)="setOrder('newest')">Newest first</button>
-          </div>
-        }
+        <div class="segmented" role="group" aria-label="Reading order, saved for next time">
+          <button type="button" [class.on]="order() === 'tone'" [attr.aria-pressed]="order() === 'tone'" (click)="setOrder('tone')">By tone</button>
+          <button type="button" [class.on]="order() === 'newest'" [attr.aria-pressed]="order() === 'newest'" (click)="setOrder('newest')">Newest first</button>
+        </div>
         <div class="segmented" role="group" aria-label="Filter by tone">
           @for (m of moods; track m) {
             <button type="button" [class.on]="mood() === m" [attr.aria-pressed]="mood() === m" (click)="mood.set(m)">
@@ -235,7 +212,7 @@
               {{ day.label }}<span class="day-count">{{ day.items.length }}</span>
             </h2>
             @for (item of day.items; track item.id) {
-              <leap-headline-row [item]="item" [selected]="selected()" [variant]="simple() ? 'simple' : 'full'" (pickStock)="pick($event)" />
+              <leap-headline-row [item]="item" [selected]="selected()" variant="full" (pickStock)="pick($event)" />
             }
           }
           @if (hidden() > 0) {
@@ -270,7 +247,7 @@
           the same as neutral news.
         </p>
         <p>
-          <strong>The pond.</strong> In the detailed view, each stock is placed by its net tone: positive headlines minus
+          <strong>The pond.</strong> Each stock is placed by its net tone: positive headlines minus
           negative ones, divided by all its headlines. Within ±0.10 it sits in the neutral zone. A stock with fewer than
           five headlines is faded, because a handful of headlines can swing it either way. Stocks with no headlines are
           left out. Where a stock sits describes the wording of its headlines, not the stock.
@@ -281,7 +258,7 @@
             NewsAPI.org: the most recent hundred headlines from the last seven days, from a fixed list of financial
             publishers.
           } @else {
-            Yahoo Finance search and headline feeds, fetched by the LEAP API, up to fifty per stock, with repeats merged.
+            Yahoo Finance search and headline feeds, fetched by the LilyPad server, up to fifty per stock, with repeats merged.
           }
         </p>
       </div>
