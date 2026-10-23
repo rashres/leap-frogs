@@ -56,12 +56,40 @@ function xOf(net: number): number {
   return i * ZW + 50 + ((Math.max(-1, Math.min(1, net)) - a) / (b - a)) * (ZW - 100);
 }
 
-/** A circle with a notch cut out, like a lily pad. */
-function padPath(cx: number, cy: number, r: number, rot: number): string {
-  const a1 = ((rot - 18) * Math.PI) / 180;
-  const a2 = ((rot + 18) * Math.PI) / 180;
-  const p = (a: number) => `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
-  return `M${cx},${cy} L${p(a1)} A${r},${r} 0 1 0 ${p(a2)} Z`;
+/** Pads lie flat on the water, so they are drawn a little squashed. */
+const TILT = 0.86;
+const NOTCH = 12;
+
+/**
+ * A lily pad seen at a slant: a slightly wavy rim with a narrow slit running
+ * into the middle at `rot` degrees, veins fanning out from the centre, and a
+ * soft highlight on the side away from the slit. Deterministic for a given rot.
+ */
+function drawPad(cx: number, cy: number, r: number, rot: number): { outline: string; veins: string; shine: { x: number; y: number } } {
+  const rad = (deg: number) => (deg * Math.PI) / 180;
+  const at = (deg: number, dist: number) => [cx + dist * Math.cos(rad(deg)), cy + dist * TILT * Math.sin(rad(deg))] as const;
+  const f = (pt: readonly [number, number]) => `${pt[0].toFixed(1)},${pt[1].toFixed(1)}`;
+
+  // The rim, from one side of the slit round to the other, with a gentle wobble.
+  const steps = 26;
+  const rim = Array.from({ length: steps + 1 }, (_, i) => {
+    const deg = rot + NOTCH + (i / steps) * (360 - 2 * NOTCH);
+    const wobble = 1 + 0.035 * Math.sin(rad(deg * 5 + rot)) + 0.02 * Math.sin(rad(deg * 11));
+    return at(deg, r * wobble);
+  });
+  const mid = (a: readonly [number, number], b: readonly [number, number]) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2] as const;
+  let outline = `M${cx},${cy} L${f(rim[0])}`;
+  for (let i = 1; i < rim.length - 1; i++) outline += ` Q${f(rim[i])} ${f(mid(rim[i], rim[i + 1]))}`;
+  outline += ` L${f(rim[rim.length - 1])} Z`;
+
+  // Veins fan out between the two edges of the slit; the one opposite it is the longest.
+  const veins = Array.from({ length: 9 }, (_, i) => {
+    const deg = rot + 36 + i * 36;
+    return `M${cx},${cy} L${f(at(deg, r * (i === 4 ? 0.9 : 0.78)))}`;
+  }).join(' ');
+
+  const [x, y] = at(rot + 180, r * 0.38);
+  return { outline, veins, shine: { x, y } };
 }
 
 const signed = (n: number) => `${n >= 0 ? '+' : '−'}${Math.abs(n).toFixed(2)}`;
@@ -80,7 +108,11 @@ interface Pad {
   x: number;
   y: number;
   r: number;
-  path: string;
+  /** The pad's half-height once tilted. */
+  ry: number;
+  outline: string;
+  veins: string;
+  shine: { x: number; y: number };
   label: string;
 }
 
@@ -127,13 +159,17 @@ interface Pad {
                  [attr.aria-pressed]="selected() === p.id" [attr.aria-label]="p.label"
                  (click)="pickStock.emit(p.id)" (keydown.enter)="pickStock.emit(p.id)" (keydown.space)="$event.preventDefault(); pickStock.emit(p.id)">
                 <title>{{ p.label }}</title>
-                <circle class="ring" [class.on]="selected() === p.id" [attr.cx]="p.x" [attr.cy]="p.y" [attr.r]="p.r + 5" />
-                <path class="leaf" [attr.d]="p.path" />
+                <ellipse class="ripple" [attr.cx]="p.x" [attr.cy]="p.y + 2" [attr.rx]="p.r * 1.16" [attr.ry]="p.ry * 1.16" />
+                <ellipse class="shadow" [attr.cx]="p.x + 3" [attr.cy]="p.y + 5" [attr.rx]="p.r" [attr.ry]="p.ry" />
+                <ellipse class="ring" [class.on]="selected() === p.id" [attr.cx]="p.x" [attr.cy]="p.y" [attr.rx]="p.r + 6" [attr.ry]="p.ry + 6" />
+                <path class="leaf" [attr.d]="p.outline" />
+                <path class="vein" [attr.d]="p.veins" />
+                <ellipse class="shine" [attr.cx]="p.shine.x" [attr.cy]="p.shine.y" [attr.rx]="p.r * 0.34" [attr.ry]="p.ry * 0.22" />
                 <image [attr.href]="frog[p.zone]" [attr.x]="p.x - p.r * 0.575" [attr.y]="p.y - p.r * 0.5 - 2"
                        [attr.width]="p.r * 1.15" [attr.height]="p.r * 0.97" />
-                <rect class="tag" [class.on]="selected() === p.id" [attr.x]="p.x - 36" [attr.y]="p.y + p.r + 5" width="72" height="29" rx="14.5" />
-                <text class="tag-sym" [attr.x]="p.x" [attr.y]="p.y + p.r + 18" text-anchor="middle">{{ p.symbol }}</text>
-                <text class="tag-sub" [attr.x]="p.x" [attr.y]="p.y + p.r + 29" text-anchor="middle">
+                <rect class="tag" [class.on]="selected() === p.id" [attr.x]="p.x - 36" [attr.y]="p.y + p.ry + 8" width="72" height="29" rx="14.5" />
+                <text class="tag-sym" [attr.x]="p.x" [attr.y]="p.y + p.ry + 21" text-anchor="middle">{{ p.symbol }}</text>
+                <text class="tag-sub" [attr.x]="p.x" [attr.y]="p.y + p.ry + 32" text-anchor="middle">
                   {{ p.total }} · {{ signed(p.net) }}{{ p.low ? ' · low' : '' }}
                 </text>
               </g>
@@ -182,15 +218,17 @@ interface Pad {
     `
       :host {
         display: block;
-        --leaf: #dbe9b4;
-        --leaf-line: #7f9f2c;
+        --leaf: #4f8a3a;
+        --leaf-line: #2f5e24;
+        --vein: #79b25a;
         --tag-bg: #ffffff;
         --tag-ink: #14201a;
         --tag-sub: #3f4d44;
       }
       :host-context([data-theme='dark']) {
-        --leaf: #c8dc8f;
-        --leaf-line: #9fbf45;
+        --leaf: #4a8636;
+        --leaf-line: #7fb85e;
+        --vein: #86c065;
         --tag-bg: #1c1c1c;
         --tag-ink: #f2f2f2;
         --tag-sub: #b3b3b3;
@@ -307,7 +345,29 @@ interface Pad {
       .leaf {
         fill: var(--leaf);
         stroke: var(--leaf-line);
-        stroke-width: 2;
+        stroke-width: 1.6;
+        stroke-linejoin: round;
+      }
+      .vein {
+        fill: none;
+        stroke: var(--vein);
+        stroke-width: 1.2;
+        stroke-linecap: round;
+        opacity: 0.7;
+      }
+      .shine {
+        fill: #ffffff;
+        opacity: 0.14;
+      }
+      .shadow {
+        fill: #0b2e1a;
+        opacity: 0.2;
+      }
+      .ripple {
+        fill: none;
+        stroke: var(--leaf-line);
+        stroke-width: 1;
+        opacity: 0.22;
       }
       .tag {
         fill: var(--tag-bg);
@@ -429,14 +489,17 @@ export class NewsPond {
           x: xOf(net),
           y: 0,
           r: radius,
-          path: '',
+          ry: radius * TILT,
+          outline: '',
+          veins: '',
+          shine: { x: 0, y: 0 },
           label:
             `${r.symbol}, ${c.total} ${c.total === 1 ? 'headline' : 'headlines'}: ${c.positive} positive, ${c.neutral} neutral, ` +
             `${c.negative} negative. Net ${signed(net)}, ${MOOD_LABEL[zone].toLowerCase()} zone${low ? ', low volume' : ''}. Press to filter.`,
         };
       });
     placeVertically(pads);
-    pads.forEach((p, i) => (p.path = padPath(p.x, p.y, p.r, 300 + i * 37)));
+    pads.forEach((p, i) => Object.assign(p, drawPad(p.x, p.y, p.r, 300 + i * 37)));
     return pads;
   });
 }

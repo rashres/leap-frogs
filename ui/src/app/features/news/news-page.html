@@ -47,29 +47,6 @@
     </div>
     <p class="sr-only" role="status">Gathering headlines…</p>
   } @else {
-    <!-- Stock chips -->
-    <nav class="stocks" aria-label="Filter by stock">
-      <button type="button" class="stock" [class.on]="selected() === null" (click)="pick(null)" [attr.aria-pressed]="selected() === null">
-        <span class="all-dot"><leap-icon name="layers" [size]="16" /></span>
-        <span class="st-text"><span class="st-sym">All stocks</span><span class="st-count num">{{ all().length }} headlines</span></span>
-      </button>
-      @for (s of stocks(); track s.id) {
-        <button type="button" class="stock" [class.on]="selected() === s.id" [class.quiet]="s.total === 0"
-                (click)="pick(s.id)" [attr.aria-pressed]="selected() === s.id" [attr.title]="s.title">
-          <leap-instrument-logo [symbol]="s.symbol" [size]="32" />
-          <span class="st-text">
-            <span class="st-sym">{{ s.symbol }}</span>
-            <span class="st-count num">{{ s.total ? s.total + (s.total === 1 ? ' headline' : ' headlines') : 'No headlines' }}</span>
-          </span>
-          @if (s.total > 0) {
-            <span class="st-bar" aria-hidden="true">
-              <i class="pos" [style.width.%]="s.pos"></i><i class="neu" [style.width.%]="s.neu"></i><i class="neg" [style.width.%]="s.neg"></i>
-            </span>
-          }
-        </button>
-      }
-    </nav>
-
     <!-- News sentiment. Detailed: the pond, with the stats as its base. Simple: the stats alone. -->
     <ng-template #heading>
       <h2 class="mood-title" id="mood-title">News sentiment</h2>
@@ -122,6 +99,29 @@
         </leap-news-pond>
       }
     </section>
+
+    <!-- Stock chips -->
+    <nav class="stocks" aria-label="Filter by stock">
+      <button type="button" class="stock" [class.on]="selected() === null" (click)="pick(null)" [attr.aria-pressed]="selected() === null">
+        <span class="all-dot"><leap-icon name="layers" [size]="16" /></span>
+        <span class="st-text"><span class="st-sym">All stocks</span><span class="st-count num">{{ all().length }} headlines</span></span>
+      </button>
+      @for (s of stocks(); track s.id) {
+        <button type="button" class="stock" [class.on]="selected() === s.id" [class.quiet]="s.total === 0"
+                (click)="pick(s.id)" [attr.aria-pressed]="selected() === s.id" [attr.title]="s.title">
+          <leap-instrument-logo [symbol]="s.symbol" [size]="32" />
+          <span class="st-text">
+            <span class="st-sym">{{ s.symbol }}</span>
+            <span class="st-count num">{{ s.total ? s.total + (s.total === 1 ? ' headline' : ' headlines') : 'No headlines' }}</span>
+          </span>
+          @if (s.total > 0) {
+            <span class="st-bar" aria-hidden="true">
+              <i class="pos" [style.width.%]="s.pos"></i><i class="neu" [style.width.%]="s.neu"></i><i class="neg" [style.width.%]="s.neg"></i>
+            </span>
+          }
+        </button>
+      }
+    </nav>
 
     <!-- Filters -->
     <div class="toolbar">
