@@ -1,8 +1,11 @@
 import { Injectable, computed, signal } from '@angular/core';
+import { dictFor, loadDict } from './dict';
+import { matchServerMessage } from './server-messages';
 
 /**
- * The interface language. Pages that have been translated read their words
- * from a dictionary keyed by `Lang`; pages that have not stay in English.
+ * The interface language. Words are written in English in the code and looked
+ * up in DICT (see dict.ts) for the other languages; the shell and Operations
+ * home keep their own keyed dictionaries.
  */
 export type Lang = 'en' | 'es' | 'zh' | 'hi' | 'fr';
 
@@ -27,9 +30,34 @@ export function fill(text: string, values: Readonly<Record<string, string | numb
   return text.replace(/\{(\w+)\}/g, (match, key: string) => (key in values ? String(values[key]) : match));
 }
 
+/** The chosen language. Module-level so plain format helpers can follow it too. */
+const current = signal<Lang>(readLang());
+loadDict(current());
+
+/** Locale for the chosen language. Reading it inside a template or computed re-runs that code on a language change. */
+export function currentLocale(): string {
+  return LOCALE[current()];
+}
+
+/** Marks English text that is translated later, where it is shown (`{{ x | t }}`), so the checker finds it. */
+export const tk = <T extends string>(text: T): T => text;
+
+/** English text in the chosen language, with `{name}` placeholders filled. Unknown text stays in English. */
+export function translate(text: string, values?: Readonly<Record<string, string | number>>): string {
+  const lang = current();
+  if (lang === 'en') return values ? fill(text, values) : text;
+  const dict = dictFor(lang);
+  if (!dict) return values ? fill(text, values) : text;
+  const out = dict[text];
+  if (out !== undefined) return values ? fill(out, values) : out;
+  const server = matchServerMessage(text);
+  if (server) return fill(dict[server.key] ?? server.key, server.values);
+  return values ? fill(text, values) : text;
+}
+
 @Injectable({ providedIn: 'root' })
 export class I18nService {
-  private readonly current = signal<Lang>(readLang());
+  private readonly current = current;
 
   readonly lang = this.current.asReadonly();
   readonly locale = computed(() => LOCALE[this.current()]);
@@ -38,8 +66,14 @@ export class I18nService {
     document.documentElement.lang = this.current();
   }
 
+  /** See `translate`. */
+  tr(text: string, values?: Readonly<Record<string, string | number>>): string {
+    return translate(text, values);
+  }
+
   set(lang: string): void {
     const next = isLang(lang) ? lang : 'en';
+    loadDict(next);
     this.current.set(next);
     document.documentElement.lang = next;
     try {

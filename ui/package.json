@@ -5,7 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development"
+    "watch": "ng build --watch --configuration development",
+    "i18n:check": "node scripts/check-i18n.mjs"
   },
   "private": true,
   "packageManager": "npm@10.9.2",
