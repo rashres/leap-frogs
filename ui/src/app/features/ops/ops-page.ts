@@ -4,18 +4,31 @@ import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuditService } from '../../core/api/audit.service';
 import { AuthService } from '../../core/api/auth.service';
 import { toApiError } from '../../core/api/api-error';
-import type { Account, Order } from '../../core/api/models';
+import type { Account, Order, OrderStatus } from '../../core/api/models';
 import { OpsService } from '../../core/api/ops.service';
-import { formatQty, formatStamp, formatUsd } from '../../shared/format';
+import { I18nService, fill } from '../../core/i18n/i18n.service';
+import { formatQty } from '../../shared/format';
 import { Icon } from '../../shared/icon';
-import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
+import { statusTone } from '../../shared/order-status';
 import { PageHeader } from '../../shared/page-header';
+import { OPS_TEXT, type OpsText } from './ops-page.i18n';
 
 /** How many of the newest orders the page reads. The audit API caps a page at 100. */
 const RECENT = 100;
 const LATEST = 5;
 
 type Kind = 'frozen' | 'failed' | 'pending';
+
+/** Glyphs keep each state readable without relying on colour. */
+const GLYPH: Readonly<Record<Kind, string>> = { frozen: '❄', failed: '✕', pending: '◷' };
+const STATUS_GLYPH: Readonly<Record<OrderStatus, string>> = {
+  CREATED: '◷',
+  PENDING: '◷',
+  COMPLETE: '✓',
+  FAILED: '✕',
+  CANCELLED: '–',
+  EXPIRED: '⌛',
+};
 
 interface LookRow {
   readonly key: string;
@@ -24,6 +37,13 @@ interface LookRow {
   readonly name: string;
   readonly why: string;
   readonly tag: string;
+  readonly glyph: string;
+}
+
+interface FreezeNote {
+  readonly reason: string;
+  readonly by: string;
+  readonly at: string;
 }
 
 /**
@@ -32,7 +52,7 @@ interface LookRow {
  *
  * Accounts come from the ops account list. Orders come from the newest page of
  * the audit log, so order counts only cover those orders; the page says so when
- * there are more.
+ * there are more. Words come from ops-page.i18n.ts in the chosen language.
  */
 @Component({
   selector: 'leap-ops-page',
@@ -45,22 +65,27 @@ export class OpsPage {
   private readonly ops = inject(OpsService);
   private readonly audit = inject(AuditService);
   private readonly auth = inject(AuthService);
+  private readonly i18n = inject(I18nService);
+
+  /** Page words in the chosen language. */
+  readonly t = computed<OpsText>(() => OPS_TEXT[this.i18n.lang()]);
 
   readonly accounts = signal<readonly Account[]>([]);
   readonly orders = signal<readonly Order[]>([]);
   /** True when the audit log holds more orders than the page read. */
   readonly truncated = signal(false);
-  /** Latest freeze reason per frozen account. */
-  readonly freezeReasons = signal<ReadonlyMap<number, { reason: string; by: string; at: string }>>(new Map());
+  /** Latest freeze note per frozen account. */
+  readonly freezeNotes = signal<ReadonlyMap<number, FreezeNote>>(new Map());
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly loadedAt = signal<Date | null>(null);
 
   readonly greeting = computed(() => {
+    const t = this.t();
     const hour = new Date().getHours();
-    const part = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
     const name = this.auth.me()?.displayName;
-    return name ? `${part}, ${name}` : part;
+    if (!name) return t.greetingNoName;
+    return fill(hour < 12 ? t.morning : hour < 18 ? t.afternoon : t.evening, { name });
   });
 
   private readonly nameOf = computed(() => new Map(this.accounts().map((a) => [a.accountId, a.name])));
@@ -77,85 +102,103 @@ export class OpsPage {
   private readonly frozen = computed(() => this.accounts().filter((a) => a.status === 'FROZEN'));
 
   readonly kpis = computed(() => {
+    const t = this.t();
     const accountsIn = (orders: readonly Order[]) => new Set(orders.map((o) => o.accountId)).size;
-    const across = (n: number) => (n === 0 ? 'None right now' : `Across ${n} ${n === 1 ? 'account' : 'accounts'}`);
+    const across = (n: number) => (n === 0 ? t.noneNow : n === 1 ? t.acrossOne : fill(t.across, { n }));
     const failed = this.failedToday();
     const pending = this.pending();
     return [
-      { key: 'accounts', label: 'Accounts', value: this.accounts().length, sub: 'All trading accounts', tone: '', link: '/ops/accounts' },
-      { key: 'frozen', label: 'Frozen', value: this.frozen().length, sub: 'New orders rejected', tone: 'info', link: '/ops/accounts' },
-      { key: 'failed', label: 'Failed orders today', value: failed.length, sub: across(accountsIn(failed)), tone: 'down', link: '/audit' },
-      { key: 'pending', label: 'Pending orders', value: pending.length, sub: across(accountsIn(pending)), tone: 'warn', link: '/audit' },
+      { key: 'accounts', label: t.kAccounts, value: this.accounts().length, sub: t.kAccountsSub, tone: '', glyph: '', link: '/ops/accounts' },
+      { key: 'frozen', label: t.kFrozen, value: this.frozen().length, sub: t.kFrozenSub, tone: 'info', glyph: GLYPH.frozen, link: '/ops/accounts' },
+      { key: 'failed', label: t.kFailed, value: failed.length, sub: across(accountsIn(failed)), tone: 'down', glyph: GLYPH.failed, link: '/audit' },
+      { key: 'pending', label: t.kPending, value: pending.length, sub: across(accountsIn(pending)), tone: 'warn', glyph: GLYPH.pending, link: '/audit' },
     ];
   });
 
   /** Frozen accounts first, then accounts with failed orders today, then accounts with pending orders. */
   readonly look = computed<LookRow[]>(() => {
+    const t = this.t();
     const rows: LookRow[] = [];
-    const reasons = this.freezeReasons();
+    const notes = this.freezeNotes();
+    const me = this.auth.me()?.username;
+    const nameOf = (id: number) => this.nameOf().get(id) ?? `#${id}`;
+
     for (const a of this.frozen()) {
-      const r = reasons.get(a.accountId);
-      const why = r ? `Frozen by ${r.by} on ${formatStamp(r.at)}. ${r.reason}` : 'Frozen. New orders are rejected until it is unfrozen.';
-      rows.push({ key: `f${a.accountId}`, kind: 'frozen', accountId: a.accountId, name: a.name, why, tag: 'Frozen' });
+      const note = notes.get(a.accountId);
+      const why = note
+        ? fill(t.frozenBy, { who: note.by === me ? t.you : note.by, date: this.i18n.day(note.at) }) + (note.reason ? ' ' + note.reason : '')
+        : t.frozenPlain;
+      rows.push({ key: `f${a.accountId}`, kind: 'frozen', accountId: a.accountId, name: a.name, why, tag: t.tagFrozen, glyph: GLYPH.frozen });
     }
-    for (const [id, list] of this.byAccount(this.failedToday())) {
-      const symbols = [...new Set(list.map((o) => o.symbol))].join(', ');
+
+    for (const [id, list] of byAccount(this.failedToday())) {
       const n = list.length;
+      const params = { n, symbols: symbolsOf(list, t), side: sideWord(list, t, false), sides: sideWord(list, t, true), time: this.i18n.time(list[0].placedTime) };
       rows.push({
         key: `x${id}`,
         kind: 'failed',
         accountId: id,
-        name: this.nameOf().get(id) ?? `Account ${id}`,
-        why: `${n} ${symbols} ${n === 1 ? 'order' : 'orders'} rejected today, latest at ${formatStamp(list[0].placedTime)}.`,
-        tag: `${n} failed`,
+        name: nameOf(id),
+        why: fill(n === 1 ? t.failedOne : t.failed, params),
+        tag: fill(t.tagFailed, { n }),
+        glyph: GLYPH.failed,
       });
     }
-    for (const [id, list] of this.byAccount(this.pending())) {
+
+    for (const [id, list] of byAccount(this.pending())) {
       const n = list.length;
-      const oldest = list[list.length - 1];
+      const limit = list.every((o) => o.orderType === 'LIMIT');
+      const template = limit ? (n === 1 ? t.pendingLimitOne : t.pendingLimit) : n === 1 ? t.pendingOne : t.pending;
       rows.push({
         key: `p${id}`,
         kind: 'pending',
         accountId: id,
-        name: this.nameOf().get(id) ?? `Account ${id}`,
-        why: `${n} ${n === 1 ? 'order' : 'orders'} waiting, the oldest since ${formatStamp(oldest.placedTime)}.`,
-        tag: `${n} pending`,
+        name: nameOf(id),
+        why: fill(template, { n, since: this.since(list[list.length - 1].placedTime) }),
+        tag: fill(t.tagPending, { n }),
+        glyph: GLYPH.pending,
       });
     }
     return rows;
   });
 
-  readonly latest = computed(() =>
-    this.orders()
+  readonly latest = computed(() => {
+    const t = this.t();
+    return this.orders()
       .slice(0, LATEST)
       .map((o) => ({
         id: o.orderId,
         buy: o.side === 'BUY',
+        side: o.side === 'BUY' ? t.buy : t.sell,
         symbol: o.symbol,
         qty: formatQty(o.quantity),
-        account: `${this.nameOf().get(o.accountId) ?? 'Account'} #${o.accountId}`,
+        account: `${this.nameOf().get(o.accountId) ?? ''} #${o.accountId}`.trim(),
         accountId: o.accountId,
-        when: formatStamp(o.placedTime),
-        value: formatUsd(o.value),
-        status: ORDER_STATUS_LABELS[o.status],
+        when: this.i18n.stamp(o.placedTime),
+        value: this.i18n.usd(o.value),
+        status: t.status[o.status],
+        glyph: STATUS_GLYPH[o.status],
         tone: statusTone(o.status),
-      })),
-  );
+      }));
+  });
 
   readonly summary = computed(() => {
-    const n = this.look().length;
-    if (this.loading() && !this.loadedAt()) return 'Loading today’s activity…';
-    if (n === 0) return 'Nothing needs a look right now.';
-    return `${n} ${n === 1 ? 'item needs' : 'items need'} a look today.`;
+    const t = this.t();
+    const n = new Set(this.look().map((l) => l.accountId)).size;
+    if (this.loading() && !this.loadedAt()) return t.loadingSummary;
+    if (n === 0) return t.quietSummary;
+    return n === 1 ? t.summaryOne : fill(t.summary, { n });
   });
 
-  readonly updated = computed(() => {
-    const at = this.loadedAt();
-    return at ? at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : null;
-  });
+  /** Set once the first load has finished, so skeletons only show before any data. */
+  readonly loaded = computed(() => this.loadedAt() !== null);
 
   constructor() {
     this.reload();
+  }
+
+  inspectLabel(name: string): string {
+    return fill(this.t().inspectAria, { name });
   }
 
   reload(): void {
@@ -167,7 +210,7 @@ export class OpsPage {
       .pipe(
         switchMap(({ accounts, page }) => {
           const frozen = accounts.filter((a) => a.status === 'FROZEN');
-          const reasons$ = frozen.length
+          const notes$ = frozen.length
             ? forkJoin(
                 frozen.map((a) =>
                   this.ops.statusEvents(a.accountId).pipe(
@@ -176,18 +219,18 @@ export class OpsPage {
                   ),
                 ),
               )
-            : of([] as (readonly [number, ReturnType<typeof latestFreeze>])[]);
-          return reasons$.pipe(map((reasons) => ({ accounts, page, reasons })));
+            : of([] as (readonly [number, FreezeNote | null])[]);
+          return notes$.pipe(map((notes) => ({ accounts, page, notes })));
         }),
       )
       .subscribe({
-        next: ({ accounts, page, reasons }) => {
+        next: ({ accounts, page, notes }) => {
           this.accounts.set(accounts);
           this.orders.set(page.orders);
           this.truncated.set(page.hasNext);
-          const found = new Map<number, { reason: string; by: string; at: string }>();
-          for (const [id, r] of reasons) if (r) found.set(id, r);
-          this.freezeReasons.set(found);
+          const found = new Map<number, FreezeNote>();
+          for (const [id, note] of notes) if (note) found.set(id, note);
+          this.freezeNotes.set(found);
           this.error.set(null);
           this.loadedAt.set(new Date());
           this.loading.set(false);
@@ -199,20 +242,43 @@ export class OpsPage {
       });
   }
 
-  /** Orders grouped by account, newest first within each, in order of each account's newest order. */
-  private byAccount(orders: readonly Order[]): Map<number, Order[]> {
-    const groups = new Map<number, Order[]>();
-    for (const o of orders) {
-      const list = groups.get(o.accountId);
-      if (list) list.push(o);
-      else groups.set(o.accountId, [o]);
-    }
-    return groups;
+  /** "this morning", "this afternoon", "this evening", or a date for older orders. */
+  private since(iso: string): string {
+    const t = this.t();
+    const at = new Date(iso);
+    if (at.toDateString() !== new Date().toDateString()) return this.i18n.day(iso);
+    const hour = at.getHours();
+    return hour < 12 ? t.thisMorning : hour < 18 ? t.thisAfternoon : t.thisEvening;
   }
 }
 
+/** Orders grouped by account, newest first within each, in order of each account's newest order. */
+function byAccount(orders: readonly Order[]): Map<number, Order[]> {
+  const groups = new Map<number, Order[]>();
+  for (const o of orders) {
+    const list = groups.get(o.accountId);
+    if (list) list.push(o);
+    else groups.set(o.accountId, [o]);
+  }
+  return groups;
+}
+
+/** "TSLA", "TSLA and AAPL", "TSLA, AAPL and others". */
+function symbolsOf(orders: readonly Order[], t: OpsText): string {
+  const symbols = [...new Set(orders.map((o) => o.symbol))];
+  if (symbols.length <= 2) return symbols.join(` ${t.and} `);
+  return `${symbols.slice(0, 2).join(', ')} ${t.and} ${t.others}`;
+}
+
+/** "buy"/"buys", "sell"/"sells", or "order"/"orders" when the group mixes sides. */
+function sideWord(orders: readonly Order[], t: OpsText, many: boolean): string {
+  const sides = new Set(orders.map((o) => o.side));
+  if (sides.size > 1) return many ? t.orderN : t.order1;
+  return orders[0].side === 'BUY' ? (many ? t.buyN : t.buy1) : many ? t.sellN : t.sell1;
+}
+
 /** The newest FREEZE event, as who froze it, when, and why. */
-function latestFreeze(events: readonly Record<string, unknown>[]): { reason: string; by: string; at: string } | null {
+function latestFreeze(events: readonly Record<string, unknown>[]): FreezeNote | null {
   const freezes = events
     .filter((e) => e['action'] === 'FREEZE')
     .sort((a, b) => String(b['occurredAt']).localeCompare(String(a['occurredAt'])));

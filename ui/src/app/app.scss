@@ -484,6 +484,8 @@
   margin: 0 auto;
   padding: 28px 28px 56px;
   outline: none;
+  /* Text size from the accessibility panel. The page is laid out in px, so it scales as a whole. */
+  zoom: var(--text-scale, 1);
 }
 
 /* ---- Collapsed sidebar (desktop only) ------------------------------------- */
