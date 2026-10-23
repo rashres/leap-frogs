@@ -1,0 +1,110 @@
+<div class="page-enter">
+  <leap-page-header [heading]="greeting()">
+    <span description>{{ summary() }}</span>
+    <ng-container ngProjectAs="[actions]">
+      @if (updated(); as at) {
+        <span class="pill pill-muted num"><leap-icon name="clock" [size]="14" />Updated {{ at }}</span>
+      }
+      <button type="button" class="btn btn-secondary btn-sm" (click)="reload()" [disabled]="loading()">
+        <leap-icon name="refresh" [size]="16" [class.spin]="loading()" />
+        {{ loading() ? 'Loading…' : 'Refresh' }}
+      </button>
+    </ng-container>
+  </leap-page-header>
+
+  @if (error(); as message) {
+    <p class="banner" role="alert">
+      <leap-icon name="alert" [size]="16" />
+      <span><strong>Couldn’t load the latest data.</strong> {{ message }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">Try again</button>
+    </p>
+  }
+
+  <!-- Today at a glance -->
+  <section class="kpis" aria-label="Today at a glance">
+    @for (k of kpis(); track k.key) {
+      <a class="kpi" [routerLink]="k.link">
+        <span class="k-label">{{ k.label }}</span>
+        @if (loading() && !updated()) {
+          <span class="skeleton k-sk"></span>
+        } @else {
+          <span class="k-value num" [class]="'t-' + (k.tone || 'plain')">{{ k.value }}</span>
+        }
+        <span class="k-sub">{{ k.sub }}</span>
+      </a>
+    }
+  </section>
+
+  <div class="split">
+    <!-- Needs a look -->
+    <section class="panel look" aria-labelledby="h-look">
+      <div class="head">
+        <h2 id="h-look">Needs a look</h2>
+        <p class="faint">From account status and recent orders.</p>
+      </div>
+      @if (look().length === 0) {
+        <p class="empty faint">{{ loading() && !updated() ? 'Checking accounts…' : 'All quiet. No frozen accounts, failed orders today or pending orders.' }}</p>
+      } @else {
+        <ul>
+          @for (l of look(); track l.key) {
+            <li>
+              <span class="badge" [class]="'b-' + l.kind" aria-hidden="true">{{ l.kind === 'frozen' ? '❄' : l.kind === 'failed' ? '✕' : '◷' }}</span>
+              <div class="who">
+                <p class="name">{{ l.name }} <span class="faint num">#{{ l.accountId }}</span></p>
+                <p class="why">{{ l.why }}</p>
+              </div>
+              <span class="tag" [class]="'b-' + l.kind">{{ l.tag }}</span>
+              <a class="btn btn-secondary btn-sm" [routerLink]="['/ops/accounts', l.accountId]" [attr.aria-label]="'Inspect ' + l.name">Inspect</a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- Tasks -->
+    <section class="tasks" aria-label="Tasks">
+      <a class="task" routerLink="/ops/accounts">
+        <span class="t-title"><leap-icon name="users" [size]="18" />Find or freeze an account</span>
+        <span class="t-sub">Search by name, email or ID. Inspect holdings, orders and freeze history.</span>
+      </a>
+      <a class="task" routerLink="/audit">
+        <span class="t-title"><leap-icon name="activity" [size]="18" />Search order history</span>
+        <span class="t-sub">Filter every order by account or date, and see each order’s life cycle.</span>
+      </a>
+    </section>
+  </div>
+
+  <!-- Latest orders -->
+  <section class="panel latest" aria-labelledby="h-latest">
+    <div class="head row">
+      <h2 id="h-latest">Latest orders</h2>
+      <a routerLink="/audit" class="open">Open Audit <leap-icon name="arrow-right" [size]="14" /></a>
+    </div>
+    @if (latest().length === 0) {
+      <p class="empty faint">{{ loading() && !updated() ? 'Loading orders…' : 'No orders yet.' }}</p>
+    } @else {
+      <ul>
+        @for (o of latest(); track o.id) {
+          <li>
+            <span class="side" [class.buy]="o.buy" [class.sell]="!o.buy"><span aria-hidden="true">{{ o.buy ? '▲' : '▼' }} </span>{{ o.buy ? 'Buy' : 'Sell' }}</span>
+            <div class="who">
+              <p class="name">{{ o.symbol }} <span class="faint num">× {{ o.qty }}</span></p>
+              <p class="why">
+                <a [routerLink]="['/ops/accounts', o.accountId]">{{ o.account }}</a> · <span class="num">{{ o.when }}</span>
+              </p>
+            </div>
+            <span class="value num">{{ o.value }}</span>
+            <span class="pill" [class]="'pill-' + o.tone">{{ o.status }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <p class="foot faint">
+    Operations can view and freeze accounts. Placing or cancelling orders is turned off for this role. Amounts in US dollars.
+    @if (truncated()) {
+      Order counts cover the newest 100 orders.
+    }
+  </p>
+</div>
