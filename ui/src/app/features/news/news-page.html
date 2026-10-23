@@ -1,7 +1,8 @@
 <div class="page-enter">
   <leap-page-header heading="News" mascot="news">
     <span description>Live</span>
-    <div actions>
+    <!-- Each item lands straight in the header's actions row, which spaces them. -->
+    <ng-container ngProjectAs="[actions]">
       <div class="segmented" role="group" aria-label="Page view, saved for next time">
         <button type="button" [class.on]="simple()" [attr.aria-pressed]="simple()" (click)="setView('simple')"
                 title="One plain list with big tone labels">Simple</button>
@@ -20,7 +21,7 @@
         <leap-icon name="refresh" [size]="16" [class.spin]="loading()" />
         {{ loading() ? 'Loading…' : 'Refresh' }}
       </button>
-    </div>
+    </ng-container>
   </leap-page-header>
 
   @if (news.state() === 'unavailable' && all().length === 0) {
