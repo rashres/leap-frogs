@@ -223,6 +223,32 @@ volume and all of its data.
 - Check `.env` credentials are correct
 - Verify Postgres is running on the configured port
 
+## Jenkins Multibranch CI
+
+The root `Jenkinsfile` verifies the Spring API against a temporary PostgreSQL
+container, builds the Angular UI, runs the Python checks, and builds the API
+image. Pull requests and branches run validation; publishing is limited to
+`main` and tags and is opt-in.
+
+Create a **Multibranch Pipeline** item in Jenkins, add this repository as its
+branch source, enable branch and pull-request discovery, and enable tag
+discovery for release builds. Set the script path to `Jenkinsfile` and scan the
+repository now (then configure a webhook or periodic scan).
+
+The Jenkins agent needs Java 17+, Maven, Node.js 20.19+ (22 recommended), npm,
+Python 3 with `venv`, and Docker access. Install the Pipeline: Multibranch, Git
+branch-source (or the provider-specific branch-source plugin), Credentials
+Binding, JUnit, and Workspace Cleanup plugins.
+
+Add a Jenkins **Secret text** credential named `leap-demo-password` whose value
+matches the local `LEAP_DEMO_PASSWORD` used to produce the hashes in
+`database/rbac-seed.sql`. The integration tests use it to authenticate the
+seeded users. To enable image publishing, also add a **Username with password**
+credential named `docker-registry`, then run a `main` or tag build with
+`PUBLISH_IMAGE` enabled and `IMAGE_REPOSITORY` set to the full destination,
+such as `ghcr.io/your-org/leap-frogs-api`. No production deploy is configured
+because this repository does not specify a deployment target.
+
 ---
 
 ## 📝 Notes
