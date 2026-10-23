@@ -1,6 +1,6 @@
 <div class="page-enter">
 	<leap-page-header heading="Audit" mascot="orders">
-		<span description>Search every order recorded in the database by account or date.</span>
+		<span description>Search every order by account or date.</span>
 	</leap-page-header>
 
 	<section class="toolbar panel" aria-label="Audit filters">
@@ -89,7 +89,7 @@
 						</thead>
 						<tbody>
 							@for (order of rows(); track order.orderId) {
-								<tr class="row" [class.open]="expanded() === order.orderId" (click)="toggle(order.orderId)">
+								<tr class="row" [class.open]="expanded() === order.orderId" [class.failed]="order.status === 'FAILED'" [class.pending]="order.status === 'PENDING'" (click)="toggle(order.orderId)">
 									<td class="num faint">{{ order.submitted }}</td>
 									<td class="num">#{{ order.accountId }}</td>
 									<td>
@@ -140,7 +140,7 @@
 														<div><dt>Value</dt><dd class="num">{{ order.valueLabel }}</dd></div>
 														<div><dt>Balance updated to</dt><dd class="num">{{ order.balanceUpdatedLabel }}</dd></div>
 														<div><dt>Fulfilled</dt><dd class="num">{{ order.fulfilledTime ? formatStamp(order.fulfilledTime) : '—' }}</dd></div>
-														<div><dt>Status in database</dt><dd><code class="code">{{ order.status }}</code></dd></div>
+														<div><dt>Status code</dt><dd><code class="code">{{ order.status }}</code></dd></div>
 													</dl>
 												</div>
 											</div>

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AuditService } from '../../core/api/audit.service';
 import { ApiError, toApiError } from '../../core/api/api-error';
@@ -57,6 +58,9 @@ export class Audit {
   });
 
   constructor() {
+    // "Open in Audit" on an account page links here with ?account=<id>.
+    const account = inject(ActivatedRoute).snapshot.queryParamMap.get('account');
+    if (account && /^\d+$/.test(account)) this.accountQuery.set(`#${account}`);
     this.load();
   }
 
@@ -163,7 +167,7 @@ export class Audit {
       steps.push({
         state: 'Submitted → Rejected',
         at: this.formatStamp(order.placedTime),
-        detail: 'Failed the cash or holdings check. The rejection reason is not stored in the audit record.',
+        detail: 'Failed the cash or holdings check. The rejection reason is not recorded.',
       });
     } else if (order.status === 'PENDING') {
       steps.push({
