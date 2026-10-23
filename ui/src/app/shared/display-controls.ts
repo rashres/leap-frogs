@@ -22,6 +22,7 @@ import { Icon } from './icon';
           <option [value]="l.code" [attr.lang]="l.code" [selected]="l.code === i18n.lang()">{{ l.name }}</option>
         }
       </select>
+      <leap-icon name="chevron-down" [size]="14" class="lang-chev" />
     </label>
 
     <div class="display">
@@ -104,16 +105,23 @@ import { Icon } from './icon';
         }
       }
 
+      /* Same pill as the API status button beside it, in both themes. */
       .lang {
+        position: relative;
         display: inline-flex;
         align-items: center;
-        gap: 4px;
-        height: 36px;
-        padding: 0 4px 0 10px;
+        gap: 6px;
+        height: 34px;
+        padding: 0 10px 0 12px;
         border: 1px solid var(--border);
-        border-radius: var(--radius);
+        border-radius: 999px;
         background: var(--panel);
         color: var(--text-2);
+        transition: border-color 0.15s ease;
+
+        &:hover {
+          border-color: var(--border-strong);
+        }
 
         &:focus-within {
           box-shadow: var(--focus-ring);
@@ -121,16 +129,31 @@ import { Icon } from './icon';
         }
       }
 
+      /* Drawn by the app, not the OS, so it follows the theme. */
       .lang-select {
-        height: 34px;
-        padding: 0 4px;
+        appearance: none;
+        -webkit-appearance: none;
+        height: 32px;
+        padding: 0 18px 0 0;
+        margin-right: -14px;
         border: none;
         background: transparent;
         color: var(--text);
+        color-scheme: inherit;
         font-size: 13px;
         font-weight: 500;
         cursor: pointer;
         outline: none;
+      }
+
+      .lang-select option {
+        background: var(--panel);
+        color: var(--text);
+      }
+
+      .lang-chev {
+        pointer-events: none;
+        color: var(--text-3);
       }
 
       .display {
