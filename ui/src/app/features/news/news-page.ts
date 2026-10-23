@@ -5,9 +5,12 @@
  * Sentiment is a count of matched words (see core/news/sentiment.ts). Each
  * headline can show the words it matched and why it was filed under a stock,
  * and stocks are ordered by how much was written about them, never by score.
+ * The one exception is the pond in the detailed view, which places stocks by
+ * net tone on purpose (see news-pond.ts).
  */
 
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import type { AttributedNewsItem, SentimentLabel } from '../../core/news/news';
 import { NewsService } from '../../core/news/news.service';
 import { SENTIMENT_DISCLAIMER, summarise } from '../../core/news/sentiment';
@@ -17,17 +20,26 @@ import { InstrumentLogo } from '../../shared/instrument-logo';
 import { PageHeader } from '../../shared/page-header';
 import { HeadlineRow } from './headline-row';
 import { ago, dayLabel, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
+import { NewsPond } from './news-pond';
 
 type Mood = 'all' | SentimentLabel;
+/** Simple: one plain list. Detailed: the pond, top stories and tone columns too. */
+type View = 'simple' | 'detailed';
+type Order = 'newest' | 'tone';
 
 /** One row of equal cards across the page. */
 const TOP_STORIES = 4;
 const PAGE = 30;
+const COLUMN_PAGE = 10;
+const VIEW_KEY = 'leap.news.view';
+const ORDER_KEY = 'leap.news.order';
+/** Tone columns always read Negative | Neutral | Positive. */
+const COLUMN_ORDER: readonly SentimentLabel[] = ['negative', 'neutral', 'positive'];
 
 @Component({
   selector: 'leap-news-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, Icon, InstrumentLogo, HeadlineRow],
+  imports: [NgTemplateOutlet, PageHeader, Icon, InstrumentLogo, HeadlineRow, NewsPond],
   templateUrl: './news-page.html',
   styleUrl: './news-page.scss',
 })
@@ -45,6 +57,12 @@ export class NewsPage {
   readonly mood = signal<Mood>('all');
   readonly query = signal('');
   readonly limit = signal(PAGE);
+  readonly view = signal<View>(readStored(VIEW_KEY) === 'simple' ? 'simple' : 'detailed');
+  readonly order = signal<Order>(readStored(ORDER_KEY) === 'tone' ? 'tone' : 'newest');
+  readonly simple = computed(() => this.view() === 'simple');
+  /** Tone columns only exist in the detailed view; simple is always one list. */
+  readonly byTone = computed(() => !this.simple() && this.order() === 'tone');
+  readonly columnLimit = signal<Record<SentimentLabel, number>>(freshColumnLimit());
   /** Stories whose picture failed to load; they fall back to a logo tile. */
   readonly broken = signal<ReadonlySet<string>>(new Set());
   /** Ticks every minute so "updated 3m ago" and "2h ago" stay true. */
@@ -95,14 +113,14 @@ export class NewsPage {
     return { pos: pct(c.positive), neu: pct(c.neutral), neg: pct(c.negative) };
   });
 
-  /** One row per sentiment: count and whole-number share of the headlines in scope. */
+  /** One row per sentiment, in the pond's zone order: count and whole-number share of the headlines in scope. */
   readonly tones = computed(() => {
     const c = this.counts();
     const bar = this.moodBar();
     return [
-      { key: 'pos', label: 'Positive', count: c.positive, pct: Math.round(bar.pos), image: 'mascot/sentiment-positive.png' },
-      { key: 'neu', label: 'Neutral', count: c.neutral, pct: Math.round(bar.neu), image: 'mascot/sentiment-neutral.png' },
       { key: 'neg', label: 'Negative', count: c.negative, pct: Math.round(bar.neg), image: 'mascot/sentiment-negative.png' },
+      { key: 'neu', label: 'Neutral', count: c.neutral, pct: Math.round(bar.neu), image: 'mascot/sentiment-neutral.png' },
+      { key: 'pos', label: 'Positive', count: c.positive, pct: Math.round(bar.pos), image: 'mascot/sentiment-positive.png' },
     ];
   });
 
@@ -131,7 +149,7 @@ export class NewsPage {
 
   /** Newest stories with a working picture, as one row of equal cards; the rest follow as a list. */
   readonly topStories = computed(() => {
-    if (this.query().trim()) return [];
+    if (this.simple() || this.query().trim()) return [];
     const items = this.filtered();
     if (items.length < 3) return [];
     const broken = this.broken();
@@ -160,6 +178,16 @@ export class NewsPage {
   });
 
   readonly hidden = computed(() => Math.max(0, this.rest().length - this.limit()));
+
+  /** Headlines split into Negative | Neutral | Positive; a tone filter leaves just its own column. */
+  readonly columns = computed(() => {
+    const mood = this.mood();
+    const limits = this.columnLimit();
+    return COLUMN_ORDER.filter((label) => mood === 'all' || mood === label).map((label) => {
+      const items = this.scoped().filter((i) => i.sentiment.label === label);
+      return { label, total: items.length, items: items.slice(0, limits[label]), hidden: Math.max(0, items.length - limits[label]) };
+    });
+  });
 
   readonly stats = computed(() => {
     this.now();
@@ -201,7 +229,10 @@ export class NewsPage {
       this.selected();
       this.mood();
       this.query();
-      untracked(() => this.limit.set(PAGE));
+      untracked(() => {
+        this.limit.set(PAGE);
+        this.columnLimit.set(freshColumnLimit());
+      });
     });
     const tick = setInterval(() => this.now.set(Date.now()), 60_000);
     inject(DestroyRef).onDestroy(() => clearInterval(tick));
@@ -225,6 +256,20 @@ export class NewsPage {
     this.limit.update((n) => n + PAGE);
   }
 
+  showMoreIn(label: SentimentLabel): void {
+    this.columnLimit.update((limits) => ({ ...limits, [label]: limits[label] + COLUMN_PAGE }));
+  }
+
+  setView(view: View): void {
+    this.view.set(view);
+    writeStored(VIEW_KEY, view);
+  }
+
+  setOrder(order: Order): void {
+    this.order.set(order);
+    writeStored(ORDER_KEY, order);
+  }
+
   markBroken(id: string): void {
     this.broken.update((set) => new Set(set).add(id));
   }
@@ -232,5 +277,25 @@ export class NewsPage {
   ago(at: Date): string {
     this.now();
     return ago(at);
+  }
+}
+
+function freshColumnLimit(): Record<SentimentLabel, number> {
+  return { negative: COLUMN_PAGE, neutral: COLUMN_PAGE, positive: COLUMN_PAGE };
+}
+
+function readStored(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStored(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* Storage disabled: the preference just lasts for this visit. */
   }
 }

@@ -1,7 +1,14 @@
 <div class="page-enter">
   <leap-page-header heading="News" mascot="news">
     <span description>Live</span>
-    <div actions>
+    <!-- Each item lands straight in the header's actions row, which spaces them. -->
+    <ng-container ngProjectAs="[actions]">
+      <div class="segmented" role="group" aria-label="Page view, saved for next time">
+        <button type="button" [class.on]="simple()" [attr.aria-pressed]="simple()" (click)="setView('simple')"
+                title="One plain list with big tone labels">Simple</button>
+        <button type="button" [class.on]="!simple()" [attr.aria-pressed]="!simple()" (click)="setView('detailed')"
+                title="The pond, top stories and tone columns">Detailed</button>
+      </div>
       @if (sourceText(); as text) {
         <span class="pill pill-muted" [attr.title]="news.fellBackBecause() ?? 'Where these headlines come from'">
           <leap-icon name="globe" [size]="14" />{{ text }}
@@ -14,7 +21,7 @@
         <leap-icon name="refresh" [size]="16" [class.spin]="loading()" />
         {{ loading() ? 'Loading…' : 'Refresh' }}
       </button>
-    </div>
+    </ng-container>
   </leap-page-header>
 
   @if (news.state() === 'unavailable' && all().length === 0) {
@@ -27,8 +34,10 @@
   } @else if (all().length === 0 && news.state() !== 'ready') {
     <!-- First load -->
     <section class="mood panel" aria-hidden="true">
-      <span class="skeleton" style="width: 40%; height: 18px"></span>
-      <span class="skeleton" style="width: 100%; height: 10px; margin-top: 14px"></span>
+      <div class="mood-body">
+        <span class="skeleton" style="width: 40%; height: 18px"></span>
+        <span class="skeleton" style="width: 100%; height: 10px; margin-top: 14px"></span>
+      </div>
     </section>
     <div class="top">
       <div class="side-grid">
@@ -39,15 +48,17 @@
     </div>
     <p class="sr-only" role="status">Gathering headlines…</p>
   } @else {
-    <!-- Mood summary -->
-    <section class="mood panel" aria-labelledby="mood-title">
+    <!-- News sentiment. Detailed: the pond, with the stats as its base. Simple: the stats alone. -->
+    <ng-template #heading>
       <h2 class="mood-title" id="mood-title">News sentiment</h2>
       <p class="verdict">{{ verdict() }}</p>
+    </ng-template>
 
-      <!-- One frog per sentiment: green positive, grey neutral, red negative. -->
-      <ul class="frogs">
+    <!-- One frog per sentiment, in zone order: red negative, grey neutral, green positive. -->
+    <ng-template #frogs>
+      <ul class="frogs" [class.zoned]="!simple()">
         @for (t of tones(); track t.key) {
-          <li [class.lead]="t.key === leadTone()">
+          <li [class.lead]="t.key === leadTone()" [class]="'z-' + t.key">
             <img class="frog" [src]="t.image" alt="" width="56" height="57" />
             <span class="f-text">
               <span class="f-pct num">{{ t.pct }}%</span>
@@ -56,25 +67,38 @@
           </li>
         }
       </ul>
+    </ng-template>
 
-      <dl class="facts">
-        <div>
-          <dt>Headlines</dt>
-          <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
+    <section class="mood panel" aria-labelledby="mood-title">
+      @if (simple()) {
+        <div class="mood-body">
+          <ng-container [ngTemplateOutlet]="heading" />
+          <ng-container [ngTemplateOutlet]="frogs" />
         </div>
-        <div>
-          <dt>Stocks in the news</dt>
-          <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
-        </div>
-        <div>
-          <dt>Most written about</dt>
-          <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
-        </div>
-        <div>
-          <dt>Latest</dt>
-          <dd><span class="v">{{ stats().newest }}</span></dd>
-        </div>
-      </dl>
+      } @else {
+        <leap-news-pond [rows]="board()" [selected]="selected()" (pickStock)="pick($event)">
+          <div pondTitle><ng-container [ngTemplateOutlet]="heading" /></div>
+          <ng-container [ngTemplateOutlet]="frogs" />
+          <dl class="facts">
+            <div>
+              <dt>Headlines</dt>
+              <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
+            </div>
+            <div>
+              <dt>Stocks in the news</dt>
+              <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
+            </div>
+            <div>
+              <dt>Most written about</dt>
+              <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
+            </div>
+            <div>
+              <dt>Latest</dt>
+              <dd><span class="v">{{ stats().newest }}</span></dd>
+            </div>
+          </dl>
+        </leap-news-pond>
+      }
     </section>
 
     <!-- Stock chips -->
@@ -102,15 +126,23 @@
 
     <!-- Filters -->
     <div class="toolbar">
-      <div class="segmented" role="group" aria-label="Filter by tone">
-        @for (m of moods; track m) {
-          <button type="button" [class.on]="mood() === m" [attr.aria-pressed]="mood() === m" (click)="mood.set(m)">
-            @if (m !== 'all') {
-              <i class="glyph" [class]="'g-' + tone[m]">{{ glyph[m] }}</i>
-            }
-            {{ moodLabel[m] }}
-          </button>
+      <div class="tb-left">
+        @if (!simple()) {
+          <div class="segmented" role="group" aria-label="Reading order, saved for next time">
+            <button type="button" [class.on]="order() === 'tone'" [attr.aria-pressed]="order() === 'tone'" (click)="setOrder('tone')">By tone</button>
+            <button type="button" [class.on]="order() === 'newest'" [attr.aria-pressed]="order() === 'newest'" (click)="setOrder('newest')">Newest first</button>
+          </div>
         }
+        <div class="segmented" role="group" aria-label="Filter by tone">
+          @for (m of moods; track m) {
+            <button type="button" [class.on]="mood() === m" [attr.aria-pressed]="mood() === m" (click)="mood.set(m)">
+              @if (m !== 'all') {
+                <i class="glyph" [class]="'g-' + tone[m]">{{ glyph[m] }}</i>
+              }
+              {{ moodLabel[m] }}
+            </button>
+          }
+        </div>
       </div>
       <label class="search">
         <leap-icon name="search" [size]="16" />
@@ -136,6 +168,29 @@
           <button type="button" class="btn btn-secondary btn-sm clear" (click)="clearFilters()">Clear filters</button>
         </div>
       </section>
+    } @else if (byTone()) {
+      <!-- Tone columns: Negative | Neutral | Positive -->
+      <div class="cols" [style.--cols]="columns().length">
+        @for (col of columns(); track col.label) {
+          <section class="panel col" [attr.aria-labelledby]="'col-' + col.label">
+            <h2 class="col-head" [class]="'ch-' + tone[col.label]" [id]="'col-' + col.label">
+              <i class="glyph">{{ glyph[col.label] }}</i>{{ moodLabel[col.label] }}
+              <span class="day-count num">{{ col.total }}</span>
+            </h2>
+            @for (item of col.items; track item.id) {
+              <leap-headline-row [item]="item" [selected]="selected()" variant="compact" (pickStock)="pick($event)" />
+            } @empty {
+              <p class="col-empty faint">No {{ moodLabel[col.label].toLowerCase() }} headlines.</p>
+            }
+            @if (col.hidden > 0) {
+              <div class="more">
+                <button type="button" class="btn btn-secondary btn-sm" (click)="showMoreIn(col.label)">Show more</button>
+                <span class="faint">{{ col.hidden }} more</span>
+              </div>
+            }
+          </section>
+        }
+      </div>
     } @else {
       <!-- Top stories -->
       @if (topStories().length > 0) {
@@ -180,7 +235,7 @@
               {{ day.label }}<span class="day-count">{{ day.items.length }}</span>
             </h2>
             @for (item of day.items; track item.id) {
-              <leap-headline-row [item]="item" [selected]="selected()" (pickStock)="pick($event)" />
+              <leap-headline-row [item]="item" [selected]="selected()" [variant]="simple() ? 'simple' : 'full'" (pickStock)="pick($event)" />
             }
           }
           @if (hidden() > 0) {
@@ -213,6 +268,12 @@
           <strong>Order.</strong> Stocks are listed by how much was written about them, never by how positive the news
           was, so the page never reads as a ranking of what to buy. A stock with no headlines shows "none", which is not
           the same as neutral news.
+        </p>
+        <p>
+          <strong>The pond.</strong> In the detailed view, each stock is placed by its net tone: positive headlines minus
+          negative ones, divided by all its headlines. Within ±0.10 it sits in the neutral zone. A stock with fewer than
+          five headlines is faded, because a handful of headlines can swing it either way. Stocks with no headlines are
+          left out. Where a stock sits describes the wording of its headlines, not the stock.
         </p>
         <p>
           <strong>Sources.</strong>

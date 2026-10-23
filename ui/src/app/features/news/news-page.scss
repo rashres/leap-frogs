@@ -23,7 +23,12 @@
 
 /* ---- News sentiment ------------------------------------------------------- */
 
+/* One card: the stats in a padded block, then the pond edge to edge under them. */
 .mood {
+  overflow: hidden;
+}
+
+.mood-body {
   padding: 20px 24px 18px;
 }
 
@@ -92,6 +97,49 @@
 .f-label {
   font-size: 13px;
   color: var(--text-2);
+}
+
+/* Under the pond: one cell per zone, tinted like the zone above it, so the
+   counts read as the base of the chart. Then the facts as a padded row. */
+.frogs.zoned {
+  margin: 0;
+  border-top: 1px solid var(--border-soft);
+
+  li,
+  li:first-child {
+    justify-content: center;
+    padding: 14px 24px;
+    border-left: none;
+  }
+
+  li + li {
+    border-left: 1px dashed var(--border-strong);
+  }
+
+  .frog {
+    width: 44px;
+  }
+}
+
+/* Zone tints, shared by the strip under the pond and the tone column heads. */
+.zoned .z-neg,
+.ch-neg {
+  background: var(--down-soft);
+}
+
+.zoned .z-neu,
+.ch-neu {
+  background: var(--panel-2);
+}
+
+.zoned .z-pos,
+.ch-pos {
+  background: var(--up-soft);
+}
+
+leap-news-pond .facts {
+  margin: 0;
+  padding: 14px 24px;
 }
 
 /* One quiet line of facts, label above value. */
@@ -254,6 +302,12 @@
     align-items: center;
     gap: 5px;
   }
+}
+
+.tb-left {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .g-pos {
@@ -472,6 +526,57 @@ leap-headline-row + leap-headline-row {
   font-size: 12.5px;
 }
 
+/* ---- Tone columns --------------------------------------------------------- */
+
+.cols {
+  display: grid;
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.col {
+  overflow: hidden;
+
+  leap-headline-row {
+    display: block;
+    border-top: 1px solid var(--border-soft);
+  }
+}
+
+.col-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 600;
+
+  .day-count {
+    margin-left: auto;
+  }
+
+  &.ch-neg {
+    color: var(--down);
+  }
+
+  &.ch-neu {
+    color: var(--text-2);
+  }
+
+  &.ch-pos {
+    color: var(--up);
+  }
+}
+
+.col-empty {
+  margin: 0;
+  padding: 16px;
+  font-size: 13px;
+  border-top: 1px solid var(--border-soft);
+}
+
 /* ---- States, disclaimer, method ------------------------------------------- */
 
 .unavailable {
@@ -562,6 +667,12 @@ leap-headline-row + leap-headline-row {
   }
 }
 
+@media (max-width: 1000px) {
+  .cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 760px) {
   .frogs {
     grid-template-columns: minmax(0, 1fr);
@@ -571,6 +682,22 @@ leap-headline-row + leap-headline-row {
     li:first-child {
       padding: 0;
       border-left: none;
+    }
+  }
+
+  /* The pond scrolls sideways here, so the zone cells stack instead of lining up. */
+  .frogs.zoned {
+    gap: 0;
+
+    li,
+    li:first-child {
+      justify-content: flex-start;
+      padding: 10px 16px;
+    }
+
+    li + li {
+      border-left: none;
+      border-top: 1px solid var(--border-soft);
     }
   }
 
@@ -590,6 +717,10 @@ leap-headline-row + leap-headline-row {
 
   .search {
     flex-basis: 100%;
+  }
+
+  .tb-left {
+    width: 100%;
   }
 
   .toolbar .segmented {

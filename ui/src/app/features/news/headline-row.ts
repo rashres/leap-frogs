@@ -14,20 +14,22 @@ import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
   imports: [Icon, InstrumentLogo],
   template: `
     @let s = item().sentiment;
-    <article class="row">
-      <a class="thumb" [href]="item().link" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">
-        @if (item().imageUrl && !broken()) {
-          <img [src]="item().imageUrl" alt="" loading="lazy" referrerpolicy="no-referrer" (error)="broken.set(true)" />
-        } @else if (firstSymbol(); as sym) {
-          <leap-instrument-logo [symbol]="sym" [size]="36" />
-        } @else {
-          <leap-icon name="news" [size]="22" />
-        }
-      </a>
+    <article class="row" [class]="variant()">
+      @if (variant() !== 'compact') {
+        <a class="thumb" [href]="item().link" target="_blank" rel="noopener noreferrer" tabindex="-1" aria-hidden="true">
+          @if (item().imageUrl && !broken()) {
+            <img [src]="item().imageUrl" alt="" loading="lazy" referrerpolicy="no-referrer" (error)="broken.set(true)" />
+          } @else if (firstSymbol(); as sym) {
+            <leap-instrument-logo [symbol]="sym" [size]="36" />
+          } @else {
+            <leap-icon name="news" [size]="22" />
+          }
+        </a>
+      }
 
       <div class="body">
         <a class="title" [href]="item().link" target="_blank" rel="noopener noreferrer">{{ item().title }}</a>
-        @if (item().summary) {
+        @if (item().summary && variant() !== 'compact') {
           <p class="summary">{{ item().summary }}</p>
         }
         <div class="meta">
@@ -68,9 +70,12 @@ import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
       </div>
 
       <div class="side">
-        <span class="sent" [class]="'sent-' + tone[s.label]">
-          <i class="glyph">{{ glyph[s.label] }}</i>{{ label[s.label] }}
-        </span>
+        <!-- In a tone column the column header already says the tone. -->
+        @if (variant() !== 'compact') {
+          <span class="sent" [class]="'sent-' + tone[s.label]">
+            <i class="glyph">{{ glyph[s.label] }}</i>{{ label[s.label] }}
+          </span>
+        }
         <button type="button" class="why-btn" (click)="open.set(!open())" [attr.aria-expanded]="open()">
           {{ open() ? 'Hide' : 'Why?' }}
         </button>
@@ -217,8 +222,22 @@ import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
         text-decoration: line-through;
         opacity: 0.75;
       }
+      .row.compact {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 10px;
+        padding: 12px 16px;
+      }
+      .row.compact .title {
+        font-size: 13.5px;
+      }
+      .row.simple .side .sent {
+        min-width: 112px;
+        padding: 5px 12px;
+        font-size: 14px;
+        font-weight: 600;
+      }
       @media (max-width: 640px) {
-        .row {
+        .row:not(.compact) {
           grid-template-columns: 56px minmax(0, 1fr);
           padding: 14px 16px;
           gap: 12px;
@@ -241,6 +260,8 @@ export class HeadlineRow {
   readonly item = input.required<AttributedNewsItem>();
   /** The stock the page is filtered to, so its chip shows as active. */
   readonly selected = input<number | null>(null);
+  /** `compact` for a tone column (no picture, summary or tone badge); `simple` for a bigger tone badge. */
+  readonly variant = input<'full' | 'compact' | 'simple'>('full');
   readonly pickStock = output<number>();
 
   protected readonly open = signal(false);
