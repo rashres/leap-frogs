@@ -33,8 +33,10 @@
   } @else if (all().length === 0 && news.state() !== 'ready') {
     <!-- First load -->
     <section class="mood panel" aria-hidden="true">
-      <span class="skeleton" style="width: 40%; height: 18px"></span>
-      <span class="skeleton" style="width: 100%; height: 10px; margin-top: 14px"></span>
+      <div class="mood-body">
+        <span class="skeleton" style="width: 40%; height: 18px"></span>
+        <span class="skeleton" style="width: 100%; height: 10px; margin-top: 14px"></span>
+      </div>
     </section>
     <div class="top">
       <div class="side-grid">
@@ -45,46 +47,6 @@
     </div>
     <p class="sr-only" role="status">Gathering headlines…</p>
   } @else {
-    <!-- Mood summary -->
-    <section class="mood panel" aria-labelledby="mood-title">
-      <h2 class="mood-title" id="mood-title">News sentiment</h2>
-      <p class="verdict">{{ verdict() }}</p>
-
-      <!-- One frog per sentiment: green positive, grey neutral, red negative. -->
-      <ul class="frogs">
-        @for (t of tones(); track t.key) {
-          <li [class.lead]="t.key === leadTone()">
-            <img class="frog" [src]="t.image" alt="" width="56" height="57" />
-            <span class="f-text">
-              <span class="f-pct num">{{ t.pct }}%</span>
-              <span class="f-label">{{ t.label }} <span class="faint num">· {{ t.count }}</span></span>
-            </span>
-          </li>
-        }
-      </ul>
-
-      @if (!simple()) {
-        <dl class="facts">
-          <div>
-            <dt>Headlines</dt>
-            <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
-          </div>
-          <div>
-            <dt>Stocks in the news</dt>
-            <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
-          </div>
-          <div>
-            <dt>Most written about</dt>
-            <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
-          </div>
-          <div>
-            <dt>Latest</dt>
-            <dd><span class="v">{{ stats().newest }}</span></dd>
-          </div>
-        </dl>
-      }
-    </section>
-
     <!-- Stock chips -->
     <nav class="stocks" aria-label="Filter by stock">
       <button type="button" class="stock" [class.on]="selected() === null" (click)="pick(null)" [attr.aria-pressed]="selected() === null">
@@ -108,10 +70,51 @@
       }
     </nav>
 
-    <!-- The pond -->
-    @if (!simple()) {
-      <leap-news-pond [rows]="board()" [selected]="selected()" (pickStock)="pick($event)" />
-    }
+    <!-- News sentiment, with the pond under it in the detailed view -->
+    <section class="mood panel" aria-labelledby="mood-title">
+      <div class="mood-body">
+        <h2 class="mood-title" id="mood-title">News sentiment</h2>
+        <p class="verdict">{{ verdict() }}</p>
+
+        <!-- One frog per sentiment: green positive, grey neutral, red negative. -->
+        <ul class="frogs">
+          @for (t of tones(); track t.key) {
+            <li [class.lead]="t.key === leadTone()">
+              <img class="frog" [src]="t.image" alt="" width="56" height="57" />
+              <span class="f-text">
+                <span class="f-pct num">{{ t.pct }}%</span>
+                <span class="f-label">{{ t.label }} <span class="faint num">· {{ t.count }}</span></span>
+              </span>
+            </li>
+          }
+        </ul>
+
+        @if (!simple()) {
+          <dl class="facts">
+            <div>
+              <dt>Headlines</dt>
+              <dd><span class="v num">{{ stats().headlines }}</span> {{ stats().span }}</dd>
+            </div>
+            <div>
+              <dt>Stocks in the news</dt>
+              <dd><span class="v num">{{ stats().inNews }}</span> of {{ stats().covered }}</dd>
+            </div>
+            <div>
+              <dt>Most written about</dt>
+              <dd><span class="v">{{ stats().topSymbol ?? '—' }}</span>@if (stats().topSymbol) { <span class="num">({{ stats().topCount }})</span>}</dd>
+            </div>
+            <div>
+              <dt>Latest</dt>
+              <dd><span class="v">{{ stats().newest }}</span></dd>
+            </div>
+          </dl>
+        }
+      </div>
+
+      @if (!simple()) {
+        <leap-news-pond [rows]="board()" [selected]="selected()" (pickStock)="pick($event)" />
+      }
+    </section>
 
     <!-- Filters -->
     <div class="toolbar">

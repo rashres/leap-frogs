@@ -23,7 +23,12 @@
 
 /* ---- News sentiment ------------------------------------------------------- */
 
+/* One card: the stats in a padded block, then the pond edge to edge under them. */
 .mood {
+  overflow: hidden;
+}
+
+.mood-body {
   padding: 20px 24px 18px;
 }
 

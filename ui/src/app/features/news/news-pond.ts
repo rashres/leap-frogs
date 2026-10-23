@@ -11,6 +11,8 @@ import { MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
  * place stocks by tone, so it carries its own key, a "Faded = under 5" warning
  * for thin coverage, and a table view that keeps the usual order (most written
  * about first). Stocks with no headlines are left off: silence is not neutral.
+ *
+ * It has no card of its own: the News page shows it inside the sentiment card.
  */
 
 const W = 1000;
@@ -85,11 +87,11 @@ interface Pad {
   selector: 'leap-news-pond',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="panel pond" aria-labelledby="pond-title">
+    <section class="pond" aria-labelledby="pond-title">
       <div class="head">
         <div>
           <span class="eyebrow">The pond</span>
-          <h2 id="pond-title">Where every stock sits</h2>
+          <h3 id="pond-title">Where every stock sits</h3>
         </div>
         <div class="keys">
           <span class="key"><i class="pk"></i>Size = headlines</span>
@@ -191,7 +193,7 @@ interface Pad {
         --tag-sub: #b3b3b3;
       }
       .pond {
-        overflow: hidden;
+        border-top: 1px solid var(--border-soft);
       }
       .head {
         display: flex;
@@ -199,7 +201,7 @@ interface Pad {
         align-items: flex-end;
         justify-content: space-between;
         gap: 14px;
-        padding: 16px 22px;
+        padding: 16px 24px;
       }
       .eyebrow {
         font-size: 11px;
@@ -208,7 +210,7 @@ interface Pad {
         text-transform: uppercase;
         color: var(--up);
       }
-      h2 {
+      h3 {
         margin: 2px 0 0;
         font-size: 20px;
         font-weight: 600;
@@ -337,7 +339,7 @@ interface Pad {
       }
       .table-wrap {
         overflow-x: auto;
-        padding: 0 22px 8px;
+        padding: 0 24px 8px;
       }
       table {
         width: 100%;
@@ -379,12 +381,12 @@ interface Pad {
       }
       .none {
         margin: 0;
-        padding: 18px 22px;
+        padding: 18px 24px;
         border-top: 1px solid var(--border-soft);
       }
       .foot {
         margin: 0;
-        padding: 10px 22px 14px;
+        padding: 10px 24px 14px;
         font-size: 12px;
         border-top: 1px solid var(--border-soft);
       }
