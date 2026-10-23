@@ -1,22 +1,25 @@
+<div class="page-enter">
 <a class="back" routerLink="/ops/accounts"><leap-icon name="arrow-left" [size]="16" /> All accounts</a>
 
 @if (account(); as a) {
-  <leap-page-header [heading]="a.name">
-    <span description>{{ a.email }} · Account #{{ a.accountId }}</span>
-  </leap-page-header>
-
-  <div class="status-bar">
-    <span class="pill" [class.frozen]="frozen()">{{ a.status ?? 'ACTIVE' }}</span>
-    <span class="cash num">Cash {{ cash(a) }}</span>
+  <section class="panel who-card">
+    <span class="avatar" aria-hidden="true">{{ initials(a.name) }}</span>
+    <div class="who">
+      <h1>
+        {{ a.name }}
+        <span class="state" [class.frozen]="frozen()"><span aria-hidden="true">{{ frozen() ? '❄' : '●' }}</span>{{ frozen() ? 'Frozen' : 'Active' }}</span>
+      </h1>
+      <p class="faint">{{ a.email }} · <span class="num">#{{ a.accountId }}</span> · Cash <span class="num">{{ cash(a) }}</span></p>
+    </div>
     @if (frozen()) {
       <button type="button" class="btn btn-secondary" [disabled]="busy()" (click)="unfreeze()">Unfreeze account</button>
     } @else {
-      <button type="button" class="btn btn-secondary" (click)="confirmFreeze.set(true)">Freeze account</button>
+      <button type="button" class="btn btn-secondary" [disabled]="confirmFreeze()" (click)="confirmFreeze.set(true)"><span aria-hidden="true">❄</span> Freeze account</button>
     }
-  </div>
+  </section>
 
   @if (flash(); as msg) {
-    <p class="flash">{{ msg }}</p>
+    <p class="flash" role="status">{{ msg }}</p>
   }
   @if (error(); as err) {
     <p class="form-error" role="alert">{{ err }}</p>
@@ -37,14 +40,21 @@
     </div>
   }
 
-  <section class="block">
-    <h2>Holdings</h2>
-    <div class="table-wrap panel">
+  @if (failedNote(); as note) {
+    <p class="alert" role="status">
+      <span class="alert-glyph" aria-hidden="true">✕</span>
+      <span><strong>{{ note.head }}</strong> {{ note.rest }}</span>
+    </p>
+  }
+
+  <div class="split">
+    <section class="panel card" aria-labelledby="h-holdings">
+      <h2 id="h-holdings">Holdings</h2>
       <table>
         <thead>
           <tr>
             <th>Symbol</th>
-            <th class="r">Qty</th>
+            <th class="r">Quantity</th>
           </tr>
         </thead>
         <tbody>
@@ -63,72 +73,84 @@
           }
         </tbody>
       </table>
-    </div>
-  </section>
+    </section>
 
-  <section class="block">
-    <h2>Orders <span class="count num">{{ orderCount() }}</span></h2>
-    <div class="table-wrap panel">
+    <section class="panel card" aria-labelledby="h-history">
+      <h2 id="h-history">Freeze history</h2>
+      @if (history().length === 0) {
+        <p class="faint">Never frozen.</p>
+      } @else {
+        <ol class="history">
+          @for (e of history(); track $index) {
+            <li [class.frozen]="e.frozen">
+              <p><strong>{{ e.frozen ? 'Frozen' : 'Unfrozen' }}</strong> <span class="faint">by {{ e.by }} · <span class="num">{{ e.at }}</span></span></p>
+              @if (e.reason) {
+                <p class="dim">{{ e.reason }}</p>
+              }
+            </li>
+          }
+        </ol>
+      }
+    </section>
+  </div>
+
+  <section class="panel card orders" aria-labelledby="h-orders">
+    <div class="head">
+      <h2 id="h-orders">Orders · <span class="num">{{ orderCount() }}</span></h2>
+      <a routerLink="/audit" [queryParams]="{ account: a.accountId }" class="open">Open in Audit</a>
+    </div>
+    <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>When</th>
-            <th>Side</th>
-            <th>Symbol</th>
-            <th class="r">Qty</th>
+            <th>Submitted</th>
+            <th>Order</th>
+            <th>Type</th>
+            <th class="r">Quantity</th>
+            <th class="r">Price</th>
             <th>Status</th>
           </tr>
         </thead>
         <tbody>
           @for (o of orders(); track o.orderId) {
-            <tr>
-              <td class="num">{{ stamp(o.placedTime) }}</td>
-              <td>{{ o.side }}</td>
-              <td>{{ o.symbol }}</td>
-              <td class="r num">{{ o.quantity }}</td>
-              <td>{{ o.status }}</td>
+            <tr [class.failed]="o.status === 'FAILED'" [class.pending]="o.status === 'PENDING'">
+              <td class="num faint">{{ stamp(o.placedTime) }}</td>
+              <td>
+                <strong>{{ o.symbol }}</strong>
+                <span class="side" [class.buy]="o.side === 'BUY'"><span aria-hidden="true">{{ o.side === 'BUY' ? '▲' : '▼' }}</span> {{ o.side === 'BUY' ? 'Buy' : 'Sell' }}</span>
+              </td>
+              <td>{{ typeOf(o) }}</td>
+              <td class="r num">{{ qty(o.quantity) }}</td>
+              <td class="r num">{{ price(o.price) }}</td>
+              <td><span [class]="'pill pill-' + tone(o)"><span aria-hidden="true">{{ glyph[o.status] }}</span>{{ label[o.status] }}</span></td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="faint">No orders.</td>
+              <td colspan="6" class="faint">No orders.</td>
             </tr>
           }
         </tbody>
       </table>
-      @if (totalPages() > 1) {
-        <nav class="pagination" aria-label="Order pages">
-          <button type="button" class="page-button page-arrow" [disabled]="page() === 0" (click)="goToPage(page() - 1)">
-            <leap-icon name="chevron-left" [size]="16" /><span class="sr-only">Previous page</span>
-          </button>
-          @for (pageNumber of pageButtons(); track pageNumber) {
-            <button type="button" class="page-button" [class.current]="pageNumber === page()" [attr.aria-current]="pageNumber === page() ? 'page' : null" (click)="goToPage(pageNumber)">
-              {{ pageNumber + 1 }}
-            </button>
-          }
-          <button type="button" class="page-button page-arrow" [disabled]="page() >= totalPages() - 1" (click)="goToPage(page() + 1)">
-            <leap-icon name="chevron-right" [size]="16" /><span class="sr-only">Next page</span>
-          </button>
-        </nav>
-      }
     </div>
+    @if (totalPages() > 1) {
+      <nav class="pagination" aria-label="Order pages">
+        <button type="button" class="page-button page-arrow" [disabled]="page() === 0" (click)="goToPage(page() - 1)">
+          <leap-icon name="chevron-left" [size]="16" /><span class="sr-only">Previous page</span>
+        </button>
+        @for (pageNumber of pageButtons(); track pageNumber) {
+          <button type="button" class="page-button" [class.current]="pageNumber === page()" [attr.aria-current]="pageNumber === page() ? 'page' : null" (click)="goToPage(pageNumber)">
+            {{ pageNumber + 1 }}
+          </button>
+        }
+        <button type="button" class="page-button page-arrow" [disabled]="page() >= totalPages() - 1" (click)="goToPage(page() + 1)">
+          <leap-icon name="chevron-right" [size]="16" /><span class="sr-only">Next page</span>
+        </button>
+      </nav>
+    }
   </section>
 
-  <section class="block">
-    <h2>Status events</h2>
-    <ul class="events">
-      @for (e of events(); track $index) {
-        <li>
-          <strong>{{ e['action'] }}</strong>
-          <span class="dim"> by {{ e['actorUsername'] }} · {{ stamp(e['occurredAt']) }}</span>
-          @if (e['reason']) {
-            <p>{{ e['reason'] }}</p>
-          }
-        </li>
-      } @empty {
-        <li class="faint">No freeze/unfreeze events yet.</li>
-      }
-    </ul>
-  </section>
+  <p class="foot faint">Operations can view and freeze accounts. Placing or cancelling orders is turned off for this role. Amounts in US dollars (USD).</p>
 } @else {
   <p class="faint">Loading account…</p>
 }
+</div>

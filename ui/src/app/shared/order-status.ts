@@ -10,6 +10,16 @@ export const ORDER_STATUS_LABELS: Readonly<Record<OrderStatus, string>> = {
   EXPIRED: 'Expired',
 };
 
+/** Glyphs keep each status readable without relying on colour. */
+export const ORDER_STATUS_GLYPH: Readonly<Record<OrderStatus, string>> = {
+  CREATED: '◷',
+  PENDING: '◷',
+  COMPLETE: '✓',
+  FAILED: '✕',
+  CANCELLED: '–',
+  EXPIRED: '⌛',
+};
+
 /** Pill tone class suffix: pill-up, pill-down, pill-accent, pill-muted. */
 export function statusTone(status: OrderStatus): string {
   switch (status) {

@@ -4,12 +4,12 @@ import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { AuditService } from '../../core/api/audit.service';
 import { AuthService } from '../../core/api/auth.service';
 import { toApiError } from '../../core/api/api-error';
-import type { Account, Order, OrderStatus } from '../../core/api/models';
+import type { Account, Order } from '../../core/api/models';
 import { OpsService } from '../../core/api/ops.service';
 import { I18nService, fill } from '../../core/i18n/i18n.service';
 import { formatQty } from '../../shared/format';
 import { Icon } from '../../shared/icon';
-import { statusTone } from '../../shared/order-status';
+import { ORDER_STATUS_GLYPH, statusTone } from '../../shared/order-status';
 import { PageHeader } from '../../shared/page-header';
 import { OPS_TEXT, type OpsText } from './ops-page.i18n';
 
@@ -21,14 +21,6 @@ type Kind = 'frozen' | 'failed' | 'pending';
 
 /** Glyphs keep each state readable without relying on colour. */
 const GLYPH: Readonly<Record<Kind, string>> = { frozen: '❄', failed: '✕', pending: '◷' };
-const STATUS_GLYPH: Readonly<Record<OrderStatus, string>> = {
-  CREATED: '◷',
-  PENDING: '◷',
-  COMPLETE: '✓',
-  FAILED: '✕',
-  CANCELLED: '–',
-  EXPIRED: '⌛',
-};
 
 interface LookRow {
   readonly key: string;
@@ -177,7 +169,7 @@ export class OpsPage {
         when: this.i18n.stamp(o.placedTime),
         value: this.i18n.usd(o.value),
         status: t.status[o.status],
-        glyph: STATUS_GLYPH[o.status],
+        glyph: ORDER_STATUS_GLYPH[o.status],
         tone: statusTone(o.status),
       }));
   });
