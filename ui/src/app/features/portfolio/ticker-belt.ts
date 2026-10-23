@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { formatPrice, formatSignedPct } from '../../shared/format';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { DayChangeStore } from './day-change.store';
+import { TPipe } from '../../core/i18n/t.pipe';
 
 /**
  * Continuously scrolling strip of every instrument's live price and 24-hour
@@ -12,10 +13,10 @@ import { DayChangeStore } from './day-change.store';
 @Component({
   selector: 'leap-ticker-belt',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo],
+  imports: [TPipe, RouterLink, InstrumentLogo],
   template: `
     @if (items().length) {
-      <div class="belt" role="region" aria-label="Live prices">
+      <div class="belt" role="region" [attr.aria-label]="'Live prices' | t">
         <div class="track" [style.animation-duration.s]="items().length * 4">
           @for (copy of [0, 1]; track copy) {
             <ul class="run" [attr.aria-hidden]="copy === 1 ? 'true' : null">

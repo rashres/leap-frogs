@@ -77,6 +77,19 @@
 	}
 }
 
+/* Rejected orders get a red edge and tint, pending ones an amber edge. */
+.row.failed td {
+	background: var(--down-soft);
+}
+
+.row.failed td:first-child {
+	box-shadow: inset 3px 0 0 var(--down);
+}
+
+.row.pending td:first-child {
+	box-shadow: inset 3px 0 0 var(--warn);
+}
+
 .chev {
 	display: inline-grid;
 	place-items: center;

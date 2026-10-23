@@ -14,6 +14,8 @@ import { MarketOverview } from './market-overview';
 import { TickerBelt } from './ticker-belt';
 import { LastTransactions } from './last-transactions';
 import { MarketNews } from './market-news';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { translate } from '../../core/i18n/i18n.service';
 
 /**
  * Portfolio dashboard for the active account. Layout from the team's Angular
@@ -24,7 +26,7 @@ import { MarketNews } from './market-news';
 @Component({
   selector: 'leap-portfolio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ValueChartPanel, HoldingsTable, WatchlistRail, PageHeader, Icon, TickerBelt, ExchangePanel, MarketOverview, LastTransactions, MarketNews],
+  imports: [TPipe, ValueChartPanel, HoldingsTable, WatchlistRail, PageHeader, Icon, TickerBelt, ExchangePanel, MarketOverview, LastTransactions, MarketNews],
   providers: [DayChangeStore],
   templateUrl: './portfolio-page.html',
   styleUrl: './portfolio-page.scss',
@@ -50,16 +52,18 @@ export class PortfolioPage {
   /** Markets this cash can buy, from the exchanges in the database. */
   readonly buyableMarkets = computed(() => {
     const labels = new Set(this.market.instruments().map((i) => marketFor(i.exchange)?.shortLabel ?? i.exchange));
-    return [...labels].join(' · ') || 'no markets yet';
+    return [...labels].join(' · ') || translate('no markets yet');
   });
 
   readonly priceNote = computed(() => {
     const updated = this.market.lastPriceUpdate();
     const unpriced = this.portfolio.unpricedCount();
     const base = updated
-      ? `Valued at the latest price from the price feed (updated ${formatTime(updated)}).`
-      : 'No instrument has a price yet, so holdings are not valued.';
-    return unpriced > 0 ? `${base} ${unpriced} holding${unpriced === 1 ? ' has' : 's have'} no price and ${unpriced === 1 ? 'is' : 'are'} excluded.` : base;
+      ? translate('Valued at the latest price from the price feed (updated {time}).', { time: formatTime(updated) })
+      : translate('No instrument has a price yet, so holdings are not valued.');
+    if (unpriced === 0) return base;
+    const rest = unpriced === 1 ? translate('1 holding has no price and is excluded.') : translate('{n} holdings have no price and are excluded.', { n: unpriced });
+    return `${base} ${rest}`;
   });
 
   closeCash(event: MouseEvent): void {

@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject, signal, u
 import { RouterLink } from '@angular/router';
 import { NewsService } from '../../core/news/news.service';
 import { Icon } from '../../shared/icon';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { translate } from '../../core/i18n/i18n.service';
 
 const SHOWN = 3;
 
@@ -9,12 +11,12 @@ const SHOWN = 3;
 @Component({
   selector: 'leap-market-news',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon],
+  imports: [TPipe, RouterLink, Icon],
   template: `
     <section class="card">
       <div class="head">
-        <h2 class="title">Market News</h2>
-        <a class="btn btn-secondary btn-sm" routerLink="/news">View All</a>
+        <h2 class="title">{{ 'Market News' | t }}</h2>
+        <a class="btn btn-secondary btn-sm" routerLink="/news">{{ 'View All' | t }}</a>
       </div>
 
       @if (items().length > 0) {
@@ -34,16 +36,16 @@ const SHOWN = 3;
                   @if (item.summary) {
                     <span class="desc">{{ item.summary }}</span>
                   }
-                  <span class="meta">{{ item.publisher }} · {{ ago(item.publishedAt) }}</span>
+                  <span class="meta">{{ item.publisher | t }} · {{ ago(item.publishedAt) }}</span>
                 </span>
               </a>
             </li>
           }
         </ul>
       } @else if (news.state() === 'unavailable') {
-        <p class="none">{{ news.error() ?? 'Headlines are unavailable right now.' }}</p>
+        <p class="none">{{ (news.error() ?? 'Headlines are unavailable right now.') | t }}</p>
       } @else if (news.state() === 'ready') {
-        <p class="none">No recent headlines for the instruments on this platform.</p>
+        <p class="none">{{ 'No recent headlines for the instruments on this platform.' | t }}</p>
       } @else {
         <div class="loading" aria-hidden="true">
           @for (n of [1, 2, 3]; track n) {
@@ -56,7 +58,7 @@ const SHOWN = 3;
             </div>
           }
         </div>
-        <p class="sr-only" role="status">Loading headlines…</p>
+        <p class="sr-only" role="status">{{ 'Loading headlines…' | t }}</p>
       }
     </section>
   `,
@@ -228,11 +230,11 @@ export class MarketNews {
 
   ago(at: Date): string {
     const minutes = Math.max(0, Math.round((Date.now() - at.getTime()) / 60_000));
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+    if (minutes < 1) return translate('just now');
+    if (minutes < 60) return minutes === 1 ? translate('1 minute ago') : translate('{n} minutes ago', { n: minutes });
     const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    if (hours < 24) return hours === 1 ? translate('1 hour ago') : translate('{n} hours ago', { n: hours });
     const days = Math.round(hours / 24);
-    return `${days} day${days === 1 ? '' : 's'} ago`;
+    return days === 1 ? translate('1 day ago') : translate('{n} days ago', { n: days });
   }
 }

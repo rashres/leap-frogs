@@ -1,0 +1,114 @@
+<div class="page-enter">
+  <leap-page-header [heading]="greeting()" mascot="portfolio">
+    <span description>{{ summary() }}</span>
+    <ng-container ngProjectAs="[actions]">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="reload()" [disabled]="loading()">
+        <leap-icon name="refresh" [size]="16" [class.spin]="loading()" />
+        {{ loading() ? t().loading : t().refresh }}
+      </button>
+    </ng-container>
+  </leap-page-header>
+
+  @if (error(); as message) {
+    <p class="banner" role="alert">
+      <leap-icon name="alert" [size]="16" />
+      <span><strong>{{ t().loadFailed }}</strong> {{ message }}</span>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="reload()">{{ t().tryAgain }}</button>
+    </p>
+  }
+
+  <!-- Today at a glance -->
+  <section class="kpis" [attr.aria-label]="t().glance">
+    @for (k of kpis(); track k.key) {
+      <a class="kpi" [routerLink]="k.link">
+        <span class="k-label">{{ k.label }}</span>
+        @if (!loaded()) {
+          <span class="skeleton k-sk"></span>
+        } @else {
+          <span class="k-value num" [class]="'t-' + (k.tone || 'plain')">
+            @if (k.glyph) {
+              <span class="k-glyph" aria-hidden="true">{{ k.glyph }}</span>
+            }
+            {{ k.value }}
+          </span>
+        }
+        <span class="k-sub">{{ k.sub }}</span>
+      </a>
+    }
+  </section>
+
+  <div class="split">
+    <!-- Needs a look -->
+    <section class="panel look" aria-labelledby="h-look">
+      <div class="head">
+        <h2 id="h-look">{{ t().needsLook }}</h2>
+        <p class="faint">{{ t().needsSub }}</p>
+      </div>
+      @if (look().length === 0) {
+        <p class="empty faint">{{ loaded() ? t().allQuiet : t().checking }}</p>
+      } @else {
+        <ul>
+          @for (l of look(); track l.key) {
+            <li>
+              <span class="badge" [class]="'b-' + l.kind" aria-hidden="true">{{ l.glyph }}</span>
+              <div class="who">
+                <p class="name">{{ l.name }} <span class="faint num">#{{ l.accountId }}</span></p>
+                <p class="why">{{ l.why }}</p>
+              </div>
+              <span class="tag" [class]="'b-' + l.kind">{{ l.tag }}</span>
+              <a class="btn btn-secondary btn-sm" [routerLink]="['/ops/accounts', l.accountId]" [attr.aria-label]="inspectLabel(l.name)">
+                {{ t().inspect }}
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </section>
+
+    <!-- Tasks -->
+    <section class="tasks" [attr.aria-label]="t().tasks">
+      <a class="task" routerLink="/ops/accounts">
+        <span class="t-title"><leap-icon name="user" [size]="18" />{{ t().task1 }}</span>
+        <span class="t-sub">{{ t().task1Sub }}</span>
+      </a>
+      <a class="task" routerLink="/audit">
+        <span class="t-title"><leap-icon name="shield-check" [size]="18" />{{ t().task2 }}</span>
+        <span class="t-sub">{{ t().task2Sub }}</span>
+      </a>
+    </section>
+  </div>
+
+  <!-- Latest orders -->
+  <section class="panel latest" aria-labelledby="h-latest">
+    <div class="head row">
+      <h2 id="h-latest">{{ t().latest }}</h2>
+      <a routerLink="/audit" class="open">{{ t().openAudit }}</a>
+    </div>
+    @if (latest().length === 0) {
+      <p class="empty faint">{{ loaded() ? t().noOrders : t().loadingOrders }}</p>
+    } @else {
+      <ul>
+        @for (o of latest(); track o.id) {
+          <li>
+            <span class="side" [class.buy]="o.buy" [class.sell]="!o.buy"><span aria-hidden="true">{{ o.buy ? '▲' : '▼' }} </span>{{ o.side }}</span>
+            <div class="who">
+              <p class="name">{{ o.symbol }} <span class="faint num">× {{ o.qty }}</span></p>
+              <p class="why">
+                <a [routerLink]="['/ops/accounts', o.accountId]">{{ o.account }}</a> · <span class="num">{{ o.when }}</span>
+              </p>
+            </div>
+            <span class="value num">{{ o.value }}</span>
+            <span class="pill" [class]="'pill-' + o.tone"><span aria-hidden="true">{{ o.glyph }}</span>{{ o.status }}</span>
+          </li>
+        }
+      </ul>
+    }
+  </section>
+
+  <p class="foot faint">
+    {{ t().readOnly }} {{ t().usd }}
+    @if (truncated()) {
+      {{ t().truncated }}
+    }
+  </p>
+</div>

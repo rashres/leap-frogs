@@ -4,24 +4,27 @@
  */
 
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { tk } from '../core/i18n/i18n.service';
+import { TPipe } from '../core/i18n/t.pipe';
 
 export type MascotName = 'portfolio' | 'markets' | 'news' | 'orders';
 
 const ALT: Record<MascotName, string> = {
-  portfolio: 'The LEAP frog',
-  markets: 'The LEAP frog holding a coin',
-  news: 'The LEAP frog reading a newspaper',
-  orders: 'The LEAP frog carrying a parcel',
+  portfolio: tk('The LilyPad frog'),
+  markets: tk('The LilyPad frog holding a coin'),
+  news: tk('The LilyPad frog reading a newspaper'),
+  orders: tk('The LilyPad frog carrying a parcel'),
 };
 
 @Component({
   selector: 'leap-page-mascot',
+  imports: [TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <img
       class="mascot"
       [src]="'mascot/' + name() + '.png'"
-      [alt]="ALT[name()]"
+      [alt]="ALT[name()] | t"
       [width]="size()"
       [height]="size()"
       decoding="async"

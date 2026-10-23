@@ -14,6 +14,7 @@ import {
   output,
   signal,
 } from '@angular/core';
+import { currentLocale, tk, translate } from '../core/i18n/i18n.service';
 import { DISPLAY_ZONE, DISPLAY_ZONE_LABEL } from '../core/markets/sessions';
 import { formatPrice } from './format';
 
@@ -318,16 +319,19 @@ export class PriceChart {
    */
   readonly summary = computed(() => {
     const points = this.points();
-    if (points.length < 2) return 'Price chart, no data available.';
+    if (points.length < 2) return translate('Price chart, no data available.');
     const open = points[0].price;
     const close = points[points.length - 1].price;
     const values = points.map((p) => p.price);
-    const direction = close > open ? 'up' : close < open ? 'down' : 'flat';
-    return (
-      `Price chart over ${points.length} points. ` +
-      `Opened ${formatPrice(open)}, closed ${formatPrice(close)}, ${direction}. ` +
-      `Low ${formatPrice(Math.min(...values))}, high ${formatPrice(Math.max(...values))}.`
-    );
+    const direction = translate(close > open ? tk('up') : close < open ? tk('down') : tk('flat'));
+    return translate('Price chart over {n} points. Opened {open}, closed {close}, {direction}. Low {low}, high {high}.', {
+      n: points.length,
+      open: formatPrice(open),
+      close: formatPrice(close),
+      direction,
+      low: formatPrice(Math.min(...values)),
+      high: formatPrice(Math.max(...values)),
+    });
   });
 
   readonly strokeColour = computed(() => {
@@ -366,8 +370,8 @@ export class PriceChart {
     const ageMs = Date.now() - at.getTime();
     const withinDay = ageMs < 24 * 60 * 60 * 1000;
     return withinDay
-      ? `${at.toLocaleTimeString('en-US', { timeZone: DISPLAY_ZONE, hour: 'numeric', minute: '2-digit' })} ${DISPLAY_ZONE_LABEL}`
-      : at.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' });
+      ? `${at.toLocaleTimeString(currentLocale(), { timeZone: DISPLAY_ZONE, hour: 'numeric', minute: '2-digit' })} ${DISPLAY_ZONE_LABEL}`
+      : at.toLocaleDateString(currentLocale(), { day: '2-digit', month: 'short', year: '2-digit' });
   }
 }
 
@@ -382,7 +386,7 @@ function hourTicks(start: number, length: number): number[] {
 }
 
 function hourLabel(at: Date): string {
-  return at.toLocaleTimeString('en-US', { timeZone: DISPLAY_ZONE, hour: 'numeric' });
+  return at.toLocaleTimeString(currentLocale(), { timeZone: DISPLAY_ZONE, hour: 'numeric' });
 }
 
 function niceStep(raw: number): number {
@@ -395,14 +399,14 @@ function axisPrice(value: number, step: number): string {
   const decimals = (x: number) => Math.min(4, Math.max(0, Math.ceil(-Math.log10(x))));
   if (Math.abs(value) >= 10_000) {
     const d = decimals(step / 1000);
-    return `$${(value / 1000).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })}k`;
+    return `$${(value / 1000).toLocaleString(currentLocale(), { minimumFractionDigits: d, maximumFractionDigits: d })}k`;
   }
   const d = decimals(step);
-  return `$${value.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d })}`;
+  return `$${value.toLocaleString(currentLocale(), { minimumFractionDigits: d, maximumFractionDigits: d })}`;
 }
 
 function axisTime(at: Date, spanMs: number): string {
   return spanMs <= 36 * 60 * 60 * 1000
-    ? at.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    : at.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    ? at.toLocaleTimeString(currentLocale(), { hour: '2-digit', minute: '2-digit' })
+    : at.toLocaleDateString(currentLocale(), { day: '2-digit', month: 'short' });
 }

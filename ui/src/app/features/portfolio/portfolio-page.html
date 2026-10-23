@@ -2,18 +2,18 @@
   <leap-page-header heading="Portfolio" mascot="portfolio">
     <span description>
       @if (portfolio.account.active(); as acc) {
-        Cash, holdings and performance for {{ acc.name }}.
+        {{ 'Cash, holdings and performance for {name}.' | t: { name: acc.name } }}
       } @else {
-        Choose an account from the top bar to see its portfolio.
+        {{ 'Choose an account from the top bar to see its portfolio.' | t }}
       }
     </span>
   </leap-page-header>
 
   <leap-ticker-belt />
 
-  <section class="metrics panel" aria-label="Key figures">
+  <section class="metrics panel" [attr.aria-label]="'Key figures' | t">
     <div class="metric cash-metric">
-      <h2 class="m-label">Available cash</h2>
+      <h2 class="m-label">{{ 'Available cash' | t }}</h2>
       <p class="m-value num">{{ cashText() }}</p>
       <button
         type="button"
@@ -22,36 +22,36 @@
         [attr.aria-expanded]="cashOpen()"
         (click)="cashOpen.set(!cashOpen())"
       >
-        USD buying power <leap-icon name="chevron-down" [size]="14" />
+        {{ 'USD buying power' | t }} <leap-icon name="chevron-down" [size]="14" />
       </button>
       @if (cashOpen()) {
-        <div class="cash-pop" id="cash-breakdown" role="region" aria-label="Cash breakdown">
+        <div class="cash-pop" id="cash-breakdown" role="region" [attr.aria-label]="'Cash breakdown' | t">
           <dl>
-            <div><dt>Cash</dt><dd class="num">{{ cashText() }}</dd></div>
-            <div><dt>Invested in holdings</dt><dd class="num">{{ investedText() }}</dd></div>
-            <div class="total"><dt>Total value</dt><dd class="num">{{ totalText() }}</dd></div>
+            <div><dt>{{ 'Cash' | t }}</dt><dd class="num">{{ cashText() }}</dd></div>
+            <div><dt>{{ 'Invested in holdings' | t }}</dt><dd class="num">{{ investedText() }}</dd></div>
+            <div class="total"><dt>{{ 'Total value' | t }}</dt><dd class="num">{{ totalText() }}</dd></div>
           </dl>
         </div>
       }
     </div>
     <div class="metric">
-      <h2 class="m-label">Unrealized P/L</h2>
+      <h2 class="m-label">{{ 'Unrealized P/L' | t }}</h2>
       <p class="m-value num" [class.up]="portfolio.hasPnl() && rising()" [class.down]="portfolio.hasPnl() && !rising()">
         {{ portfolio.hasPnl() ? pnlText() : '—' }}
       </p>
       <p class="m-sub">
         @if (portfolio.hasPnl()) {
           <span class="num" [class.up]="rising()" [class.down]="!rising()">{{ returnText() }}</span>
-          <span class="faint">return</span>
+          <span class="faint">{{ 'return' | t }}</span>
         } @else {
-          <span class="faint">No priced positions yet</span>
+          <span class="faint">{{ 'No priced positions yet' | t }}</span>
         }
       </p>
     </div>
     <div class="metric">
-      <h2 class="m-label">Holdings</h2>
+      <h2 class="m-label">{{ 'Holdings' | t }}</h2>
       <p class="m-value num">{{ portfolio.positions().length }}</p>
-      <p class="m-sub faint">Open positions</p>
+      <p class="m-sub faint">{{ 'Open positions' | t }}</p>
     </div>
   </section>
 
@@ -74,6 +74,6 @@
 
   <p class="disclosure">
     <leap-icon name="alert" [size]="14" />
-    <span>{{ priceNote() }} Average cost comes from this account's filled buy orders.</span>
+    <span>{{ priceNote() }} {{ 'Average cost comes from this account’s filled buy orders.' | t }}</span>
   </p>
 </div>

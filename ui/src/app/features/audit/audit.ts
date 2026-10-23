@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute } from '@angular/router';
 import { catchError, of } from 'rxjs';
 import { AuditService } from '../../core/api/audit.service';
 import { ApiError, toApiError } from '../../core/api/api-error';
@@ -9,6 +10,8 @@ import { Icon } from '../../shared/icon';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { PageHeader } from '../../shared/page-header';
 import { formatPrice, formatQty, formatStamp, formatUsd } from '../../shared/format';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { translate } from '../../core/i18n/i18n.service';
 
 interface Step {
   readonly state: string;
@@ -19,7 +22,7 @@ interface Step {
 @Component({
   selector: 'leap-audit',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, PageHeader],
+  imports: [TPipe, Icon, PageHeader],
   templateUrl: './audit.html',
   styleUrl: './audit.scss',
 })
@@ -57,6 +60,9 @@ export class Audit {
   });
 
   constructor() {
+    // "Open in Audit" on an account page links here with ?account=<id>.
+    const account = inject(ActivatedRoute).snapshot.queryParamMap.get('account');
+    if (account && /^\d+$/.test(account)) this.accountQuery.set(`#${account}`);
     this.load();
   }
 
@@ -135,7 +141,7 @@ export class Audit {
   }
 
   statusLabel(status: Order['status']): string {
-    return ORDER_STATUS_LABELS[status];
+    return translate(ORDER_STATUS_LABELS[status]);
   }
 
   statusTone(status: Order['status']): string {
@@ -144,40 +150,48 @@ export class Audit {
 
   private toRow(order: Order) {
     const filled = order.status === 'COMPLETE';
-    const waiting = order.limitPrice != null ? `until ${this.formatPrice(order.limitPrice)} or better` : 'for the market to open';
+    const waiting =
+      order.limitPrice != null
+        ? translate('Waiting until {price} or better.', { price: this.formatPrice(order.limitPrice) })
+        : translate('Waiting for the market to open.');
     const steps: Step[] = [
       {
-        state: 'Submitted',
+        state: translate('Submitted'),
         at: this.formatStamp(order.placedTime),
-        detail: `${order.side} ${this.formatQty(order.quantity)} ${order.symbol} recorded for account #${order.accountId}.`,
+        detail: translate('{side} {qty} {symbol} recorded for account #{account}.', {
+          side: translate(order.side === 'BUY' ? 'Buy' : 'Sell'),
+          qty: this.formatQty(order.quantity),
+          symbol: order.symbol,
+          account: order.accountId,
+        }),
       },
     ];
     if (filled) {
       const waited = order.fulfilledTime != null && Date.parse(order.fulfilledTime) - Date.parse(order.placedTime) > 1000;
       steps.push({
-        state: waited ? 'Pending → Filled' : 'Submitted → Filled',
+        state: translate(waited ? 'Pending → Filled' : 'Submitted → Filled'),
         at: order.fulfilledTime ? this.formatStamp(order.fulfilledTime) : '',
-        detail: `Executed at ${this.formatPrice(order.price)}; cash and holdings updated.`,
+        detail: translate('Executed at {price}; cash and holdings updated.', { price: this.formatPrice(order.price) }),
       });
     } else if (order.status === 'FAILED') {
       steps.push({
-        state: 'Submitted → Rejected',
+        state: translate('Submitted → Rejected'),
         at: this.formatStamp(order.placedTime),
-        detail: 'Failed the cash or holdings check. The rejection reason is not stored in the audit record.',
+        detail: translate('Failed the cash or holdings check. The rejection reason is not recorded.'),
       });
     } else if (order.status === 'PENDING') {
       steps.push({
-        state: 'Pending',
+        state: translate('Pending'),
         at: this.formatStamp(order.placedTime),
-        detail: `Waiting ${waiting}. ${order.expiresAt ? `Expires ${this.formatStamp(order.expiresAt)}.` : 'Open until filled or cancelled.'}`,
+        detail: `${waiting} ${order.expiresAt ? translate('Expires {time}.', { time: this.formatStamp(order.expiresAt) }) : translate('Open until filled or cancelled.')}`,
       });
     } else if (order.status === 'CANCELLED') {
-      steps.push({ state: 'Pending → Cancelled', at: '', detail: 'Cancelled before it filled; nothing was traded.' });
+      steps.push({ state: translate('Pending → Cancelled'), at: '', detail: translate('Cancelled before it filled; nothing was traded.') });
     } else if (order.status === 'EXPIRED') {
       steps.push({
-        state: 'Pending → Expired',
+        state: translate('Pending → Expired'),
         at: order.expiresAt ? this.formatStamp(order.expiresAt) : '',
-        detail: 'A day order that did not fill before its session closed; nothing was traded.',
+        detail: translate('A day order that did not fill before its session closed; nothing was traded.'),
       });
     }
     return {

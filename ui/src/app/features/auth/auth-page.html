@@ -1,27 +1,21 @@
 <div class="auth">
   <section class="pane form-pane" aria-labelledby="auth-title">
     <header class="brand-row">
-      <a class="brand" routerLink="/login" aria-label="LEAP Console">
+      <a class="brand" routerLink="/login" aria-label="LilyPad Console">
         <svg class="mark" viewBox="0 0 32 32" aria-hidden="true">
-          <rect width="32" height="32" rx="8" fill="var(--text)" />
-          <path
-            d="M7 21 L13 14 L18 18 L25 9"
-            stroke="var(--panel)"
-            stroke-width="2.8"
-            fill="none"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-        </svg>
-        <span class="brand-name">LEAP</span>
+            <path d="M16 16 L21.92 3.31 A14 14 0 1 0 29.16 11.21 Z" fill="#4cb84a" />
+            <path d="M16 16 L28.22 11.55 A13 13 0 0 0 21.49 4.22 Z" fill="#8f8f8f" transform="translate(2.2 -1.4)" />
+          </svg>
+        <span class="brand-name">LilyPad</span>
       </a>
       <div class="brand-actions">
-        <span class="brand-meta faint">Multi-market console</span>
+        <leap-display-controls />
+        <span class="brand-meta faint">{{ 'Multi-market console' | t }}</span>
         <button
           type="button"
           class="icon-btn theme-btn"
-          [attr.aria-label]="theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
-          [attr.title]="theme() === 'dark' ? 'Light theme' : 'Dark theme'"
+          [attr.aria-label]="(theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme') | t"
+          [attr.title]="(theme() === 'dark' ? 'Light theme' : 'Dark theme') | t"
           (click)="toggleTheme()"
         >
           <leap-icon [name]="theme() === 'dark' ? 'sun' : 'moon'" [size]="18" />
@@ -30,17 +24,17 @@
     </header>
 
     <div class="form-body">
-      <h1 id="auth-title">{{ title() }}</h1>
+      <h1 id="auth-title">{{ title() | t }}</h1>
       @if (admin()) {
-        <p class="form-note faint">Dedicated Super Admin entry. Other roles use the main sign-in page.</p>
+        <p class="form-note faint">{{ 'Dedicated Super Admin entry. Other roles use the main sign-in page.' | t }}</p>
       } @else if (signup()) {
-        <p class="form-note faint">Opens a trading account in your name. You can sign in with it straight away.</p>
+        <p class="form-note faint">{{ 'Opens a trading account in your name. You can sign in with it straight away.' | t }}</p>
       }
 
       <form class="form" [class.compact]="signup()" (submit)="submit($event)" novalidate>
         @if (signup()) {
           <label class="uline">
-            <span>Full name</span>
+            <span>{{ 'Full name' | t }}</span>
             <input
               type="text"
               name="name"
@@ -52,7 +46,7 @@
           </label>
 
           <label class="uline">
-            <span>Email</span>
+            <span>{{ 'Email' | t }}</span>
             <input
               type="email"
               name="email"
@@ -65,7 +59,7 @@
         }
 
         <label class="uline">
-          <span>Username</span>
+          <span>{{ 'Username' | t }}</span>
           <input
             type="text"
             name="username"
@@ -77,7 +71,7 @@
         </label>
 
         <label class="uline">
-          <span>Password</span>
+          <span>{{ 'Password' | t }}</span>
           <div class="pass-row">
             <input
               [type]="showPassword() ? 'text' : 'password'"
@@ -90,7 +84,7 @@
             <button
               type="button"
               class="reveal"
-              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              [attr.aria-label]="(showPassword() ? 'Hide password' : 'Show password') | t"
               (click)="togglePassword()"
             >
               <leap-icon [name]="showPassword() ? 'eye-off' : 'eye'" [size]="18" />
@@ -100,7 +94,7 @@
 
         @if (signup()) {
           <label class="uline">
-            <span>Confirm password</span>
+            <span>{{ 'Confirm password' | t }}</span>
             <input
               [type]="showPassword() ? 'text' : 'password'"
               name="confirm-password"
@@ -120,37 +114,37 @@
                 (change)="remember.set($any($event.target).checked)"
               />
               <span class="dot" aria-hidden="true"></span>
-              Remember Me
+              {{ 'Remember Me' | t }}
             </label>
             @if (!admin()) {
-              <a class="text-link" routerLink="/admin/login">Admin sign-in</a>
+              <a class="text-link" routerLink="/admin/login">{{ 'Admin sign-in' | t }}</a>
             } @else {
-              <a class="text-link" routerLink="/login">User sign-in</a>
+              <a class="text-link" routerLink="/login">{{ 'User sign-in' | t }}</a>
             }
           </div>
         }
 
         @if (error(); as err) {
-          <p class="form-error" role="alert">{{ err }}</p>
+          <p class="form-error" role="alert">{{ err | t }}</p>
         }
 
         <button type="submit" class="cta" [disabled]="submitting()">
-          {{ submitting() ? busyLabel() : submitLabel() }}
+          {{ (submitting() ? busyLabel() : submitLabel()) | t }}
         </button>
 
         @if (signup()) {
-          <p class="switch faint">Already have an account? <a class="text-link bold" routerLink="/login">Sign in</a></p>
+          <p class="switch faint">{{ 'Already have an account?' | t }} <a class="text-link bold" routerLink="/login">{{ 'Sign in' | t }}</a></p>
         } @else if (!admin()) {
-          <p class="switch faint">New to LEAP? <a class="text-link bold" routerLink="/signup">Create an account</a></p>
+          <p class="switch faint">{{ 'New to LilyPad?' | t }} <a class="text-link bold" routerLink="/signup">{{ 'Create an account' | t }}</a></p>
         }
       </form>
 
       @if (!signup()) {
         <div class="demo">
-          <span class="demo-kicker">Demo users (password from local LEAP_DEMO_PASSWORD)</span>
+          <span class="demo-kicker">{{ 'Demo users (password from local LEAP_DEMO_PASSWORD)' | t }}</span>
           <div class="demo-row">
             @for (d of demos(); track d.username) {
-              <button type="button" class="demo-btn" (click)="fillDemo(d.username)">{{ d.label }}</button>
+              <button type="button" class="demo-btn" (click)="fillDemo(d.username)">{{ d.label | t }}</button>
             }
           </div>
         </div>
@@ -173,12 +167,12 @@
           <span class="coin a"></span>
           <span class="coin b"></span>
         </div>
-        <p class="bal-label">Portfolio value</p>
+        <p class="bal-label">{{ 'Portfolio value' | t }}</p>
         <p class="bal-value num">{{ showcase().value }}</p>
         <div class="bal-foot">
           <span class="bal-mask">{{ showcase().mask }}</span>
           <span class="bal-chg num" [class.up]="showcase().dayUp" [class.down]="!showcase().dayUp">
-            {{ showcase().dayPct }} today
+            {{ '{pct} today' | t: { pct: showcase().dayPct } }}
           </span>
         </div>
         <div class="dots"></div>
@@ -186,8 +180,8 @@
 
       <article class="float card-movers">
         <div class="movers-head">
-          <span>Live movers</span>
-          <span class="movers-time">Now</span>
+          <span>{{ 'Live movers' | t }}</span>
+          <span class="movers-time">{{ 'Now' | t }}</span>
         </div>
         <div class="movers-row">
           @for (m of movers(); track m.symbol) {
@@ -206,7 +200,7 @@
       </article>
 
       <article class="float card-bars">
-        <div class="bars" role="img" aria-label="Weekly activity">
+        <div class="bars" role="img" [attr.aria-label]="'Weekly activity' | t">
           @for (b of weekBars(); track b.label) {
             <div class="bar-col">
               <span class="bar" [class.on]="b.on" [style.height.%]="b.h"></span>
@@ -222,14 +216,14 @@
           <div class="toast-body">
             <div class="toast-meta">
               <strong>{{ hm.symbol }}</strong>
-              <span>Top mover</span>
+              <span>{{ 'Top mover' | t }}</span>
             </div>
             <p>
               {{ hm.price }}
               <span class="num" [class.up]="hm.up" [class.down]="!hm.up">{{ hm.pct }}</span>
             </p>
           </div>
-          <span class="toast-pill">Trade</span>
+          <span class="toast-pill">{{ 'Trade' | t }}</span>
         </article>
       }
 

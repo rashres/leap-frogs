@@ -7,6 +7,8 @@ import { InstrumentLogo } from '../../shared/instrument-logo';
 import { LivePrice } from '../../shared/live-price';
 import { Icon } from '../../shared/icon';
 import { PageHeader } from '../../shared/page-header';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk, translate } from '../../core/i18n/i18n.service';
 
 interface LiveSearchResult {
   readonly symbol: string;
@@ -24,7 +26,7 @@ const OTHER: string = 'OTHER';
 @Component({
   selector: 'leap-markets-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, LivePrice, PageHeader, Icon],
+  imports: [TPipe, RouterLink, InstrumentLogo, LivePrice, PageHeader, Icon],
   templateUrl: './markets-page.html',
   styleUrl: './markets-page.scss',
 })
@@ -40,7 +42,7 @@ export class MarketsPage {
     const present = new Set<string>(this.market.instruments().map((i) => marketFor(i.exchange)?.code ?? OTHER));
     return [...MARKET_ORDER, OTHER]
       .filter((code) => present.has(code))
-      .map((code) => ({ code, label: code === OTHER ? 'Other' : MARKETS[code as MarketCode].label }));
+      .map((code) => ({ code, label: code === OTHER ? translate('Other') : MARKETS[code as MarketCode].label }));
   });
 
   readonly exchanges = computed(() => [...new Set(this.market.instruments().map((i) => i.exchange))].sort());
@@ -72,8 +74,8 @@ export class MarketsPage {
         const instruments = byMarket.get(code)!;
         return {
           code,
-          label: policy?.label ?? 'Other markets',
-          hours: policy?.sessionLabel ?? 'Trading hours not known',
+          label: policy?.label ?? translate('Other markets'),
+          hours: policy?.sessionLabel ?? translate('Trading hours not known'),
           open: policy ? policy.isOpen(now) : null,
           exchanges: [...new Set(instruments.map((i) => i.exchange))].join(' · '),
           rows: instruments.map((i) => ({
@@ -141,10 +143,10 @@ export class MarketsPage {
 
 function ago(now: Date, at: number): string {
   const seconds = Math.max(0, Math.round((now.getTime() - at) / 1000));
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m ago`;
-  if (seconds < 86_400) return `${Math.round(seconds / 3600)}h ago`;
-  return `${Math.round(seconds / 86_400)}d ago`;
+  if (seconds < 60) return translate('{n}s ago', { n: seconds });
+  if (seconds < 3600) return translate('{n}m ago', { n: Math.round(seconds / 60) });
+  if (seconds < 86_400) return translate('{n}h ago', { n: Math.round(seconds / 3600) });
+  return translate('{n}d ago', { n: Math.round(seconds / 86_400) });
 }
 
 async function yahooSearch(term: string): Promise<LiveSearchResult[]> {
@@ -161,6 +163,6 @@ async function yahooSearch(term: string): Promise<LiveSearchResult[]> {
       symbol: q.symbol!,
       name: q.longname ?? q.shortname ?? q.symbol!,
       exchange: q.exchDisp ?? '—',
-      type: q.typeDisp ?? 'Unknown',
+      type: q.typeDisp ?? tk('Unknown'),
     }));
 }

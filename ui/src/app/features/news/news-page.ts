@@ -5,7 +5,7 @@
  * Sentiment is a count of matched words (see core/news/sentiment.ts). Each
  * headline can show the words it matched and why it was filed under a stock,
  * and stocks are ordered by how much was written about them, never by score.
- * The one exception is the pond in the detailed view, which places stocks by
+ * The one exception is the pond, which places stocks by
  * net tone on purpose (see news-pond.ts).
  */
 
@@ -21,17 +21,16 @@ import { PageHeader } from '../../shared/page-header';
 import { HeadlineRow } from './headline-row';
 import { ago, dayLabel, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
 import { NewsPond } from './news-pond';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk, translate } from '../../core/i18n/i18n.service';
 
 type Mood = 'all' | SentimentLabel;
-/** Simple: one plain list. Detailed: the pond, top stories and tone columns too. */
-type View = 'simple' | 'detailed';
 type Order = 'newest' | 'tone';
 
 /** One row of equal cards across the page. */
 const TOP_STORIES = 4;
 const PAGE = 30;
 const COLUMN_PAGE = 10;
-const VIEW_KEY = 'leap.news.view';
 const ORDER_KEY = 'leap.news.order';
 /** Tone columns always read Negative | Neutral | Positive. */
 const COLUMN_ORDER: readonly SentimentLabel[] = ['negative', 'neutral', 'positive'];
@@ -39,7 +38,7 @@ const COLUMN_ORDER: readonly SentimentLabel[] = ['negative', 'neutral', 'positiv
 @Component({
   selector: 'leap-news-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgTemplateOutlet, PageHeader, Icon, InstrumentLogo, HeadlineRow, NewsPond],
+  imports: [TPipe, NgTemplateOutlet, PageHeader, Icon, InstrumentLogo, HeadlineRow, NewsPond],
   templateUrl: './news-page.html',
   styleUrl: './news-page.scss',
 })
@@ -48,7 +47,7 @@ export class NewsPage {
   protected readonly market = inject(MarketStore);
 
   readonly moods: readonly Mood[] = ['all', 'positive', 'neutral', 'negative'];
-  readonly moodLabel: Record<Mood, string> = { all: 'All', ...MOOD_LABEL };
+  readonly moodLabel: Record<Mood, string> = { all: tk('All'), ...MOOD_LABEL };
   readonly glyph = MOOD_GLYPH;
   readonly tone = MOOD_TONE;
   readonly disclaimer = SENTIMENT_DISCLAIMER;
@@ -57,11 +56,8 @@ export class NewsPage {
   readonly mood = signal<Mood>('all');
   readonly query = signal('');
   readonly limit = signal(PAGE);
-  readonly view = signal<View>(readStored(VIEW_KEY) === 'simple' ? 'simple' : 'detailed');
   readonly order = signal<Order>(readStored(ORDER_KEY) === 'tone' ? 'tone' : 'newest');
-  readonly simple = computed(() => this.view() === 'simple');
-  /** Tone columns only exist in the detailed view; simple is always one list. */
-  readonly byTone = computed(() => !this.simple() && this.order() === 'tone');
+  readonly byTone = computed(() => this.order() === 'tone');
   readonly columnLimit = signal<Record<SentimentLabel, number>>(freshColumnLimit());
   /** Stories whose picture failed to load; they fall back to a logo tile. */
   readonly broken = signal<ReadonlySet<string>>(new Set());
@@ -86,8 +82,14 @@ export class NewsPage {
         neu: pct(c.neutral),
         neg: pct(c.negative),
         title: c.total
-          ? `${row.name}: ${c.total} headlines — ${c.positive} positive, ${c.neutral} neutral, ${c.negative} negative`
-          : `${row.name}: no headlines in this window`,
+          ? translate('{name}: {total} headlines — {pos} positive, {neu} neutral, {neg} negative', {
+              name: row.name,
+              total: c.total,
+              pos: c.positive,
+              neu: c.neutral,
+              neg: c.negative,
+            })
+          : translate('{name}: no headlines in this window', { name: row.name }),
       };
     }),
   );
@@ -118,9 +120,9 @@ export class NewsPage {
     const c = this.counts();
     const bar = this.moodBar();
     return [
-      { key: 'neg', label: 'Negative', count: c.negative, pct: Math.round(bar.neg), image: 'mascot/sentiment-negative.png' },
-      { key: 'neu', label: 'Neutral', count: c.neutral, pct: Math.round(bar.neu), image: 'mascot/sentiment-neutral.png' },
-      { key: 'pos', label: 'Positive', count: c.positive, pct: Math.round(bar.pos), image: 'mascot/sentiment-positive.png' },
+      { key: 'neg', label: tk('Negative'), count: c.negative, pct: Math.round(bar.neg), image: 'mascot/sentiment-negative.png' },
+      { key: 'neu', label: tk('Neutral'), count: c.neutral, pct: Math.round(bar.neu), image: 'mascot/sentiment-neutral.png' },
+      { key: 'pos', label: tk('Positive'), count: c.positive, pct: Math.round(bar.pos), image: 'mascot/sentiment-positive.png' },
     ];
   });
 
@@ -136,10 +138,19 @@ export class NewsPage {
    */
   readonly verdict = computed(() => {
     const total = this.counts().total;
-    const subject = this.selectedStock() ? `${this.selectedStock()!.symbol} headlines` : 'headlines';
-    if (total === 0) return `No ${subject} yet`;
+    const symbol = this.selectedStock()?.symbol;
+    const say = (all: string, one: string) => (symbol ? translate(one, { symbol }) : translate(all));
+    if (total === 0) return say(tk('No headlines yet'), tk('No {symbol} headlines yet'));
     const top = [...this.tones()].sort((a, b) => b.count - a.count)[0];
-    return top.count * 2 > total ? `Most ${subject} are ${top.label.toLowerCase()}` : `${subject[0].toUpperCase()}${subject.slice(1)} are mixed`;
+    if (top.count * 2 <= total) return say(tk('Headlines are mixed'), tk('{symbol} headlines are mixed'));
+    switch (top.key) {
+      case 'pos':
+        return say(tk('Most headlines are positive'), tk('Most {symbol} headlines are positive'));
+      case 'neg':
+        return say(tk('Most headlines are negative'), tk('Most {symbol} headlines are negative'));
+      default:
+        return say(tk('Most headlines are neutral'), tk('Most {symbol} headlines are neutral'));
+    }
   });
 
   readonly filtered = computed(() => {
@@ -149,7 +160,7 @@ export class NewsPage {
 
   /** Newest stories with a working picture, as one row of equal cards; the rest follow as a list. */
   readonly topStories = computed(() => {
-    if (this.simple() || this.query().trim()) return [];
+    if (this.query().trim()) return [];
     const items = this.filtered();
     if (items.length < 3) return [];
     const broken = this.broken();
@@ -198,22 +209,13 @@ export class NewsPage {
     const spanDays = oldest ? Math.max(1, Math.ceil((Date.now() - oldest.getTime()) / 86_400_000)) : 0;
     return {
       headlines: all.length,
-      span: spanDays === 1 ? 'in the last day' : `over the last ${spanDays} days`,
+      span: spanDays === 1 ? translate('in the last day') : translate('over the last {n} days', { n: spanDays }),
       inNews: board.filter((r) => r.counts.total > 0).length,
       covered: board.length,
       topSymbol: top && top.counts.total > 0 ? top.symbol : null,
       topCount: top?.counts.total ?? 0,
       newest: all[0] ? ago(all[0].publishedAt) : '—',
     };
-  });
-
-  readonly sourceText = computed(() => {
-    const source = this.news.servedBy();
-    if (!source) return null;
-    const name = source === 'newsapi' ? 'NewsAPI.org' : 'Yahoo Finance';
-    this.now();
-    const at = this.news.fetchedAt();
-    return at ? `${name} · updated ${ago(at)}` : name;
   });
 
   constructor() {
@@ -258,11 +260,6 @@ export class NewsPage {
 
   showMoreIn(label: SentimentLabel): void {
     this.columnLimit.update((limits) => ({ ...limits, [label]: limits[label] + COLUMN_PAGE }));
-  }
-
-  setView(view: View): void {
-    this.view.set(view);
-    writeStored(VIEW_KEY, view);
   }
 
   setOrder(order: Order): void {

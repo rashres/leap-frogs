@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
+import { TPipe } from '../core/i18n/t.pipe';
+import { currentLocale, tk, translate } from '../core/i18n/i18n.service';
 
 /** One slice: `color` is a CSS colour, normally a --series-* token. */
 export interface DonutSegment {
@@ -25,6 +27,7 @@ const GAP = 2;
  */
 @Component({
   selector: 'leap-allocation-donut',
+  imports: [TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="wrap">
@@ -52,7 +55,7 @@ const GAP = 2;
         <div class="centre" aria-hidden="true">
           @if (focus(); as f) {
             <span class="c-value num">{{ f.pct }}</span>
-            <span class="c-label">{{ f.label }}</span>
+            <span class="c-label">{{ f.label | t }}</span>
             <span class="c-sub num">{{ f.valueLabel }}</span>
           }
         </div>
@@ -70,9 +73,9 @@ const GAP = 2;
           >
             <span class="swatch" [style.background]="arc.color" aria-hidden="true"></span>
             <span class="who">
-              <span class="name">{{ arc.label }}</span>
+              <span class="name">{{ arc.label | t }}</span>
               @if (arc.sub) {
-                <span class="sub">{{ arc.sub }}</span>
+                <span class="sub">{{ arc.sub | t }}</span>
               }
             </span>
             <span class="nums">
@@ -232,7 +235,7 @@ const GAP = 2;
 export class AllocationDonut {
   readonly segments = input.required<readonly DonutSegment[]>();
   /** Shown in the centre when nothing is hovered. */
-  readonly idleLabel = input('Total');
+  readonly idleLabel = input<string>(tk('Total'));
   readonly idleValue = input('');
   readonly idleSub = input('');
 
@@ -253,7 +256,7 @@ export class AllocationDonut {
       const length = Math.max(share * CIRCUMFERENCE - gap, 0.5);
       const arc = {
         ...s,
-        pct: `${(share * 100).toFixed(1)}%`,
+        pct: `${formatPct(share * 100)}%`,
         dash: `${length} ${CIRCUMFERENCE - length}`,
         offset: -start,
       };
@@ -270,6 +273,11 @@ export class AllocationDonut {
   });
 
   readonly summary = computed(() =>
-    'Allocation: ' + this.arcs().map((a) => `${a.label} ${a.pct}`).join(', '),
+    translate('Allocation: {parts}', { parts: this.arcs().map((a) => `${translate(a.label)} ${a.pct}`).join(', ') }),
   );
+}
+
+/** "12.5" in the chosen language. */
+function formatPct(value: number): string {
+  return value.toLocaleString(currentLocale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }

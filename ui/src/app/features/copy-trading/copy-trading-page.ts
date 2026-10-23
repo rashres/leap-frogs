@@ -10,6 +10,8 @@ import { PageHeader } from '../../shared/page-header';
 import { Sparkline } from '../../shared/sparkline';
 import { CopyControl } from './copy-control';
 import { equitySeries, initials, riskLabel, riskTone, signTone, since, traderMetrics } from './trader-view';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk, translate } from '../../core/i18n/i18n.service';
 
 type SortKey = 'roi' | 'pnl' | 'sharpeRatio' | 'aum' | 'copiers';
 
@@ -23,7 +25,7 @@ const GRID_METRICS = new Set(['mdd', 'sharpe', 'aum', 'copiers', 'success', 'equ
 @Component({
   selector: 'leap-copy-trading-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PageHeader, Icon, Sparkline, CopyControl],
+  imports: [TPipe, RouterLink, PageHeader, Icon, Sparkline, CopyControl],
   templateUrl: './copy-trading-page.html',
   styleUrl: './copy-trading-page.scss',
 })
@@ -36,11 +38,11 @@ export class CopyTradingPage {
   readonly subscriptions = createLoader(() => this.api.subscriptions(this.account.activeId()!));
 
   readonly sorts: readonly { key: SortKey; label: string }[] = [
-    { key: 'roi', label: 'ROI' },
-    { key: 'pnl', label: 'PnL' },
-    { key: 'sharpeRatio', label: 'Sharpe' },
-    { key: 'aum', label: 'AUM' },
-    { key: 'copiers', label: 'Copiers' },
+    { key: 'roi', label: tk('ROI') },
+    { key: 'pnl', label: tk('PnL') },
+    { key: 'sharpeRatio', label: tk('Sharpe') },
+    { key: 'aum', label: tk('AUM') },
+    { key: 'copiers', label: tk('Copiers') },
   ];
   readonly sort = signal<SortKey>('roi');
 
@@ -79,8 +81,8 @@ export class CopyTradingPage {
       initials: initials(s.traderName),
       allocation: formatUsd(s.allocation),
       limits: [
-        s.maxPerTrade != null ? `max ${formatUsd(s.maxPerTrade)}/trade` : '',
-        s.stopLossPercent != null ? `stop-loss ${s.stopLossPercent}%` : '',
+        s.maxPerTrade != null ? translate('max {amount}/trade', { amount: formatUsd(s.maxPerTrade) }) : '',
+        s.stopLossPercent != null ? translate('stop-loss {pct}%', { pct: s.stopLossPercent }) : '',
       ]
         .filter(Boolean)
         .join(' · '),

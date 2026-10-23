@@ -1,0 +1,324 @@
+:host {
+  display: block;
+}
+
+.page-enter > * + * {
+  margin-top: 16px;
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-bottom: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--down-line);
+  background: var(--down-soft);
+  color: var(--down);
+  font-size: 13px;
+
+  span {
+    flex: 1 1 260px;
+  }
+}
+
+/* ---- Today at a glance ---------------------------------------------------- */
+
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-soft);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  color: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: var(--panel-hover);
+  }
+}
+
+.k-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.k-sub {
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.k-value {
+  margin: 6px 0 2px;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.k-glyph {
+  margin-right: 4px;
+}
+
+.k-sk {
+  display: block;
+  width: 48px;
+  height: 28px;
+  margin: 6px 0 4px;
+}
+
+.t-plain {
+  color: var(--text);
+}
+
+.t-info {
+  color: #1d4ed8;
+}
+
+.t-down {
+  color: var(--down);
+}
+
+.t-warn {
+  color: #b54708;
+}
+
+:host-context([data-theme='dark']) {
+  .t-info {
+    color: #84adff;
+  }
+
+  .t-warn {
+    color: #fdb022;
+  }
+}
+
+/* ---- Needs a look + tasks ------------------------------------------------- */
+
+.split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.look {
+  flex: 3 1 520px;
+  min-width: 0;
+}
+
+.tasks {
+  flex: 2 1 320px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-soft);
+  background: var(--panel);
+  box-shadow: var(--shadow-1);
+  color: inherit;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: var(--panel-hover);
+  }
+}
+
+.t-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.t-sub {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+/* ---- Shared list panels ---------------------------------------------------- */
+
+.head {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border-soft);
+
+  h2 {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  p {
+    margin: 2px 0 0;
+    font-size: 12px;
+  }
+
+  &.row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    h2 {
+      flex: 1;
+    }
+  }
+}
+
+.open {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.panel ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.panel li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  padding: 13px 20px;
+
+  & + li {
+    border-top: 1px solid var(--border-soft);
+  }
+}
+
+.who {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.name {
+  margin: 0;
+  font-weight: 600;
+
+  .faint {
+    font-weight: 400;
+  }
+}
+
+.why {
+  margin: 1px 0 0;
+  font-size: 13px;
+  color: var(--text-2);
+
+  a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+}
+
+.empty {
+  margin: 0;
+  padding: 18px 20px;
+  font-size: 13px;
+}
+
+.badge {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  font-weight: 700;
+}
+
+.tag {
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.b-frozen {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.b-failed {
+  background: var(--down-soft);
+  color: var(--down);
+}
+
+.b-pending {
+  background: #fffaeb;
+  color: #b54708;
+}
+
+:host-context([data-theme='dark']) {
+  .b-frozen {
+    background: rgba(132, 173, 255, 0.14);
+    color: #84adff;
+  }
+
+  .b-pending {
+    background: rgba(253, 176, 34, 0.14);
+    color: #fdb022;
+  }
+}
+
+/* ---- Latest orders --------------------------------------------------------- */
+
+.side {
+  width: 64px;
+  font-size: 12px;
+  font-weight: 700;
+
+  &.buy {
+    color: var(--up);
+  }
+
+  &.sell {
+    color: var(--down);
+  }
+}
+
+.value {
+  min-width: 96px;
+  text-align: right;
+  font-weight: 600;
+}
+
+.foot {
+  margin: 0;
+  font-size: 12px;
+}

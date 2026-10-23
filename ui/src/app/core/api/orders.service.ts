@@ -3,6 +3,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { catchError, map, of, tap, throwError, type Observable } from 'rxjs';
 import { ApiError } from './api-error';
 import type { Order, OrderRequest } from './models';
+import { tk } from '../i18n/i18n.service';
 
 /** Outcome of POST /orders: 201 completed, 202 pending (waiting to fill) or 422 rejected (saved as FAILED). */
 export type PlaceOrderResult =
@@ -32,7 +33,7 @@ export class OrdersService {
       catchError((error: unknown) => {
         if (error instanceof ApiError && error.status === 422 && isOrder(error.body)) {
           const order = error.body;
-          return of<PlaceOrderResult>({ kind: 'rejected', order, reason: order.message ?? 'Order rejected' });
+          return of<PlaceOrderResult>({ kind: 'rejected', order, reason: order.message ?? tk('Order rejected') });
         }
         return throwError(() => error);
       }),

@@ -17,6 +17,8 @@ import { NewsFeed } from '../../shared/news-feed';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { OrderTicket } from './order-ticket';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { translate } from '../../core/i18n/i18n.service';
 
 /** How often the live 1D line asks for new minutes; the API caches them for 10 seconds. */
 const LIVE_REFRESH_MS = 15_000;
@@ -30,7 +32,7 @@ const LIVE_REFRESH_MS = 15_000;
 @Component({
   selector: 'leap-instrument-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, NewsFeed, OrderTicket, PriceChart, Icon],
+  imports: [TPipe, RouterLink, InstrumentLogo, NewsFeed, OrderTicket, PriceChart, Icon],
   templateUrl: './instrument-page.html',
   styleUrl: './instrument-page.scss',
 })
@@ -134,7 +136,7 @@ export class InstrumentPage {
       quantity: formatQty(o.quantity),
       label: ORDER_STATUS_LABELS[o.status],
       tone: statusTone(o.status as OrderStatus),
-      fill: o.status === 'COMPLETE' ? `at ${formatPrice(o.price)}` : 'not filled',
+      fill: o.status === 'COMPLETE' ? translate('at {price}', { price: formatPrice(o.price) }) : translate('not filled'),
       when: formatTime(o.placedTime),
     })),
   );

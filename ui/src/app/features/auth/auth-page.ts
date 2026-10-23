@@ -4,14 +4,17 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
 import { AuthService } from '../../core/api/auth.service';
 import { toApiError } from '../../core/api/api-error';
+import { currentLocale, tk } from '../../core/i18n/i18n.service';
 import { MARKET_ORDER, marketFor } from '../../core/markets/sessions';
 import { MarketStore } from '../../core/state/market.store';
 import { ThemeService } from '../../core/state/theme.service';
 import { formatPrice, formatSignedPct, formatUsd } from '../../shared/format';
+import { DisplayControls } from '../../shared/display-controls';
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { DayChangeStore } from '../portfolio/day-change.store';
 import { TickerBelt } from '../portfolio/ticker-belt';
+import { TPipe } from '../../core/i18n/t.pipe';
 
 /** Usernames the API accepts: 3 to 32 letters, numbers, dots, dashes or underscores. */
 const USERNAME = /^[A-Za-z0-9._-]{3,32}$/;
@@ -25,7 +28,7 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 @Component({
   selector: 'leap-auth-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, InstrumentLogo, TickerBelt],
+  imports: [TPipe, DisplayControls, RouterLink, Icon, InstrumentLogo, TickerBelt],
   providers: [DayChangeStore],
   templateUrl: './auth-page.html',
   styleUrl: './auth-page.scss',
@@ -54,20 +57,20 @@ export class AuthPage {
   readonly remember = signal(true);
 
   readonly title = computed(() =>
-    this.signup() ? 'Create Your Account' : this.admin() ? 'Super Admin Sign In' : 'Login to Your Account!',
+    this.signup() ? tk('Create Your Account') : this.admin() ? tk('Super Admin Sign In') : tk('Login to Your Account!'),
   );
   readonly submitLabel = computed(() =>
-    this.signup() ? 'Create Account' : this.admin() ? 'Sign In as Admin' : 'Login To Your Account',
+    this.signup() ? tk('Create Account') : this.admin() ? tk('Sign In as Admin') : tk('Login To Your Account'),
   );
-  readonly busyLabel = computed(() => (this.signup() ? 'Creating account…' : 'Signing in…'));
+  readonly busyLabel = computed(() => (this.signup() ? tk('Creating account…') : tk('Signing in…')));
 
   readonly demos = computed(() =>
     this.admin()
-      ? [{ username: 'admin', label: 'Super Admin' }]
+      ? [{ username: 'admin', label: tk('Super Admin') }]
       : [
-          { username: 'joanna', label: 'Joanna (Trader)' },
-          { username: 'priya', label: 'Priya (Analyst)' },
-          { username: 'david', label: 'David (Operations)' },
+          { username: 'joanna', label: tk('Joanna (Trader)') },
+          { username: 'priya', label: tk('Priya (Analyst)') },
+          { username: 'david', label: tk('David (Operations)') },
         ],
   );
 
@@ -119,7 +122,8 @@ export class AuthPage {
       .slice(0, 7)
       .map((r) => Math.min(100, Math.abs(r.changePct!) * 18 + 28));
     const defaults = [42, 58, 36, 72, 48, 64, 55];
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    // Mon–Sun in the chosen language; 8 Jan 2024 was a Monday.
+    const days = defaults.map((_, i) => new Date(Date.UTC(2024, 0, 8 + i)).toLocaleDateString(currentLocale(), { timeZone: 'UTC', weekday: 'short' }));
     const today = new Date().getDay();
     const highlight = today === 0 ? 6 : today - 1;
     return days.map((label, i) => ({
@@ -166,11 +170,11 @@ export class AuthPage {
     const username = this.username().trim();
     const password = this.password();
     if (!username) {
-      this.error.set('Enter your username.');
+      this.error.set(tk('Enter your username.'));
       return;
     }
     if (password.length < 6) {
-      this.error.set('Password needs at least 6 characters.');
+      this.error.set(tk('Password needs at least 6 characters.'));
       return;
     }
     this.submitting.set(true);
@@ -181,7 +185,7 @@ export class AuthPage {
       },
       error: (err: unknown) => {
         this.submitting.set(false);
-        this.error.set(toApiError(err).message || 'Sign in failed.');
+        this.error.set(toApiError(err).message || tk('Sign in failed.'));
       },
     });
   }
@@ -194,15 +198,15 @@ export class AuthPage {
       password: this.password(),
     };
     const problem = !details.name
-      ? 'Enter your name.'
+      ? tk('Enter your name.')
       : !EMAIL.test(details.email)
-        ? 'Enter a valid email address.'
+        ? tk('Enter a valid email address.')
         : !USERNAME.test(details.username)
-          ? 'Username must be 3 to 32 letters, numbers, dots, dashes or underscores.'
+          ? tk('Username must be 3 to 32 letters, numbers, dots, dashes or underscores.')
           : details.password.length < 8
-            ? 'Password needs at least 8 characters.'
+            ? tk('Password needs at least 8 characters.')
             : details.password !== this.confirmPassword()
-              ? 'The passwords do not match.'
+              ? tk('The passwords do not match.')
               : null;
     if (problem) {
       this.error.set(problem);
@@ -218,7 +222,7 @@ export class AuthPage {
         this.submitting.set(false);
         const e = toApiError(err);
         const fieldMessage = Object.values(e.fieldErrors)[0];
-        this.error.set(fieldMessage || e.message || 'Could not create the account.');
+        this.error.set(fieldMessage || e.message || tk('Could not create the account.'));
       },
     });
   }

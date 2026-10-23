@@ -39,6 +39,7 @@ import { attributeAll, coverageFor, type CoveredInstrument } from './news-attrib
 import { NewsUnavailable, type NewsProvider } from './news-provider';
 import { NewsApiProvider } from './newsapi-news-provider';
 import { YahooNewsProvider } from './yahoo-news-provider';
+import { tk } from '../i18n/i18n.service';
 
 const CACHE_MS = 15 * 60 * 1000;
 
@@ -172,7 +173,7 @@ export class NewsService {
           const message =
             cause instanceof NewsUnavailable
               ? cause.message
-              : 'Headlines are unavailable from this source.';
+              : tk('Headlines are unavailable from this source.');
           if (provider === this.primary) primaryFailure = message;
           else {
             // Both sources are down. The primary's reason is the useful one:

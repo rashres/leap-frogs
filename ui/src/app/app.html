@@ -1,4 +1,4 @@
-<a class="skip-link" href="#main">Skip to main content</a>
+<a class="skip-link" href="#main">{{ t().skip }}</a>
 
 @if (authRoute()) {
   <main id="main" tabindex="-1">
@@ -6,29 +6,22 @@
   </main>
 } @else {
 <div class="shell" [class.collapsed]="collapsed()" [class.drawer-open]="drawerOpen()">
-  <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+  <aside class="sidebar" id="sidebar" [attr.aria-label]="'Sidebar' | t">
     <div class="side-top">
-      <a class="brand" [routerLink]="auth.me()?.homePath ?? '/login'" aria-label="LEAP home">
+      <a class="brand" [routerLink]="auth.me()?.homePath ?? '/login'" [attr.aria-label]="t().home">
         <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
-          <rect width="32" height="32" rx="9" fill="var(--accent)" />
-          <path
-            d="M7 21 L13 14 L18 18 L25 9"
-            stroke="var(--on-accent)"
-            stroke-width="2.8"
-            fill="none"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+          <path d="M16 16 L21.92 3.31 A14 14 0 1 0 29.16 11.21 Z" fill="#4cb84a" />
+          <path d="M16 16 L28.22 11.55 A13 13 0 0 0 21.49 4.22 Z" fill="#8f8f8f" transform="translate(2.2 -1.4)" />
         </svg>
-        <span class="brand-text">LEAP<span class="brand-sub">Console</span></span>
+        <span class="brand-text">LilyPad<span class="brand-sub">Console</span></span>
       </a>
-      <button type="button" class="icon-btn drawer-close" aria-label="Close navigation" (click)="drawerOpen.set(false)">
+      <button type="button" class="icon-btn drawer-close" [attr.aria-label]="t().closeNav" (click)="drawerOpen.set(false)">
         <leap-icon name="x" />
       </button>
     </div>
 
-    <nav class="side-nav" aria-label="Main">
-      <p class="side-label">Main menu</p>
+    <nav class="side-nav" [attr.aria-label]="'Main' | t">
+      <p class="side-label">{{ t().mainMenu }}</p>
       <ul>
         @for (item of nav(); track item.path) {
           @let active = crumbs().section.path === item.path;
@@ -50,13 +43,13 @@
 
     @if (sessions().length) {
       <section class="side-sessions" aria-labelledby="sessions-label">
-        <p class="side-label" id="sessions-label">Market sessions</p>
+        <p class="side-label" id="sessions-label">{{ t().sessions }}</p>
         <ul>
           @for (session of sessions(); track session.code) {
             <li class="session" [class.on]="session.open" [title]="session.label + ' — ' + session.hours">
               <span class="sess-dot" aria-hidden="true"></span>
               <span class="sess-name">{{ session.label }}</span>
-              <span class="sess-state">{{ session.open ? 'Open' : 'Closed' }}</span>
+              <span class="sess-state">{{ session.open ? t().open : t().closed }}</span>
             </li>
           }
         </ul>
@@ -73,7 +66,7 @@
       <button
         type="button"
         class="icon-btn menu-btn"
-        aria-label="Open navigation"
+        [attr.aria-label]="t().openNav"
         aria-controls="sidebar"
         [attr.aria-expanded]="drawerOpen()"
         (click)="drawerOpen.set(true)"
@@ -85,14 +78,14 @@
         class="icon-btn collapse-btn"
         aria-controls="sidebar"
         [attr.aria-expanded]="!collapsed()"
-        [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
-        [attr.title]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+        [attr.aria-label]="collapsed() ? t().expandSidebar : t().collapseSidebar"
+        [attr.title]="collapsed() ? t().expandSidebar : t().collapseSidebar"
         (click)="toggleSidebar()"
       >
         <leap-icon name="sidebar" />
       </button>
 
-      <nav class="crumbs" aria-label="Breadcrumb">
+      <nav class="crumbs" [attr.aria-label]="t().breadcrumb">
         <ol>
           @if (crumbs().page; as page) {
             <li><a [routerLink]="crumbs().section.path">{{ crumbs().section.label }}</a></li>
@@ -110,19 +103,21 @@
           [class.on]="source().tone === 'on'"
           [class.bad]="source().tone === 'bad'"
           [attr.title]="source().title"
-          [attr.aria-label]="'API status: ' + source().label + '. Refresh data'"
+          [attr.aria-label]="apiLabel(source().label)"
           (click)="refresh()"
         >
           <i class="src-dot" aria-hidden="true"></i><span class="src-label">{{ source().label }}</span>
         </button>
 
-        <span class="clock num" aria-label="Central time"><leap-icon name="clock" [size]="16" />{{ clock() }}</span>
+        <span class="clock num" [attr.aria-label]="t().centralTime"><leap-icon name="clock" [size]="16" />{{ clock() }}</span>
+
+        <leap-display-controls />
 
         <button
           type="button"
           class="icon-btn theme-btn"
-          [attr.aria-label]="theme() === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'"
-          [attr.title]="theme() === 'dark' ? 'Light theme' : 'Dark theme'"
+          [attr.aria-label]="theme() === 'dark' ? t().toLight : t().toDark"
+          [attr.title]="theme() === 'dark' ? t().lightTheme : t().darkTheme"
           (click)="toggleTheme()"
         >
           <leap-icon [name]="theme() === 'dark' ? 'sun' : 'moon'" />
@@ -136,22 +131,22 @@
             (click)="menuOpen.set(!menuOpen())"
             [attr.aria-expanded]="menuOpen()"
             aria-haspopup="menu"
-            [attr.aria-label]="'Signed in as ' + (userLabel() ?? 'user')"
-            [attr.title]="userLabel() ?? 'Account'"
+            [attr.aria-label]="signedInAs(userLabel() ?? t().account)"
+            [attr.title]="userLabel() ?? t().account"
           >
             <span class="avatar">{{ initials() }}</span>
             <span class="account-text">
-              <span class="account-name">{{ userLabel() ?? 'Account' }}</span>
-              <span class="account-mail">{{ auth.me()?.role ?? account.active()?.email ?? '' }}</span>
+              <span class="account-name">{{ userLabel() ?? t().account }}</span>
+              <span class="account-mail">{{ roleLabel() ?? account.active()?.email ?? '' }}</span>
             </span>
             <leap-icon name="chevron-down" [size]="16" class="caret" />
           </button>
 
           @if (menuOpen()) {
             <div class="menu-backdrop" (click)="menuOpen.set(false)"></div>
-            <div class="menu" role="menu" aria-label="Account menu">
+            <div class="menu" role="menu" [attr.aria-label]="t().accountMenu">
               @if (showAccountPicker()) {
-                <p class="menu-head">Switch account</p>
+                <p class="menu-head">{{ t().switchAccount }}</p>
                 @for (row of accountRows(); track row.id) {
                   <button
                     type="button"
@@ -172,15 +167,15 @@
                     }
                   </button>
                 } @empty {
-                  <p class="menu-empty">{{ account.error()?.message ?? 'No accounts in the database.' }}</p>
+                  <p class="menu-empty">{{ account.error()?.message ?? t().noAccounts }}</p>
                 }
               } @else {
                 <p class="menu-head">{{ auth.me()?.displayName }}</p>
-                <p class="menu-empty">{{ auth.me()?.role }}</p>
+                <p class="menu-empty">{{ roleLabel() }}</p>
               }
               <button type="button" class="menu-item menu-signout" (click)="signOut()">
                 <leap-icon name="arrow-left" [size]="16" />
-                <span class="who"><span class="who-name">Sign out</span></span>
+                <span class="who"><span class="who-name">{{ t().signOut }}</span></span>
               </button>
             </div>
           }

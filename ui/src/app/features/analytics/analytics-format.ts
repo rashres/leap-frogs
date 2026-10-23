@@ -1,15 +1,9 @@
 import type { AnalyticsInterval } from '../../core/api/analytics.service';
+import { currentLocale, translate } from '../../core/i18n/i18n.service';
 
-const compactFormat = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  notation: 'compact',
-  maximumFractionDigits: 1,
-});
-
-/** "$737.4K" */
+/** "$737.4K" in the chosen language. */
 export function compactUsd(value: number): string {
-  return compactFormat.format(value);
+  return value.toLocaleString(currentLocale(), { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 });
 }
 
 /** A yyyy-MM-dd date from the API as a local date (new Date("2026-07-01") would be UTC midnight). */
@@ -29,19 +23,19 @@ export function periodLabel(period: string, interval: AnalyticsInterval, short: 
   const date = parseDay(period);
   switch (interval) {
     case 'month':
-      return date.toLocaleDateString('en-GB', { month: short ? 'short' : 'long', year: 'numeric' });
+      return date.toLocaleDateString(currentLocale(), { month: short ? 'short' : 'long', year: 'numeric' });
     case 'week': {
-      const day = date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-      return short ? day : `Week of ${day}`;
+      const day = date.toLocaleDateString(currentLocale(), { day: 'numeric', month: 'short' });
+      return short ? day : translate('Week of {day}', { day });
     }
     default:
-      return date.toLocaleDateString('en-GB', short ? { day: 'numeric', month: 'short' } : { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+      return date.toLocaleDateString(currentLocale(), short ? { day: 'numeric', month: 'short' } : { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
   }
 }
 
 /** "13 Oct 2026" */
 export function dayLabel(value: string): string {
-  return parseDay(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return parseDay(value).toLocaleDateString(currentLocale(), { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 /** Builds a CSV file and hands it to the browser as a download. */

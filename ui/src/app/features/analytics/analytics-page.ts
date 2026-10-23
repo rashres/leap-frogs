@@ -12,6 +12,8 @@ import { InstrumentLogo } from '../../shared/instrument-logo';
 import { PageHeader } from '../../shared/page-header';
 import { dayLabel, downloadCsv, isoDay, periodLabel } from './analytics-format';
 import { VolumeBars } from './volume-bars';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { currentLocale, tk, translate } from '../../core/i18n/i18n.service';
 
 type Preset = '30D' | '90D' | 'YTD' | 'ALL';
 
@@ -27,7 +29,7 @@ const RELOAD_EVERY_MS = 5 * 60_000;
 @Component({
   selector: 'leap-analytics-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, Icon, InstrumentLogo, VolumeBars],
+  imports: [TPipe, PageHeader, Icon, InstrumentLogo, VolumeBars],
   templateUrl: './analytics-page.html',
   styleUrl: './analytics-page.scss',
 })
@@ -36,9 +38,9 @@ export class AnalyticsPage {
   private readonly market = inject(MarketStore);
 
   readonly presets: readonly Preset[] = ['30D', '90D', 'YTD', 'ALL'];
-  readonly presetLabels: Record<Preset, string> = { '30D': '30 days', '90D': '90 days', YTD: 'Year to date', ALL: 'All time' };
+  readonly presetLabels: Record<Preset, string> = { '30D': tk('30 days'), '90D': tk('90 days'), YTD: tk('Year to date'), ALL: tk('All time') };
   readonly intervals: readonly AnalyticsInterval[] = ['day', 'week', 'month'];
-  readonly intervalLabels: Record<AnalyticsInterval, string> = { day: 'Daily', week: 'Weekly', month: 'Monthly' };
+  readonly intervalLabels: Record<AnalyticsInterval, string> = { day: tk('Daily'), week: tk('Weekly'), month: tk('Monthly') };
 
   /** The quick period last picked; null once the dates are edited by hand. */
   readonly preset = signal<Preset | null>('ALL');
@@ -54,7 +56,7 @@ export class AnalyticsPage {
   readonly rangeError = computed(() => {
     const from = this.from();
     const to = this.to();
-    return from && to && from > to ? 'The start date must be on or before the end date.' : null;
+    return from && to && from > to ? tk('The start date must be on or before the end date.') : null;
   });
 
   readonly filter = computed<AnalyticsFilter>(() => ({ from: this.from(), to: this.to(), symbol: this.symbol() }));
@@ -78,9 +80,9 @@ export class AnalyticsPage {
   readonly rangeText = computed(() => {
     const from = this.from();
     const to = this.to();
-    if (!from && !to) return 'All time';
-    if (!from) return `Up to ${dayLabel(to!)}`;
-    if (!to) return `From ${dayLabel(from)}`;
+    if (!from && !to) return translate('All time');
+    if (!from) return translate('Up to {date}', { date: dayLabel(to!) });
+    if (!to) return translate('From {date}', { date: dayLabel(from) });
     return `${dayLabel(from)} – ${dayLabel(to)}`;
   });
 
@@ -105,11 +107,11 @@ export class AnalyticsPage {
       buyValue: formatUsd(s.buyValue),
       sellValue: formatUsd(s.sellValue),
       buyShare,
-      trades: s.trades.toLocaleString('en-US'),
+      trades: s.trades.toLocaleString(currentLocale()),
       buyTrades: s.buyTrades,
       sellTrades: s.sellTrades,
       avgTrade: s.trades > 0 ? formatUsd(s.valueTraded / s.trades) : '—',
-      clients: s.activeClients.toLocaleString('en-US'),
+      clients: s.activeClients.toLocaleString(currentLocale()),
       perClient: s.activeClients > 0 ? (s.trades / s.activeClients).toFixed(1) : '—',
       instruments: s.instrumentsTraded,
       exchanges: data.markets.length,
@@ -246,7 +248,7 @@ export class AnalyticsPage {
   exportInstruments(): void {
     downloadCsv(
       `leap-instruments-${this.fileSuffix()}.csv`,
-      ['Rank', 'Symbol', 'Name', 'Exchange', 'Trades', 'Buy trades', 'Sell trades', 'Clients', 'Value traded (USD)', 'Share of value (%)'],
+      [translate('Rank'), translate('Symbol'), translate('Name'), translate('Exchange'), translate('Trades'), translate('Buy trades'), translate('Sell trades'), translate('Clients'), translate('Value traded (USD)'), translate('Share of value (%)')],
       this.instrumentRows().map((r) => [
         r.rank, r.symbol, r.name, r.exchange, r.trades, r.buyTrades, r.sellTrades, r.clients, r.valueTraded, r.share.toFixed(2),
       ]),
@@ -256,7 +258,7 @@ export class AnalyticsPage {
   exportVolume(): void {
     downloadCsv(
       `leap-volume-${this.interval()}-${this.fileSuffix()}.csv`,
-      ['Period start', 'Trades', 'Buy value (USD)', 'Sell value (USD)', 'Value traded (USD)'],
+      [translate('Period start'), translate('Trades'), translate('Buy value (USD)'), translate('Sell value (USD)'), translate('Value traded (USD)')],
       (this.volume.data() ?? []).map((p) => [p.period, p.trades, p.buyValue, p.sellValue, p.valueTraded]),
     );
   }
@@ -264,7 +266,7 @@ export class AnalyticsPage {
   exportClients(): void {
     downloadCsv(
       `leap-clients-${this.fileSuffix()}.csv`,
-      ['Month', 'Active clients', 'Trades', 'Avg trades per client', 'Value traded (USD)'],
+      [translate('Month'), translate('Active clients'), translate('Trades'), translate('Avg trades per client'), translate('Value traded (USD)')],
       (this.report.data()?.clients ?? []).map((c) => [c.month.slice(0, 7), c.activeClients, c.trades, c.avgTradesPerClient, c.valueTraded]),
     );
   }

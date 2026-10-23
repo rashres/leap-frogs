@@ -20,6 +20,7 @@ import { Injectable } from '@angular/core';
 import type { NewsItem } from './news';
 import type { CoveredInstrument } from './news-attribution';
 import { NewsUnavailable, type NewsProvider } from './news-provider';
+import { tk, translate } from '../i18n/i18n.service';
 
 const PROXY = '/api/yahoo';
 
@@ -73,7 +74,7 @@ export function parseYahooNews(payload: YahooSearchResponse): readonly NewsItem[
         {
           id: entry.uuid ?? `${title}-${seconds}`,
           title,
-          publisher: entry.publisher ?? 'Unknown source',
+          publisher: entry.publisher ?? tk('Unknown source'),
           link: entry.link ?? '#',
           publishedAt: new Date(seconds * 1000),
           relatedTickers: entry.relatedTickers ?? [],
@@ -187,7 +188,7 @@ export class YahooNewsProvider implements NewsProvider {
 
   private async rss(ticker: string): Promise<readonly NewsItem[]> {
     const response = await fetch(`${PROXY}/rss/2.0/headline?s=${encodeURIComponent(ticker)}`);
-    if (!response.ok) throw new NewsUnavailable(`Yahoo headline feed failed for ${ticker} (HTTP ${response.status}).`);
+    if (!response.ok) throw new NewsUnavailable(translate('Yahoo headline feed failed for {ticker} (HTTP {status}).', { ticker, status: response.status }));
     return parseYahooRss(await response.text(), ticker);
   }
 
@@ -201,17 +202,17 @@ export class YahooNewsProvider implements NewsProvider {
       response = await fetch(url);
     } catch {
       throw new NewsUnavailable(
-        'The fallback news feed could not be reached. Headlines come through the LEAP API, so check that it is running.',
+        tk('The fallback news feed could not be reached. Headlines come through the LilyPad server, so check that it is running.'),
       );
     }
 
     if (!response.ok) {
       throw new NewsUnavailable(
         response.status === 429
-          ? 'Yahoo is rate-limiting this IP (429). Fallback headlines are temporarily unavailable.'
+          ? tk('Yahoo is rate-limiting this IP (429). Fallback headlines are temporarily unavailable.')
           : response.status === 502 || response.status === 504
-            ? 'Yahoo Finance is not answering right now. Fallback headlines are temporarily unavailable.'
-            : `Fallback news request failed (HTTP ${response.status}).`,
+            ? tk('Yahoo Finance is not answering right now. Fallback headlines are temporarily unavailable.')
+            : translate('Fallback news request failed (HTTP {status}).', { status: response.status }),
       );
     }
     return parseYahooNews((await response.json()) as YahooSearchResponse);

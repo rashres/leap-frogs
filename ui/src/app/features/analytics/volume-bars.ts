@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, signal } from '@an
 import type { AnalyticsInterval, VolumePoint } from '../../core/api/analytics.service';
 import { formatUsd } from '../../shared/format';
 import { compactUsd, periodLabel } from './analytics-format';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk, translate } from '../../core/i18n/i18n.service';
 
 const WIDTH = 1000;
 const HEIGHT = 260;
@@ -13,6 +15,7 @@ const MAX_X_LABELS = 8;
  */
 @Component({
   selector: 'leap-volume-bars',
+  imports: [TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <div class="chart" (mouseleave)="hovered.set(null)">
@@ -38,9 +41,9 @@ const MAX_X_LABELS = 8;
         @if (tooltip(); as t) {
           <div class="tip" [style.left.%]="t.left" [class.flip]="t.left > 70" role="status">
             <p class="tip-title">{{ t.label }}</p>
-            <p><i class="sw buy"></i>Buys <span class="num">{{ t.buy }}</span></p>
-            <p><i class="sw sell"></i>Sells <span class="num">{{ t.sell }}</span></p>
-            <p class="tip-total">Total <span class="num">{{ t.total }}</span></p>
+            <p><i class="sw buy"></i>{{ 'Buys' | t }} <span class="num">{{ t.buy }}</span></p>
+            <p><i class="sw sell"></i>{{ 'Sells' | t }} <span class="num">{{ t.sell }}</span></p>
+            <p class="tip-total">{{ 'Total' | t }} <span class="num">{{ t.total }}</span></p>
             <p class="faint">{{ t.trades }}</p>
           </div>
         }
@@ -235,13 +238,14 @@ export class VolumeBars {
       buy: formatUsd(p.buyValue),
       sell: formatUsd(p.sellValue),
       total: formatUsd(p.valueTraded),
-      trades: `${p.trades} ${p.trades === 1 ? 'trade' : 'trades'}`,
+      trades: p.trades === 1 ? translate('1 trade') : translate('{n} trades', { n: p.trades }),
     };
   });
 
   protected readonly summary = computed(() => {
     const points = this.points();
     const total = points.reduce((sum, p) => sum + p.valueTraded, 0);
-    return `Value traded per ${this.interval()}, ${points.length} periods, ${formatUsd(total)} in total. Green is buys, red is sells.`;
+    const per = this.interval() === 'day' ? tk('Value traded per day') : this.interval() === 'week' ? tk('Value traded per week') : tk('Value traded per month');
+    return `${translate(per)}. ${translate('{n} periods, {total} in total. Green is buys, red is sells.', { n: points.length, total: formatUsd(total) })}`;
   });
 }

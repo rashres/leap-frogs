@@ -1,16 +1,16 @@
 <div class="page-enter">
 	<leap-page-header heading="Audit" mascot="orders">
-		<span description>Search every order recorded in the database by account or date.</span>
+		<span description>{{ 'Search every order by account or date.' | t }}</span>
 	</leap-page-header>
 
-	<section class="toolbar panel" aria-label="Audit filters">
+	<section class="toolbar panel" [attr.aria-label]="'Audit filters' | t">
 		<label class="filter-field">
-			<span class="field-label">Account</span>
+			<span class="field-label">{{ 'Account' | t }}</span>
 			<input
 				class="control"
 				type="search"
 				list="audit-accounts"
-				placeholder="All accounts — search name, email or #ID"
+				[placeholder]="'All accounts — search name, email or #ID' | t"
 				autocomplete="off"
 				[value]="accountQuery()"
 				(input)="setAccount($event)"
@@ -23,79 +23,79 @@
 				}
 			</datalist>
 			@if (accountUnmatched()) {
-				<span class="field-hint">No account matches. Pick one from the list or type its #ID.</span>
+				<span class="field-hint">{{ 'No account matches. Pick one from the list or type its #ID.' | t }}</span>
 			}
 		</label>
 
 		<label class="filter-field">
-			<span class="field-label">From</span>
+			<span class="field-label">{{ 'From' | t }}</span>
 			<input class="control" type="date" [value]="startDate()" (input)="setStartDate($event)" />
 		</label>
 
 		<label class="filter-field">
-			<span class="field-label">To</span>
+			<span class="field-label">{{ 'To' | t }}</span>
 			<input class="control" type="date" [value]="endDate()" (input)="setEndDate($event)" />
 		</label>
 
 		<div class="filter-actions">
 			<button type="button" class="btn btn-primary" [disabled]="loading() || accountUnmatched()" (click)="load()">
-				<leap-icon name="search" [size]="16" />Apply
+				<leap-icon name="search" [size]="16" />{{ 'Apply' | t }}
 			</button>
 			<button type="button" class="btn btn-ghost" [disabled]="loading()" (click)="clearFilters()">
-				<leap-icon name="x" [size]="16" />Clear
+				<leap-icon name="x" [size]="16" />{{ 'Clear' | t }}
 			</button>
 		</div>
 	</section>
 
 	@if (error(); as e) {
 		<section class="panel state-panel">
-			<p class="state-error"><leap-icon name="alert" [size]="18" />{{ e.message }}</p>
+			<p class="state-error"><leap-icon name="alert" [size]="18" />{{ e.message | t }}</p>
 		</section>
 	} @else if (loading()) {
-		<p class="sr-only" role="status">Loading audit orders…</p>
+		<p class="sr-only" role="status">{{ 'Loading audit orders…' | t }}</p>
 	} @else if (page(); as result) {
 		<p class="result-summary" role="status">
-			<span><strong class="num">{{ result.totalElements }}</strong> {{ result.totalElements === 1 ? 'order' : 'orders' }} in total</span>
+			<span>{{ (result.totalElements === 1 ? '1 order in total' : '{n} orders in total') | t: { n: result.totalElements } }}</span>
 			@if (rows().length > 0) {
 				<span class="dot">·</span>
 				<span>
-					<strong class="num">{{ rows().length }}</strong> on this page
-					<span class="faint num">({{ result.page * result.size + 1 }}–{{ result.page * result.size + rows().length }}, page {{ result.page + 1 }} of {{ result.totalPages }})</span>
+					{{ '{n} on this page' | t: { n: rows().length } }}
+					<span class="faint num">{{ '({from}–{to}, page {page} of {pages})' | t: { from: result.page * result.size + 1, to: result.page * result.size + rows().length, page: result.page + 1, pages: result.totalPages } }}</span>
 				</span>
 			}
 		</p>
 		@if (rows().length === 0) {
 			<section class="panel empty-state">
 				<span class="empty-icon"><leap-icon name="inbox" [size]="26" /></span>
-				<strong>No orders match these filters</strong>
-				<span>Try a different account or date range.</span>
+				<strong>{{ 'No orders match these filters' | t }}</strong>
+				<span>{{ 'Try a different account or date range.' | t }}</span>
 			</section>
 		} @else {
-			<section class="panel orders-panel" aria-label="Audit orders">
+			<section class="panel orders-panel" [attr.aria-label]="'Audit orders' | t">
 				<div class="table-wrap">
 					<table class="data-table">
 						<thead>
 							<tr>
-								<th>Submitted</th>
-								<th>Account</th>
-								<th>Order</th>
-								<th class="r">Quantity</th>
-								<th class="r">Price</th>
-								<th class="r">Value</th>
-								<th class="r">Balance updated</th>
-								<th>Status</th>
-								<th><span class="sr-only">Details</span></th>
+								<th>{{ 'Submitted' | t }}</th>
+								<th>{{ 'Account' | t }}</th>
+								<th>{{ 'Order' | t }}</th>
+								<th class="r">{{ 'Quantity' | t }}</th>
+								<th class="r">{{ 'Price' | t }}</th>
+								<th class="r">{{ 'Value' | t }}</th>
+								<th class="r">{{ 'Balance updated' | t }}</th>
+								<th>{{ 'Status' | t }}</th>
+								<th><span class="sr-only">{{ 'Details' | t }}</span></th>
 							</tr>
 						</thead>
 						<tbody>
 							@for (order of rows(); track order.orderId) {
-								<tr class="row" [class.open]="expanded() === order.orderId" (click)="toggle(order.orderId)">
+								<tr class="row" [class.open]="expanded() === order.orderId" [class.failed]="order.status === 'FAILED'" [class.pending]="order.status === 'PENDING'" (click)="toggle(order.orderId)">
 									<td class="num faint">{{ order.submitted }}</td>
 									<td class="num">#{{ order.accountId }}</td>
 									<td>
 										<div class="order-ident">
 											<strong>{{ order.symbol }}</strong>
-											<span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">{{ order.side }}</span>
+											<span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">{{ (order.side === 'BUY' ? 'BUY' : 'SELL') | t }}</span>
 										</div>
 									</td>
 									<td class="r num">{{ order.quantityLabel }}</td>
@@ -104,7 +104,7 @@
 									<td class="r num">{{ order.balanceUpdatedLabel }}</td>
 									<td><span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.statusLabel }}</span></td>
 									<td class="r">
-										<button type="button" class="chev" (click)="toggleFromButton($event, order.orderId)" [attr.aria-expanded]="expanded() === order.orderId" [attr.aria-label]="(expanded() === order.orderId ? 'Hide' : 'Show') + ' details for order #' + order.orderId">
+										<button type="button" class="chev" (click)="toggleFromButton($event, order.orderId)" [attr.aria-expanded]="expanded() === order.orderId" [attr.aria-label]="(expanded() === order.orderId ? 'Hide details for order #{id}' : 'Show details for order #{id}') | t: { id: order.orderId }">
 											<leap-icon name="chevron-down" [size]="18" />
 										</button>
 									</td>
@@ -115,7 +115,7 @@
 										<td colspan="9">
 											<div class="detail">
 												<div class="detail-card">
-													<h3>Lifecycle</h3>
+													<h3>{{ 'Lifecycle' | t }}</h3>
 													<ol class="timeline">
 														@for (step of order.steps; track $index) {
 															<li>
@@ -126,21 +126,21 @@
 													</ol>
 												</div>
 												<div class="detail-card">
-													<h3>Recorded facts</h3>
+													<h3>{{ 'Recorded facts' | t }}</h3>
 													<dl>
-														<div><dt>Order</dt><dd class="num">#{{ order.orderId }}</dd></div>
-														<div><dt>Account</dt><dd class="num">#{{ order.accountId }}</dd></div>
-														<div><dt>Instrument</dt><dd>{{ order.symbol }} · #{{ order.instrumentId }}</dd></div>
-														<div><dt>Type</dt><dd class="num">{{ order.orderType }}</dd></div>
-														<div><dt>Good for</dt><dd>{{ order.timeInForce }}</dd></div>
+														<div><dt>{{ 'Order' | t }}</dt><dd class="num">#{{ order.orderId }}</dd></div>
+														<div><dt>{{ 'Account' | t }}</dt><dd class="num">#{{ order.accountId }}</dd></div>
+														<div><dt>{{ 'Instrument' | t }}</dt><dd>{{ order.symbol }} · #{{ order.instrumentId }}</dd></div>
+														<div><dt>{{ 'Type' | t }}</dt><dd class="num">{{ (order.orderType === 'LIMIT' ? 'Limit' : 'Market') | t }}</dd></div>
+														<div><dt>{{ 'Good for' | t }}</dt><dd>{{ (order.timeInForce === 'GTC' ? 'Good ’til cancelled' : 'Day') | t }}</dd></div>
 														@if (order.status === 'PENDING') {
-															<div><dt>Expires</dt><dd class="num">{{ order.expiresAt ? formatStamp(order.expiresAt) : '—' }}</dd></div>
+															<div><dt>{{ 'Expires' | t }}</dt><dd class="num">{{ order.expiresAt ? formatStamp(order.expiresAt) : '—' }}</dd></div>
 														}
-														<div><dt>Price</dt><dd class="num">{{ order.priceLabel }}</dd></div>
-														<div><dt>Value</dt><dd class="num">{{ order.valueLabel }}</dd></div>
-														<div><dt>Balance updated to</dt><dd class="num">{{ order.balanceUpdatedLabel }}</dd></div>
-														<div><dt>Fulfilled</dt><dd class="num">{{ order.fulfilledTime ? formatStamp(order.fulfilledTime) : '—' }}</dd></div>
-														<div><dt>Status in database</dt><dd><code class="code">{{ order.status }}</code></dd></div>
+														<div><dt>{{ 'Price' | t }}</dt><dd class="num">{{ order.priceLabel }}</dd></div>
+														<div><dt>{{ 'Value' | t }}</dt><dd class="num">{{ order.valueLabel }}</dd></div>
+														<div><dt>{{ 'Balance updated to' | t }}</dt><dd class="num">{{ order.balanceUpdatedLabel }}</dd></div>
+														<div><dt>{{ 'Fulfilled' | t }}</dt><dd class="num">{{ order.fulfilledTime ? formatStamp(order.fulfilledTime) : '—' }}</dd></div>
+														<div><dt>{{ 'Status code' | t }}</dt><dd><code class="code">{{ order.status }}</code></dd></div>
 													</dl>
 												</div>
 											</div>
@@ -153,9 +153,9 @@
 				</div>
 
 				@if (result.totalPages > 1) {
-					<nav class="pagination" aria-label="Audit order pages">
+					<nav class="pagination" [attr.aria-label]="'Audit order pages' | t">
 						<button type="button" class="page-button page-arrow" [disabled]="!result.hasPrevious || loading()" (click)="goToPage(result.page - 1)">
-							<leap-icon name="chevron-left" [size]="16" /><span class="sr-only">Previous page</span>
+							<leap-icon name="chevron-left" [size]="16" /><span class="sr-only">{{ 'Previous page' | t }}</span>
 						</button>
 						@for (pageNumber of pageButtons(); track pageNumber) {
 							<button type="button" class="page-button" [class.current]="pageNumber === result.page" [attr.aria-current]="pageNumber === result.page ? 'page' : null" (click)="goToPage(pageNumber)">
@@ -163,7 +163,7 @@
 							</button>
 						}
 						<button type="button" class="page-button page-arrow" [disabled]="!result.hasNext || loading()" (click)="goToPage(result.page + 1)">
-							<leap-icon name="chevron-right" [size]="16" /><span class="sr-only">Next page</span>
+							<leap-icon name="chevron-right" [size]="16" /><span class="sr-only">{{ 'Next page' | t }}</span>
 						</button>
 					</nav>
 				}

@@ -8,35 +8,40 @@ import { ApiStatusService } from './core/state/api-status.service';
 import { MarketStore } from './core/state/market.store';
 import { AuthService, type AppRole } from './core/api/auth.service';
 import { ThemeService } from './core/state/theme.service';
+import { I18nService, fill, translate } from './core/i18n/i18n.service';
+import { SHELL_TEXT, type ShellText } from './core/i18n/shell.i18n';
+import { TPipe } from './core/i18n/t.pipe';
 import { formatTime, formatUsd } from './shared/format';
+import { DisplayControls } from './shared/display-controls';
 import { Icon, type IconName } from './shared/icon';
 
 const SIDEBAR_KEY = 'leap.ui.sidebar';
 
 interface NavItem {
   readonly path: string;
+  readonly key: keyof ShellText['nav'];
   readonly label: string;
   readonly icon: IconName;
   readonly roles: readonly AppRole[];
 }
 
-const NAV: readonly NavItem[] = [
-  { path: '/portfolio', label: 'Portfolio', icon: 'portfolio', roles: ['SUPER_ADMIN', 'TRADER'] },
-  { path: '/markets', label: 'Markets', icon: 'markets', roles: ['SUPER_ADMIN', 'TRADER'] },
-  { path: '/orders', label: 'Orders', icon: 'orders', roles: ['SUPER_ADMIN', 'TRADER'] },
-  { path: '/copy-trading', label: 'Copy Trading', icon: 'copy', roles: ['SUPER_ADMIN', 'TRADER'] },
-  { path: '/news', label: 'News', icon: 'news', roles: ['SUPER_ADMIN', 'TRADER'] },
-  { path: '/ops', label: 'Operations', icon: 'activity', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
-  { path: '/ops/accounts', label: 'Accounts', icon: 'users', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
-  { path: '/audit', label: 'Audit', icon: 'activity', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
-  { path: '/analytics', label: 'Analytics', icon: 'analytics', roles: ['SUPER_ADMIN', 'BUSINESS_ANALYST'] },
+const NAV: readonly Omit<NavItem, 'label'>[] = [
+  { path: '/portfolio', key: 'portfolio', icon: 'portfolio', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/markets', key: 'markets', icon: 'markets', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/orders', key: 'orders', icon: 'orders', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/copy-trading', key: 'copyTrading', icon: 'copy', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/news', key: 'news', icon: 'news', roles: ['SUPER_ADMIN', 'TRADER'] },
+  { path: '/ops', key: 'operations', icon: 'activity', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
+  { path: '/ops/accounts', key: 'accounts', icon: 'users', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
+  { path: '/audit', key: 'audit', icon: 'shield-check', roles: ['SUPER_ADMIN', 'TRADING_OPERATIONS'] },
+  { path: '/analytics', key: 'analytics', icon: 'analytics', roles: ['SUPER_ADMIN', 'BUSINESS_ANALYST'] },
 ];
 
 /** Shell layout adapted from the team's Angular app (fe/21-page-mascots, app.ts / app.html). */
 @Component({
   selector: 'leap-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, Icon],
+  imports: [RouterOutlet, RouterLink, Icon, DisplayControls, TPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   host: { '(document:keydown.escape)': 'closeOverlays()' },
@@ -48,11 +53,16 @@ export class App {
   private readonly themes = inject(ThemeService);
   protected readonly account = inject(ActiveAccountService);
   protected readonly auth = inject(AuthService);
+  protected readonly i18n = inject(I18nService);
 
-  readonly nav = computed(() => {
+  /** Shell words in the chosen language. */
+  readonly t = computed(() => SHELL_TEXT[this.i18n.lang()]);
+
+  readonly nav = computed<NavItem[]>(() => {
     const role = this.auth.role();
     if (!role) return [];
-    return NAV.filter((n) => n.roles.includes(role));
+    const words = this.t().nav;
+    return NAV.filter((n) => n.roles.includes(role)).map((n) => ({ ...n, label: words[n.key] }));
   });
   readonly menuOpen = signal(false);
   readonly drawerOpen = signal(false);
@@ -78,17 +88,18 @@ export class App {
   readonly crumbs = computed(() => {
     const path = this.url().split(/[?#]/)[0];
     const items = this.nav();
-    const fallback: NavItem = { path: '/', label: 'LEAP', icon: 'portfolio', roles: [] };
+    const fallback: NavItem = { path: '/', key: 'portfolio', label: 'LilyPad', icon: 'portfolio', roles: [] };
+    const page = this.t().page;
     const pick = (...candidates: Array<NavItem | undefined>) =>
       candidates.find((n) => n != null) ?? fallback;
     if (path.startsWith('/instrument')) {
-      return { section: pick(items.find((n) => n.path === '/markets'), items[0]), page: 'Instrument' };
+      return { section: pick(items.find((n) => n.path === '/markets'), items[0]), page: page.instrument };
     }
     if (path.startsWith('/copy-trading/')) {
-      return { section: pick(items.find((n) => n.path === '/copy-trading'), items[0]), page: 'Lead trader' };
+      return { section: pick(items.find((n) => n.path === '/copy-trading'), items[0]), page: page.leadTrader };
     }
     if (path.startsWith('/ops/accounts/')) {
-      return { section: pick(items.find((n) => n.path === '/ops/accounts'), items[0]), page: 'Inspect' };
+      return { section: pick(items.find((n) => n.path === '/ops/accounts'), items[0]), page: page.inspect };
     }
     return {
       section: pick(
@@ -119,35 +130,40 @@ export class App {
   });
 
   readonly clock = computed(() =>
-    `${this.market.now().toLocaleTimeString('en-US', { timeZone: DISPLAY_ZONE, hour: 'numeric', minute: '2-digit', second: '2-digit' })} ${DISPLAY_ZONE_LABEL}`,
+    `${this.market.now().toLocaleTimeString(this.i18n.locale(), { timeZone: DISPLAY_ZONE, hour: 'numeric', minute: '2-digit', second: '2-digit' })} ${DISPLAY_ZONE_LABEL}`,
   );
 
   /** Header pill: is the API up, and is the price feed filling instrument.last_price. */
   readonly source = computed(() => {
+    const words = this.t().source;
     switch (this.api.status()) {
       case 'checking':
-        return { label: 'Connecting', tone: '', title: 'Checking GET /api/health…' };
+        return { label: words.checking, tone: '', title: translate('Checking GET /api/health…') };
       case 'unreachable':
-        return { label: 'Offline', tone: 'bad', title: 'The API is not reachable. Is Spring Boot running on port 8081?' };
+        return { label: words.offline, tone: 'bad', title: translate('The API is not reachable. Is Spring Boot running on port 8081?') };
       case 'db-down':
-        return { label: 'DB down', tone: 'bad', title: 'The API is up but cannot reach the database.' };
+        return { label: words.dbDown, tone: 'bad', title: translate('The API is up but cannot reach the database.') };
     }
     if (!this.market.hasPrices()) {
       return {
-        label: 'No prices',
+        label: words.noPrices,
         tone: 'bad',
-        title: 'API online, but no instrument has a lastPrice yet. Prices come from the yfinance price fetcher.',
+        title: translate('API online, but no instrument has a lastPrice yet. Prices come from the yfinance price fetcher.'),
       };
     }
     const updated = this.market.lastPriceUpdate();
     return {
-      label: 'Live',
+      label: words.live,
       tone: 'on',
-      title: `API online. Latest price update ${updated ? formatTime(updated) : 'unknown'}. Click to refresh.`,
+      title: translate('API online. Latest price update {time}. Click to refresh.', { time: updated ? formatTime(updated) : translate('unknown') }),
     };
   });
 
   readonly initials = computed(() => initialsOf(this.userLabel()));
+  readonly roleLabel = computed(() => {
+    const role = this.auth.me()?.role;
+    return role ? this.t().roles[role] : null;
+  });
 
   readonly accountRows = computed(() =>
     this.account.accounts().map((a) => ({
@@ -184,6 +200,14 @@ export class App {
   closeOverlays(): void {
     this.menuOpen.set(false);
     this.drawerOpen.set(false);
+  }
+
+  apiLabel(label: string): string {
+    return fill(this.t().apiStatus, { label });
+  }
+
+  signedInAs(who: string): string {
+    return fill(this.t().signedInAs, { who });
   }
 
   signOut(): void {

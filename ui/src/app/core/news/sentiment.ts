@@ -36,6 +36,7 @@
 import type { MatchedTerm, ScoredNewsItem, SentimentScore, SentimentSummary } from './news';
 import type { AttributedNewsItem, NewsItem, StockSentiment } from './news';
 import type { CoveredInstrument } from './news-attribution';
+import { tk } from '../i18n/i18n.service';
 
 type Polarity = 'positive' | 'negative';
 
@@ -284,7 +285,7 @@ export function scoreHeadline(headline: string, summary?: string): SentimentScor
 
   // 4. A question asserts nothing.
   if (/\?\s*$/.test(headline.trim())) {
-    matched = matched.map((m) => ({ ...m, counted: false, note: 'in a question' }));
+    matched = matched.map((m) => ({ ...m, counted: false, note: tk('in a question') }));
   }
 
   // 5. The summary only speaks when the headline did not.
@@ -321,10 +322,9 @@ export function summarise(items: readonly ScoredNewsItem[]): SentimentSummary {
 }
 
 /** Shown wherever a score is displayed. Not optional, not collapsible. */
-export const SENTIMENT_DISCLAIMER =
-  'Derived mechanically by matching headline wording (or the feed summary, when the headline matches nothing) ' +
-  'against a fixed list of words and phrases. ' +
-  'It is not investment advice, not a recommendation, and not a measure of market sentiment.';
+export const SENTIMENT_DISCLAIMER = tk(
+  'Derived mechanically by matching headline wording (or the feed summary, when the headline matches nothing) against a fixed list of words and phrases. It is not investment advice, not a recommendation, and not a measure of market sentiment.',
+);
 
 /**
  * Rolls attributed headlines up per instrument — the stock sentiment board.
