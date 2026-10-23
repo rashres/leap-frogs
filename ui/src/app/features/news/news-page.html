@@ -70,26 +70,37 @@
       }
     </nav>
 
-    <!-- News sentiment, with the pond under it in the detailed view -->
+    <!-- News sentiment. Detailed: the pond, with the stats as its base. Simple: the stats alone. -->
+    <ng-template #heading>
+      <h2 class="mood-title" id="mood-title">News sentiment</h2>
+      <p class="verdict">{{ verdict() }}</p>
+    </ng-template>
+
+    <!-- One frog per sentiment, in zone order: red negative, grey neutral, green positive. -->
+    <ng-template #frogs>
+      <ul class="frogs" [class.zoned]="!simple()">
+        @for (t of tones(); track t.key) {
+          <li [class.lead]="t.key === leadTone()" [class]="'z-' + t.key">
+            <img class="frog" [src]="t.image" alt="" width="56" height="57" />
+            <span class="f-text">
+              <span class="f-pct num">{{ t.pct }}%</span>
+              <span class="f-label">{{ t.label }} <span class="faint num">· {{ t.count }}</span></span>
+            </span>
+          </li>
+        }
+      </ul>
+    </ng-template>
+
     <section class="mood panel" aria-labelledby="mood-title">
-      <div class="mood-body">
-        <h2 class="mood-title" id="mood-title">News sentiment</h2>
-        <p class="verdict">{{ verdict() }}</p>
-
-        <!-- One frog per sentiment: green positive, grey neutral, red negative. -->
-        <ul class="frogs">
-          @for (t of tones(); track t.key) {
-            <li [class.lead]="t.key === leadTone()">
-              <img class="frog" [src]="t.image" alt="" width="56" height="57" />
-              <span class="f-text">
-                <span class="f-pct num">{{ t.pct }}%</span>
-                <span class="f-label">{{ t.label }} <span class="faint num">· {{ t.count }}</span></span>
-              </span>
-            </li>
-          }
-        </ul>
-
-        @if (!simple()) {
+      @if (simple()) {
+        <div class="mood-body">
+          <ng-container [ngTemplateOutlet]="heading" />
+          <ng-container [ngTemplateOutlet]="frogs" />
+        </div>
+      } @else {
+        <leap-news-pond [rows]="board()" [selected]="selected()" (pickStock)="pick($event)">
+          <div pondTitle><ng-container [ngTemplateOutlet]="heading" /></div>
+          <ng-container [ngTemplateOutlet]="frogs" />
           <dl class="facts">
             <div>
               <dt>Headlines</dt>
@@ -108,11 +119,7 @@
               <dd><span class="v">{{ stats().newest }}</span></dd>
             </div>
           </dl>
-        }
-      </div>
-
-      @if (!simple()) {
-        <leap-news-pond [rows]="board()" [selected]="selected()" (pickStock)="pick($event)" />
+        </leap-news-pond>
       }
     </section>
 

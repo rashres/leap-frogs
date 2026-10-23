@@ -10,6 +10,7 @@
  */
 
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
 import type { AttributedNewsItem, SentimentLabel } from '../../core/news/news';
 import { NewsService } from '../../core/news/news.service';
 import { SENTIMENT_DISCLAIMER, summarise } from '../../core/news/sentiment';
@@ -38,7 +39,7 @@ const COLUMN_ORDER: readonly SentimentLabel[] = ['negative', 'neutral', 'positiv
 @Component({
   selector: 'leap-news-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageHeader, Icon, InstrumentLogo, HeadlineRow, NewsPond],
+  imports: [NgTemplateOutlet, PageHeader, Icon, InstrumentLogo, HeadlineRow, NewsPond],
   templateUrl: './news-page.html',
   styleUrl: './news-page.scss',
 })
@@ -112,14 +113,14 @@ export class NewsPage {
     return { pos: pct(c.positive), neu: pct(c.neutral), neg: pct(c.negative) };
   });
 
-  /** One row per sentiment: count and whole-number share of the headlines in scope. */
+  /** One row per sentiment, in the pond's zone order: count and whole-number share of the headlines in scope. */
   readonly tones = computed(() => {
     const c = this.counts();
     const bar = this.moodBar();
     return [
-      { key: 'pos', label: 'Positive', count: c.positive, pct: Math.round(bar.pos), image: 'mascot/sentiment-positive.png' },
-      { key: 'neu', label: 'Neutral', count: c.neutral, pct: Math.round(bar.neu), image: 'mascot/sentiment-neutral.png' },
       { key: 'neg', label: 'Negative', count: c.negative, pct: Math.round(bar.neg), image: 'mascot/sentiment-negative.png' },
+      { key: 'neu', label: 'Neutral', count: c.neutral, pct: Math.round(bar.neu), image: 'mascot/sentiment-neutral.png' },
+      { key: 'pos', label: 'Positive', count: c.positive, pct: Math.round(bar.pos), image: 'mascot/sentiment-positive.png' },
     ];
   });
 

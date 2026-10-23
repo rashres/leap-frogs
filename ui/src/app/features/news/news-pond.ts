@@ -12,7 +12,8 @@ import { MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
  * for thin coverage, and a table view that keeps the usual order (most written
  * about first). Stocks with no headlines are left off: silence is not neutral.
  *
- * It has no card of its own: the News page shows it inside the sentiment card.
+ * It has no card of its own: the News page puts it inside the sentiment card,
+ * passing its title in as [pondTitle] and its stats as the rest of the content.
  */
 
 const W = 1000;
@@ -87,11 +88,10 @@ interface Pad {
   selector: 'leap-news-pond',
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="pond" aria-labelledby="pond-title">
+    <section class="pond" aria-label="The pond: where every stock sits">
       <div class="head">
-        <div>
-          <span class="eyebrow">The pond</span>
-          <h3 id="pond-title">Where every stock sits</h3>
+        <div class="title">
+          <ng-content select="[pondTitle]" />
         </div>
         <div class="keys">
           <span class="key"><i class="pk"></i>Size = headlines</span>
@@ -167,6 +167,9 @@ interface Pad {
         </div>
       }
 
+      <!-- The page's stats, lined up under the zones. -->
+      <ng-content />
+
       <p class="foot faint">
         Net tone = (positive − negative) ÷ headlines. Within ±0.10 counts as neutral.
         @if (silent().length > 0) {
@@ -192,8 +195,8 @@ interface Pad {
         --tag-ink: #f2f2f2;
         --tag-sub: #b3b3b3;
       }
-      .pond {
-        border-top: 1px solid var(--border-soft);
+      .title {
+        min-width: 0;
       }
       .head {
         display: flex;
@@ -201,20 +204,7 @@ interface Pad {
         align-items: flex-end;
         justify-content: space-between;
         gap: 14px;
-        padding: 16px 24px;
-      }
-      .eyebrow {
-        font-size: 11px;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--up);
-      }
-      h3 {
-        margin: 2px 0 0;
-        font-size: 20px;
-        font-weight: 600;
-        letter-spacing: -0.015em;
+        padding: 20px 24px 16px;
       }
       .keys {
         display: flex;
