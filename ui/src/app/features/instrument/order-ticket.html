@@ -1,13 +1,13 @@
 <section class="panel ticket" aria-labelledby="ticket-title">
   <div class="ticket-head">
-    <h2 class="panel-title" id="ticket-title">Trade {{ instrument().symbol }}</h2>
+    <h2 class="panel-title" id="ticket-title">{{ 'Trade {symbol}' | t: { symbol: instrument().symbol } }}</h2>
   </div>
-  <div class="sides" role="group" aria-label="Order side">
+  <div class="sides" role="group" [attr.aria-label]="'Order side' | t">
     <button type="button" class="side-btn buy" [class.on]="side() === 'BUY'" [attr.aria-pressed]="side() === 'BUY'" (click)="setSide('BUY')">
-      Buy
+      {{ 'Buy' | t }}
     </button>
     <button type="button" class="side-btn sell" [class.on]="side() === 'SELL'" [attr.aria-pressed]="side() === 'SELL'" (click)="setSide('SELL')">
-      Sell
+      {{ 'Sell' | t }}
     </button>
   </div>
 
@@ -15,15 +15,15 @@
     @if (step() === 'edit') {
       <div class="step">
         <div class="choice">
-          <span class="label" id="type-label">Order type</span>
+          <span class="label" id="type-label">{{ 'Order type' | t }}</span>
           <div class="segmented" role="group" aria-labelledby="type-label">
-            <button type="button" [class.on]="!isLimit()" [attr.aria-pressed]="!isLimit()" (click)="setOrderType('MARKET')">Market</button>
-            <button type="button" [class.on]="isLimit()" [attr.aria-pressed]="isLimit()" (click)="setOrderType('LIMIT')">Limit</button>
+            <button type="button" [class.on]="!isLimit()" [attr.aria-pressed]="!isLimit()" (click)="setOrderType('MARKET')">{{ 'Market' | t }}</button>
+            <button type="button" [class.on]="isLimit()" [attr.aria-pressed]="isLimit()" (click)="setOrderType('LIMIT')">{{ 'Limit' | t }}</button>
           </div>
         </div>
 
         <div class="row">
-          <span class="label">Indicative price</span>
+          <span class="label">{{ 'Indicative price' | t }}</span>
           <span class="value">
             @if (price() != null) {
               <leap-live-price [value]="price()" />
@@ -35,16 +35,15 @@
         </div>
         <p class="note faint">
           @if (isLimit()) {
-            A limit order only fills at your price or better, at the market price when it fills.
+            {{ 'A limit order only fills at your price or better, at the market price when it fills.' | t }}
           } @else {
-            Latest price from the price feed. The API fills your order at the price it holds when the order arrives,
-            which may differ.
+            {{ 'Latest price from the price feed. The API fills your order at the price it holds when the order arrives, which may differ.' | t }}
           }
         </p>
 
         @if (isLimit()) {
           <label class="field">
-            <span class="label">Limit price (USD) — {{ side() === 'BUY' ? 'most you will pay' : 'least you will accept' }}</span>
+            <span class="label">{{ (side() === 'BUY' ? 'Limit price (USD) — most you will pay' : 'Limit price (USD) — least you will accept') | t }}</span>
             <div class="input-wrap" [class.bad]="limitInvalid()">
               <input
                 type="text"
@@ -59,20 +58,20 @@
           </label>
 
           <div class="choice">
-            <span class="label" id="tif-label">Good for</span>
+            <span class="label" id="tif-label">{{ 'Good for' | t }}</span>
             <div class="segmented" role="group" aria-labelledby="tif-label">
               <button type="button" [class.on]="timeInForce() === 'DAY'" [attr.aria-pressed]="timeInForce() === 'DAY'" (click)="setTimeInForce('DAY')">
-                Day
+                {{ 'Day' | t }}
               </button>
               <button type="button" [class.on]="timeInForce() === 'GTC'" [attr.aria-pressed]="timeInForce() === 'GTC'" (click)="setTimeInForce('GTC')">
-                Until cancelled
+                {{ 'Until cancelled' | t }}
               </button>
             </div>
           </div>
         }
 
         <label class="field">
-          <span class="label">Quantity</span>
+          <span class="label">{{ 'Quantity' | t }}</span>
           <div class="input-wrap" [class.bad]="quantityInvalid()">
             <input
               type="text"
@@ -81,43 +80,43 @@
               [value]="quantityText()"
               (input)="onQuantity($event)"
               autocomplete="off"
-              [attr.aria-label]="'Quantity of ' + instrument().symbol + ' to ' + side().toLowerCase()"
+              [attr.aria-label]="(side() === 'BUY' ? 'Quantity of {symbol} to buy' : 'Quantity of {symbol} to sell') | t: { symbol: instrument().symbol }"
               [attr.aria-invalid]="quantityInvalid()"
             />
-            <button type="button" class="max" (click)="useMax()" aria-label="Use maximum quantity">MAX</button>
+            <button type="button" class="max" (click)="useMax()" [attr.aria-label]="'Use maximum quantity' | t">{{ 'MAX' | t }}</button>
           </div>
         </label>
 
         <div class="meta faint">
           @if (side() === 'BUY') {
-            <span>{{ cashText() }} USD available</span>
+            <span>{{ '{amount} USD available' | t: { amount: cashText() } }}</span>
             @if (reservedCash() > 0) {
               <span class="dot">·</span>
-              <span>{{ reservedCashText() }} held for pending orders</span>
+              <span>{{ '{amount} held for pending orders' | t: { amount: reservedCashText() } }}</span>
             }
           } @else {
-            <span>{{ heldText() }} {{ instrument().symbol }} available</span>
+            <span>{{ '{qty} {symbol} available' | t: { qty: heldText(), symbol: instrument().symbol } }}</span>
           }
           <span class="dot">·</span>
-          <span>Up to 6dp</span>
+          <span>{{ 'Up to 6dp' | t }}</span>
         </div>
 
         <div class="row total">
-          <span class="label">{{ totalQualifier() }} {{ side() === 'BUY' ? 'cost' : 'proceeds' }}</span>
+          <span class="label">{{ totalQualifier() | t }}</span>
           <span class="value num strong">{{ consideration() != null ? considerationText() : '—' }}</span>
         </div>
 
         @if (outcome(); as text) {
           <div class="waits" role="status">
-            <span class="pill pill-accent">Will be pending</span>
+            <span class="pill pill-accent">{{ 'Will be pending' | t }}</span>
             <p>{{ text }}</p>
           </div>
         }
 
         @if (limitInvalid()) {
           <div class="reject" role="status">
-            <div class="reject-head"><span class="pill pill-warn">Invalid</span></div>
-            <p>Enter a limit price above 0 with at most 6 decimal places, for example 180 or 179.50.</p>
+            <div class="reject-head"><span class="pill pill-warn">{{ 'Invalid' | t }}</span></div>
+            <p>{{ 'Enter a limit price above 0 with at most 6 decimal places, for example 180 or 179.50.' | t }}</p>
           </div>
         }
 
@@ -129,7 +128,7 @@
         } @else if (rejection(); as reason) {
           <div class="reject" role="status">
             <div class="reject-head">
-              <span class="pill pill-down">Can't place order</span>
+              <span class="pill pill-down">{{ 'Can’t place order' | t }}</span>
             </div>
             <p>{{ reason }}</p>
           </div>
@@ -137,18 +136,18 @@
 
         @if (quantityInvalid()) {
           <div class="reject" role="status">
-            <div class="reject-head"><span class="pill pill-warn">Invalid</span></div>
-            <p>Enter a positive number with at most 6 decimal places, for example 10 or 0.25.</p>
+            <div class="reject-head"><span class="pill pill-warn">{{ 'Invalid' | t }}</span></div>
+            <p>{{ 'Enter a positive number with at most 6 decimal places, for example 10 or 0.25.' | t }}</p>
           </div>
         }
 
         @if (account.activeId() == null) {
-          <p class="note faint">Pick an account from the avatar in the header to trade.</p>
+          <p class="note faint">{{ 'Pick an account from the avatar in the header to trade.' | t }}</p>
         }
 
         <div class="submit-bar">
           <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="!canSubmit()" (click)="review()">
-            Review {{ side() === 'BUY' ? 'buy' : 'sell' }} order
+            {{ (side() === 'BUY' ? 'Review buy order' : 'Review sell order') | t }}
           </button>
         </div>
       </div>
@@ -157,83 +156,83 @@
         @let r = reviewed()!;
 
         <div class="review-head">
-          <span class="pill pill-accent">Confirm</span>
-          <span class="faint">Check this before it is sent</span>
+          <span class="pill pill-accent">{{ 'Confirm' | t }}</span>
+          <span class="faint">{{ 'Check this before it is sent' | t }}</span>
         </div>
 
         <dl class="summary">
           <div>
-            <dt>Account</dt>
+            <dt>{{ 'Account' | t }}</dt>
             <dd>{{ account.active()?.name }}</dd>
           </div>
           <div>
-            <dt>Action</dt>
+            <dt>{{ 'Action' | t }}</dt>
             <dd [class.up]="side() === 'BUY'" [class.down]="side() === 'SELL'">
-              {{ side() === 'BUY' ? 'Buy' : 'Sell' }} {{ instrument().symbol }}
+              {{ (side() === 'BUY' ? 'Buy' : 'Sell') | t }} {{ instrument().symbol }}
             </dd>
           </div>
           <div>
-            <dt>Quantity</dt>
+            <dt>{{ 'Quantity' | t }}</dt>
             <dd class="num">{{ r.quantity }}</dd>
           </div>
           <div>
-            <dt>Type</dt>
+            <dt>{{ 'Type' | t }}</dt>
             <dd class="num">{{ r.type }}</dd>
           </div>
           @if (isLimit()) {
             <div>
-              <dt>Good for</dt>
+              <dt>{{ 'Good for' | t }}</dt>
               <dd>{{ r.timeInForce }}</dd>
             </div>
           }
           <div>
-            <dt>Current market price</dt>
+            <dt>{{ 'Current market price' | t }}</dt>
             <dd class="num">{{ r.priceText }}</dd>
           </div>
           <div>
-            <dt>Settles in</dt>
+            <dt>{{ 'Settles in' | t }}</dt>
             <dd>USD</dd>
           </div>
           <div class="grand">
-            <dt>{{ totalQualifier() }} {{ side() === 'BUY' ? 'total cost' : 'total proceeds' }}</dt>
+            <dt>{{ totalQualifier() | t }}</dt>
             <dd class="num">{{ r.consideration }}</dd>
           </div>
         </dl>
 
         @if (drift(); as d) {
           <p class="drift" role="status">
-            Price has moved
+            {{ 'Price has moved' | t }}
             <strong class="num" [class.up]="!d.negative" [class.down]="d.negative">{{ d.text }}</strong>
-            since you opened this review. Prices update to reflect the latest available price, so the final execution price may differ.
+            {{ 'since you opened this review. Prices update to reflect the latest available price, so the final execution price may differ.' | t }}
           </p>
         }
 
         @if (blockReason(); as reason) {
           <div class="reject">
             <div class="reject-head">
-              <span class="pill pill-down">Can't place order</span>
+              <span class="pill pill-down">{{ 'Can’t place order' | t }}</span>
             </div>
             <p>{{ reason }}</p>
-            <p class="reject-note faint">Go back and change the order.</p>
+            <p class="reject-note faint">{{ 'Go back and change the order.' | t }}</p>
           </div>
         } @else {
-          <p class="passed faint">Passes the cash, holdings and price checks the API runs.</p>
+          <p class="passed faint">{{ 'Passes the cash, holdings and price checks the API runs.' | t }}</p>
         }
 
         @if (outcome(); as text) {
           <div class="waits">
-            <span class="pill pill-accent">Will be pending</span>
+            <span class="pill pill-accent">{{ 'Will be pending' | t }}</span>
             <p>{{ text }}</p>
           </div>
         }
 
         <div class="actions submit-bar">
-          <button type="button" class="back btn btn-secondary" (click)="back()">Back</button>
+          <button type="button" class="back btn btn-secondary" (click)="back()">{{ 'Back' | t }}</button>
           <button type="button" class="submit" [class.sell]="side() === 'SELL'" [disabled]="submitting() || blockReason() != null" (click)="confirm()">
-            {{ submitting() ? 'Sending…' : 'Confirm ' + (side() === 'BUY' ? 'buy' : 'sell') }}
+            {{ (submitting() ? 'Sending…' : side() === 'BUY' ? 'Confirm buy' : 'Confirm sell') | t }}
           </button>
         </div>
-        <p class="escape faint">Press Esc to go back without sending.</p>
+        <p class="escape faint">{{ 'Press Esc to go back without sending.' | t }}</p>
       </div>
     }
 
@@ -241,11 +240,11 @@
       <div class="placed">
         <div class="reject" role="alert">
           <div class="reject-head">
-            <span class="pill pill-down">{{ e.unreachable ? 'API unreachable' : 'HTTP ' + e.status }}</span>
+            <span class="pill pill-down">{{ e.unreachable ? ('API unreachable' | t) : 'HTTP ' + e.status }}</span>
             <code>{{ e.title }}</code>
-            <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss"><leap-icon name="x" [size]="16" /></button>
+            <button type="button" class="dismiss" (click)="dismiss()" [attr.aria-label]="'Dismiss' | t"><leap-icon name="x" [size]="16" /></button>
           </div>
-          <p>{{ e.message }}</p>
+          <p>{{ e.message | t }}</p>
           @for (field of e.fieldErrors | keyvalue; track field.key) {
             <p class="reject-note faint">{{ field.key }}: {{ field.value }}</p>
           }
@@ -257,8 +256,8 @@
       <div class="placed">
         <div class="placed-head">
           <span [class]="'pill pill-' + p.tone">{{ p.label }}</span>
-          <span class="ref num faint">Order {{ p.ref }}</span>
-          <button type="button" class="dismiss" (click)="dismiss()" aria-label="Dismiss order status"><leap-icon name="x" [size]="16" /></button>
+          <span class="ref num faint">{{ 'Order {ref}' | t: { ref: p.ref } }}</span>
+          <button type="button" class="dismiss" (click)="dismiss()" [attr.aria-label]="'Dismiss order status' | t"><leap-icon name="x" [size]="16" /></button>
         </div>
 
         <ol class="timeline">
@@ -274,16 +273,16 @@
         @if (p.quotes; as q) {
           <div class="quotes">
             <div>
-              <span class="label faint">You confirmed</span>
+              <span class="label faint">{{ 'You confirmed' | t }}</span>
               <span class="num">{{ q.confirmed }}</span>
             </div>
             <div>
-              <span class="label faint">Filled at</span>
+              <span class="label faint">{{ 'Filled at' | t }}</span>
               <span class="num">{{ q.filled }}</span>
             </div>
             @if (q.slippage; as slip) {
               <div>
-                <span class="label faint">Slippage</span>
+                <span class="label faint">{{ 'Slippage' | t }}</span>
                 <span class="num" [class.up]="!slip.negative" [class.down]="slip.negative">{{ slip.text }}</span>
               </div>
             }

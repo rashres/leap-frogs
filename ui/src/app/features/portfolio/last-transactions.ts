@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { CopiedOrdersStore } from '../../core/state/copied-orders.store';
 import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatPrice, formatQty, formatUsd } from '../../shared/format';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { currentLocale, translate } from '../../core/i18n/i18n.service';
 
 const SHOWN = 5;
 
@@ -10,36 +12,36 @@ const SHOWN = 5;
 @Component({
   selector: 'leap-last-transactions',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [TPipe, RouterLink],
   template: `
     <section class="card">
       <div class="head">
-        <h2 class="title">Last Transaction</h2>
-        <a class="btn btn-secondary btn-sm" routerLink="/orders">View All</a>
+        <h2 class="title">{{ 'Last Transaction' | t }}</h2>
+        <a class="btn btn-secondary btn-sm" routerLink="/orders">{{ 'View All' | t }}</a>
       </div>
 
       @if (portfolio.orders.error(); as e) {
-        <p class="state-error">{{ e.message }}</p>
+        <p class="state-error">{{ e.message | t }}</p>
       } @else if (portfolio.orders.initialLoading()) {
         <div class="loading" aria-hidden="true">
           @for (n of [1, 2, 3, 4, 5]; track n) {
             <span class="skeleton"></span>
           }
         </div>
-        <p class="sr-only" role="status">Loading transactions…</p>
+        <p class="sr-only" role="status">{{ 'Loading transactions…' | t }}</p>
       } @else if (rows().length === 0) {
-        <p class="none">No filled transactions yet. <a routerLink="/markets">Browse markets</a> to place an order.</p>
+        <p class="none">{{ 'No filled transactions yet.' | t }} <a routerLink="/markets">{{ 'Browse markets' | t }}</a> {{ 'to place an order.' | t }}</p>
       } @else {
         <div class="table-wrap">
           <table>
             <thead>
               <tr>
-                <th>Type</th>
-                <th>Symbol</th>
-                <th>Quantity</th>
-                <th>Price</th>
-                <th>Total</th>
-                <th>Time</th>
+                <th>{{ 'Type' | t }}</th>
+                <th>{{ 'Symbol' | t }}</th>
+                <th>{{ 'Quantity' | t }}</th>
+                <th>{{ 'Price' | t }}</th>
+                <th>{{ 'Total' | t }}</th>
+                <th>{{ 'Time' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -47,13 +49,13 @@ const SHOWN = 5;
                 <tr>
                   <td>
                     <span class="type" [class.buy]="row.side === 'BUY'" [class.sell]="row.side === 'SELL'">
-                      {{ row.side === 'BUY' ? 'Buy' : 'Sell' }}
+                      {{ (row.side === 'BUY' ? 'Buy' : 'Sell') | t }}
                     </span>
                   </td>
                   <td>
                     <a class="sym" [routerLink]="['/instrument', row.instrumentId]">{{ row.symbol }}</a>
                     @if (row.copiedFrom; as from) {
-                      <span class="copied" [attr.title]="'Copy traded from ' + from">Copy traded</span>
+                      <span class="copied" [attr.title]="'Copy traded from {name}' | t: { name: from }">{{ 'Copy traded' | t }}</span>
                     }
                   </td>
                   <td class="num">{{ row.qty }}</td>
@@ -216,11 +218,11 @@ function stamp(o: { fulfilledTime: string | null; placedTime: string }): number 
 /** "Today, 9:41 AM", "Yesterday, 12:41 PM", otherwise "06 Oct, 9:25 AM". */
 function relativeDay(at: Date, now: Date): string {
   if (Number.isNaN(at.getTime())) return '—';
-  const time = at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const time = at.toLocaleTimeString(currentLocale(), { hour: 'numeric', minute: '2-digit' });
   const days = Math.round((startOfDay(now) - startOfDay(at)) / 86_400_000);
-  if (days === 0) return `Today, ${time}`;
-  if (days === 1) return `Yesterday, ${time}`;
-  return `${at.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })}, ${time}`;
+  if (days === 0) return translate('Today, {time}', { time });
+  if (days === 1) return translate('Yesterday, {time}', { time });
+  return `${at.toLocaleDateString(currentLocale(), { day: '2-digit', month: 'short' })}, ${time}`;
 }
 
 function startOfDay(d: Date): number {

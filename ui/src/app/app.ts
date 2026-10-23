@@ -8,8 +8,9 @@ import { ApiStatusService } from './core/state/api-status.service';
 import { MarketStore } from './core/state/market.store';
 import { AuthService, type AppRole } from './core/api/auth.service';
 import { ThemeService } from './core/state/theme.service';
-import { I18nService, fill } from './core/i18n/i18n.service';
+import { I18nService, fill, translate } from './core/i18n/i18n.service';
 import { SHELL_TEXT, type ShellText } from './core/i18n/shell.i18n';
+import { TPipe } from './core/i18n/t.pipe';
 import { formatTime, formatUsd } from './shared/format';
 import { DisplayControls } from './shared/display-controls';
 import { Icon, type IconName } from './shared/icon';
@@ -40,7 +41,7 @@ const NAV: readonly Omit<NavItem, 'label'>[] = [
 @Component({
   selector: 'leap-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, RouterLink, Icon, DisplayControls],
+  imports: [RouterOutlet, RouterLink, Icon, DisplayControls, TPipe],
   templateUrl: './app.html',
   styleUrl: './app.scss',
   host: { '(document:keydown.escape)': 'closeOverlays()' },
@@ -129,7 +130,7 @@ export class App {
   });
 
   readonly clock = computed(() =>
-    `${this.market.now().toLocaleTimeString('en-US', { timeZone: DISPLAY_ZONE, hour: 'numeric', minute: '2-digit', second: '2-digit' })} ${DISPLAY_ZONE_LABEL}`,
+    `${this.market.now().toLocaleTimeString(this.i18n.locale(), { timeZone: DISPLAY_ZONE, hour: 'numeric', minute: '2-digit', second: '2-digit' })} ${DISPLAY_ZONE_LABEL}`,
   );
 
   /** Header pill: is the API up, and is the price feed filling instrument.last_price. */
@@ -137,24 +138,24 @@ export class App {
     const words = this.t().source;
     switch (this.api.status()) {
       case 'checking':
-        return { label: words.checking, tone: '', title: 'Checking GET /api/health…' };
+        return { label: words.checking, tone: '', title: translate('Checking GET /api/health…') };
       case 'unreachable':
-        return { label: words.offline, tone: 'bad', title: 'The API is not reachable. Is Spring Boot running on port 8081?' };
+        return { label: words.offline, tone: 'bad', title: translate('The API is not reachable. Is Spring Boot running on port 8081?') };
       case 'db-down':
-        return { label: words.dbDown, tone: 'bad', title: 'The API is up but cannot reach the database.' };
+        return { label: words.dbDown, tone: 'bad', title: translate('The API is up but cannot reach the database.') };
     }
     if (!this.market.hasPrices()) {
       return {
         label: words.noPrices,
         tone: 'bad',
-        title: 'API online, but no instrument has a lastPrice yet. Prices come from the yfinance price fetcher.',
+        title: translate('API online, but no instrument has a lastPrice yet. Prices come from the yfinance price fetcher.'),
       };
     }
     const updated = this.market.lastPriceUpdate();
     return {
       label: words.live,
       tone: 'on',
-      title: `API online. Latest price update ${updated ? formatTime(updated) : 'unknown'}. Click to refresh.`,
+      title: translate('API online. Latest price update {time}. Click to refresh.', { time: updated ? formatTime(updated) : translate('unknown') }),
     };
   });
 

@@ -1,17 +1,16 @@
 <div class="page-enter">
   <leap-page-header heading="Orders" mascot="orders">
     <span description>
-      Every order for {{ portfolio.account.active()?.name ?? 'this account' }}, newest first. Pending orders can be
-      cancelled until they fill. Orders placed by a trader you copy are marked Copy traded. Expand a row for its history.
+      {{ 'Every order for {name}, newest first. Pending orders can be cancelled until they fill. Orders placed by a trader you copy are marked Copy traded. Expand a row for its history.' | t: { name: portfolio.account.active()?.name ?? ('this account' | t) } }}
     </span>
   </leap-page-header>
 
   <section class="panel">
     <div class="panel-head">
-      <div class="tabs" role="group" aria-label="Filter orders by state">
+      <div class="tabs" role="group" [attr.aria-label]="'Filter orders by state' | t">
         @for (f of filters; track f) {
           <button type="button" class="tab" [class.on]="filter() === f" [attr.aria-pressed]="filter() === f" (click)="setFilter(f)">
-            {{ filterLabels[f] }}
+            {{ filterLabels[f] | t }}
             <span class="count num">{{ counts()[f] }}</span>
           </button>
         }
@@ -19,21 +18,21 @@
     </div>
 
     @if (cancelError(); as message) {
-      <div class="pad"><p class="state-error" role="alert">{{ message }}</p></div>
+      <div class="pad"><p class="state-error" role="alert">{{ message | t }}</p></div>
     }
 
     @if (portfolio.account.activeId() == null) {
       <p class="empty">
         @if (portfolio.account.error(); as e) {
-          {{ e.message }}
+          {{ e.message | t }}
         } @else if (portfolio.account.loaded()) {
-          No accounts in the database yet.
+          {{ 'No accounts in the database yet.' | t }}
         } @else {
-          Loading accounts…
+          {{ 'Loading accounts…' | t }}
         }
       </p>
     } @else if (portfolio.orders.error(); as e) {
-      <div class="pad"><p class="state-error">{{ e.message }}</p></div>
+      <div class="pad"><p class="state-error">{{ e.message | t }}</p></div>
     } @else if (portfolio.orders.initialLoading()) {
       <div class="pad" aria-hidden="true">
         @for (n of [1, 2, 3, 4]; track n) {
@@ -45,25 +44,25 @@
           </div>
         }
       </div>
-      <p class="sr-only" role="status">Loading orders…</p>
+      <p class="sr-only" role="status">{{ 'Loading orders…' | t }}</p>
     } @else if (rows().length === 0) {
       <div class="empty">
         <span class="empty-icon"><leap-icon name="inbox" [size]="26" /></span>
-        <span class="empty-title">No orders here yet</span>
-        Head to <a class="lnk" routerLink="/markets">Markets</a> and place one.
+        <span class="empty-title">{{ 'No orders here yet' | t }}</span>
+        {{ 'Head to' | t }} <a class="lnk" routerLink="/markets">{{ 'Markets' | t }}</a> {{ 'and place one.' | t }}
       </div>
     } @else {
       <div class="table-wrap">
         <table class="data-table">
           <thead>
             <tr>
-              <th>Submitted</th>
-              <th>Order</th>
-              <th class="r">Quantity</th>
-              <th class="r">Price</th>
-              <th class="r">Value</th>
-              <th>State</th>
-              <th><span class="sr-only">Details</span></th>
+              <th>{{ 'Submitted' | t }}</th>
+              <th>{{ 'Order' | t }}</th>
+              <th class="r">{{ 'Quantity' | t }}</th>
+              <th class="r">{{ 'Price' | t }}</th>
+              <th class="r">{{ 'Value' | t }}</th>
+              <th>{{ 'State' | t }}</th>
+              <th><span class="sr-only">{{ 'Details' | t }}</span></th>
             </tr>
           </thead>
           <tbody>
@@ -75,11 +74,11 @@
                     <leap-instrument-logo [symbol]="order.symbol" [size]="34" />
                     <span class="sym">{{ order.symbol }}</span>
                     <span class="side" [class.buy]="order.side === 'BUY'" [class.sell]="order.side === 'SELL'">
-                      {{ order.side }}
+                      {{ (order.side === 'BUY' ? 'BUY' : 'SELL') | t }}
                     </span>
                     @if (order.copiedFrom; as from) {
-                      <span class="copied" [attr.title]="'Copy traded from ' + from.name + ' (' + from.handle + ')'">
-                        <leap-icon name="copy" [size]="13" />Copy traded · {{ from.name }}
+                      <span class="copied" [attr.title]="'Copy traded from {name} ({handle})' | t: { name: from.name, handle: from.handle }">
+                        <leap-icon name="copy" [size]="13" />{{ 'Copy traded' | t }} · {{ from.name }}
                       </span>
                     }
                   </div>
@@ -89,16 +88,16 @@
                 <td class="r num strong" [class.dim]="order.status !== 'COMPLETE'">{{ order.value }}</td>
                 <td>
                   <div class="state">
-                    <span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.label }}</span>
+                    <span [class]="'pill pill-' + order.tone"><i class="dot"></i>{{ order.label | t }}</span>
                     @if (order.status === 'PENDING') {
                       <button
                         type="button"
                         class="btn btn-secondary btn-sm"
                         [disabled]="cancelling() != null"
                         (click)="cancel($event, order.id)"
-                        [attr.aria-label]="'Cancel order #' + order.id"
+                        [attr.aria-label]="'Cancel order #{id}' | t: { id: order.id }"
                       >
-                        {{ cancelling() === order.id ? 'Cancelling…' : 'Cancel' }}
+                        {{ (cancelling() === order.id ? 'Cancelling…' : 'Cancel') | t }}
                       </button>
                     }
                   </div>
@@ -109,7 +108,7 @@
                     class="chev"
                     (click)="toggleFromButton($event, order.id)"
                     [attr.aria-expanded]="expanded() === order.id"
-                    [attr.aria-label]="(expanded() === order.id ? 'Hide' : 'Show') + ' details for order #' + order.id"
+                    [attr.aria-label]="(expanded() === order.id ? 'Hide details for order #{id}' : 'Show details for order #{id}') | t: { id: order.id }"
                   >
                     <leap-icon name="chevron-down" [size]="18" />
                   </button>
@@ -121,7 +120,7 @@
                   <td colspan="7">
                     <div class="detail">
                       <div class="detail-card">
-                        <h3>Lifecycle</h3>
+                        <h3>{{ 'Lifecycle' | t }}</h3>
                         <ol class="timeline">
                           @for (step of order.steps; track $index) {
                             <li>
@@ -136,14 +135,14 @@
                       </div>
 
                       <div class="detail-card">
-                        <h3>Recorded facts</h3>
+                        <h3>{{ 'Recorded facts' | t }}</h3>
                         <dl>
                           <div>
-                            <dt>Order</dt>
+                            <dt>{{ 'Order' | t }}</dt>
                             <dd class="num">#{{ order.id }}</dd>
                           </div>
                           <div>
-                            <dt>Instrument</dt>
+                            <dt>{{ 'Instrument' | t }}</dt>
                             <dd>
                               <a class="lnk" [routerLink]="['/instrument', order.instrumentId]">
                                 {{ order.symbol }} — {{ order.instrumentName }}
@@ -152,45 +151,45 @@
                           </div>
                           @if (order.copiedFrom; as from) {
                             <div>
-                              <dt>Copy traded from</dt>
+                              <dt>{{ 'Copy traded from' | t }}</dt>
                               <dd>
                                 <a class="lnk" [routerLink]="['/copy-trading', from.traderId]">{{ from.name }} {{ from.handle }}</a>
                                 @if (from.leaderOrderId != null) {
-                                  <span class="num faint"> · order #{{ from.leaderOrderId }}</span>
+                                  <span class="num faint"> · {{ 'order #{id}' | t: { id: from.leaderOrderId } }}</span>
                                 } @else {
-                                  <span class="faint"> · stop-loss sell</span>
+                                  <span class="faint"> · {{ 'stop-loss sell' | t }}</span>
                                 }
                               </dd>
                             </div>
                           }
                           <div>
-                            <dt>Type</dt>
+                            <dt>{{ 'Type' | t }}</dt>
                             <dd class="num">{{ order.type }}</dd>
                           </div>
                           <div>
-                            <dt>Good for</dt>
+                            <dt>{{ 'Good for' | t }}</dt>
                             <dd>{{ order.timeInForce }}</dd>
                           </div>
                           @if (order.status === 'PENDING') {
                             <div>
-                              <dt>Expires</dt>
+                              <dt>{{ 'Expires' | t }}</dt>
                               <dd class="num">{{ order.expires }}</dd>
                             </div>
                           }
                           <div>
-                            <dt>{{ order.status === 'COMPLETE' ? 'Fill price' : 'Market price when placed' }}</dt>
+                            <dt>{{ (order.status === 'COMPLETE' ? 'Fill price' : 'Market price when placed') | t }}</dt>
                             <dd class="num">{{ order.price }}</dd>
                           </div>
                           <div>
-                            <dt>Value</dt>
+                            <dt>{{ 'Value' | t }}</dt>
                             <dd class="num">{{ order.value }}</dd>
                           </div>
                           <div>
-                            <dt>Fulfilled</dt>
+                            <dt>{{ 'Fulfilled' | t }}</dt>
                             <dd class="num">{{ order.fulfilled }}</dd>
                           </div>
                           <div>
-                            <dt>Status in database</dt>
+                            <dt>{{ 'Status code' | t }}</dt>
                             <dd><code class="code">{{ order.status }}</code></dd>
                           </div>
                         </dl>

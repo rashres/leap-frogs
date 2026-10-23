@@ -1,4 +1,5 @@
 import type { CopyTrader } from '../../core/api/models';
+import { currentLocale, tk, translate } from '../../core/i18n/i18n.service';
 import { formatSignedPct, formatSignedUsd, formatUsd } from '../../shared/format';
 import type { PricePoint } from '../../shared/price-chart';
 
@@ -14,11 +15,11 @@ export interface Metric {
   readonly hint: string;
 }
 
-const RISK_LABELS: Record<CopyTrader['riskLevel'], string> = { LOW: 'Low risk', MEDIUM: 'Medium risk', HIGH: 'High risk' };
+const RISK_LABELS: Record<CopyTrader['riskLevel'], string> = { LOW: tk('Low risk'), MEDIUM: tk('Medium risk'), HIGH: tk('High risk') };
 const RISK_TONES: Record<CopyTrader['riskLevel'], string> = { LOW: 'up', MEDIUM: 'warn', HIGH: 'down' };
 
 export function riskLabel(trader: CopyTrader): string {
-  return RISK_LABELS[trader.riskLevel] ?? trader.riskLevel;
+  return translate(RISK_LABELS[trader.riskLevel] ?? trader.riskLevel);
 }
 
 /** Pill tone suffix: pill-up, pill-warn, pill-down. */
@@ -42,7 +43,7 @@ export function signTone(value: number | null | undefined): Tone {
 
 /** "Jan 2026". */
 export function since(trader: CopyTrader): string {
-  return new Date(trader.tradingSince).toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  return new Date(trader.tradingSince).toLocaleDateString(currentLocale(), { month: 'short', year: 'numeric' });
 }
 
 export function equitySeries(trader: CopyTrader): PricePoint[] {
@@ -52,7 +53,7 @@ export function equitySeries(trader: CopyTrader): PricePoint[] {
 /** "$1.2M", "$125.6K", "$950". */
 export function compactUsd(value: number | null | undefined): string {
   if (value == null) return '—';
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(value);
+  return new Intl.NumberFormat(currentLocale(), { style: 'currency', currency: 'USD', notation: 'compact', maximumFractionDigits: 1 }).format(value);
 }
 
 /** Every headline number for a trader, in the order the grids show them. */
@@ -60,59 +61,59 @@ export function traderMetrics(trader: CopyTrader): Metric[] {
   return [
     {
       key: 'pnl',
-      label: 'PnL',
+      label: translate('PnL'),
       value: formatSignedUsd(trader.pnl),
       tone: signTone(trader.pnl),
-      hint: `Profit and loss: equity minus the ${formatUsd(trader.startingCapital)} the trader started with.`,
+      hint: translate('Profit and loss: equity minus the {amount} the trader started with.', { amount: formatUsd(trader.startingCapital) }),
     },
     {
       key: 'roi',
-      label: 'ROI',
+      label: translate('ROI'),
       value: formatSignedPct(trader.roi),
       tone: signTone(trader.roi),
-      hint: 'Return on investment: PnL as a percent of starting capital.',
+      hint: translate('Return on investment: PnL as a percent of starting capital.'),
     },
     {
       key: 'mdd',
-      label: 'MDD',
+      label: translate('MDD'),
       value: trader.maxDrawdown == null ? '—' : trader.maxDrawdown === 0 ? '0.00%' : `−${trader.maxDrawdown.toFixed(2)}%`,
       tone: trader.maxDrawdown ? 'down' : 'neutral',
-      hint: 'Maximum drawdown: the largest fall from a high point of the equity curve. Smaller is safer.',
+      hint: translate('Maximum drawdown: the largest fall from a high point of the equity curve. Smaller is safer.'),
     },
     {
       key: 'sharpe',
-      label: 'Sharpe ratio',
+      label: translate('Sharpe ratio'),
       value: trader.sharpeRatio == null ? '—' : trader.sharpeRatio.toFixed(2),
       tone: signTone(trader.sharpeRatio),
-      hint: 'Return per unit of risk, from daily equity changes over a year. Above 1 is good, above 2 is very good.',
+      hint: translate('Return per unit of risk, from daily equity changes over a year. Above 1 is good, above 2 is very good.'),
     },
     {
       key: 'aum',
-      label: 'AUM',
+      label: translate('AUM'),
       value: compactUsd(trader.aum),
       tone: 'neutral',
-      hint: `Assets under management: the trader's equity plus ${formatUsd(trader.copierFunds)} allocated by copiers.`,
+      hint: translate('Assets under management: the trader’s equity plus {amount} allocated by copiers.', { amount: formatUsd(trader.copierFunds) }),
     },
     {
       key: 'copiers',
-      label: 'Copy traders',
+      label: translate('Copy traders'),
       value: String(trader.copiers),
       tone: 'neutral',
-      hint: 'Accounts copying this trader right now.',
+      hint: translate('Accounts copying this trader right now.'),
     },
     {
       key: 'success',
-      label: 'Success rate',
+      label: translate('Success rate'),
       value: trader.successRate == null ? '—' : `${trader.successRate.toFixed(0)}%`,
       tone: 'neutral',
-      hint: `Share of the ${trader.closedTrades} closing sells made above the average buy price.`,
+      hint: translate('Share of the {n} closing sells made above the average buy price.', { n: trader.closedTrades }),
     },
     {
       key: 'equity',
-      label: 'Equity',
+      label: translate('Equity'),
       value: formatUsd(trader.equity),
       tone: 'neutral',
-      hint: "Cash plus holdings at today's prices.",
+      hint: translate('Cash plus holdings at today’s prices.'),
     },
   ];
 }

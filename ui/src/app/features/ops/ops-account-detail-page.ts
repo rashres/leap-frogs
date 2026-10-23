@@ -11,13 +11,15 @@ import { formatPrice, formatQty, formatStamp, formatUsd } from '../../shared/for
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { ORDER_STATUS_GLYPH, ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { currentLocale, tk, translate } from '../../core/i18n/i18n.service';
 
 const ORDERS_PER_PAGE = 25;
 
 @Component({
   selector: 'leap-ops-account-detail-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, InstrumentLogo],
+  imports: [TPipe, RouterLink, Icon, InstrumentLogo],
   templateUrl: './ops-account-detail-page.html',
   styleUrl: './ops-account-detail-page.scss',
 })
@@ -98,12 +100,17 @@ export class OpsAccountDetailPage {
     const newest = failed.reduce((a, b) => (a.placedTime > b.placedTime ? a : b));
     const symbols = [...new Set(failed.map((o) => o.symbol))];
     const sides = new Set(failed.map((o) => o.side));
-    const side = sides.size > 1 ? 'orders' : newest.side === 'BUY' ? 'buys' : 'sells';
+    const time = clock(newest.placedTime);
     if (n === 1) {
-      return { head: '1 failed order today.', rest: `The ${newest.symbol} ${side.slice(0, -1)} at ${clock(newest.placedTime)} was rejected.` };
+      const one = newest.side === 'BUY' ? tk('The {symbol} buy at {time} was rejected.') : tk('The {symbol} sell at {time} was rejected.');
+      return { head: translate('1 failed order today.'), rest: translate(one, { symbol: newest.symbol, time }) };
     }
-    const what = symbols.length === 1 ? `${n === 2 ? 'Both' : `All ${n}`} ${symbols[0]} ${side}` : `${n} ${side} (${symbols.join(', ')})`;
-    return { head: `${n} failed orders today.`, rest: `${what} were rejected, the latest at ${clock(newest.placedTime)}.` };
+    const head = translate('{n} failed orders today.', { n });
+    if (symbols.length === 1 && sides.size === 1) {
+      const same = newest.side === 'BUY' ? tk('All {n} {symbol} buys were rejected, the latest at {time}.') : tk('All {n} {symbol} sells were rejected, the latest at {time}.');
+      return { head, rest: translate(same, { n, symbol: symbols[0], time }) };
+    }
+    return { head, rest: translate('Orders in {symbols} were rejected, the latest at {time}.', { symbols: symbols.join(', '), time }) };
   });
 
   cash(a: Account | null): string {
@@ -121,8 +128,8 @@ export class OpsAccountDetailPage {
 
   /** "Market · Day" or "Limit $182.00 · GTC". */
   typeOf(o: Order): string {
-    const type = o.orderType === 'LIMIT' ? `Limit ${formatPrice(o.limitPrice)}` : 'Market';
-    return `${type} · ${o.timeInForce === 'GTC' ? 'GTC' : 'Day'}`;
+    const type = o.orderType === 'LIMIT' ? translate('Limit {price}', { price: formatPrice(o.limitPrice) }) : translate('Market');
+    return `${type} · ${o.timeInForce === 'GTC' ? 'GTC' : translate('Day')}`;
   }
 
   tone(o: Order): string {
@@ -149,7 +156,7 @@ export class OpsAccountDetailPage {
   freeze(): void {
     const reason = this.reason().trim();
     if (!reason) {
-      this.error.set('Enter a reason to freeze this account.');
+      this.error.set(tk('Enter a reason to freeze this account.'));
       return;
     }
     this.busy.set(true);
@@ -158,7 +165,7 @@ export class OpsAccountDetailPage {
         this.busy.set(false);
         this.confirmFreeze.set(false);
         this.reason.set('');
-        this.flash.set(`Account ${a.accountId} frozen.`);
+        this.flash.set(translate('Account {id} frozen.', { id: a.accountId }));
         this.error.set(null);
         this.tick.update((n) => n + 1);
       },
@@ -174,7 +181,7 @@ export class OpsAccountDetailPage {
     this.ops.unfreeze(this.id()).subscribe({
       next: (a) => {
         this.busy.set(false);
-        this.flash.set(`Account ${a.accountId} unfrozen.`);
+        this.flash.set(translate('Account {id} unfrozen.', { id: a.accountId }));
         this.error.set(null);
         this.tick.update((n) => n + 1);
       },
@@ -188,5 +195,5 @@ export class OpsAccountDetailPage {
 
 /** "1:30 PM". */
 function clock(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  return new Date(iso).toLocaleTimeString(currentLocale(), { hour: 'numeric', minute: '2-digit' });
 }

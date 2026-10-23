@@ -3,6 +3,8 @@ import type { Attribution, AttributedNewsItem, MatchedTerm } from '../../core/ne
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { currentLocale, translate } from '../../core/i18n/i18n.service';
 
 /**
  * One headline in the News list. "Why?" opens the working behind it: the words
@@ -11,7 +13,7 @@ import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
 @Component({
   selector: 'leap-headline-row',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon, InstrumentLogo],
+  imports: [TPipe, Icon, InstrumentLogo],
   template: `
     @let s = item().sentiment;
     <article class="row" [class]="variant()">
@@ -33,12 +35,12 @@ import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
           <p class="summary">{{ item().summary }}</p>
         }
         <div class="meta">
-          <span class="pub">{{ item().publisher }}</span>
+          <span class="pub">{{ item().publisher | t }}</span>
           <span class="sep">·</span>
-          <time [attr.datetime]="item().publishedAt.toISOString()" [attr.title]="item().publishedAt.toLocaleString()">{{ when() }}</time>
+          <time [attr.datetime]="item().publishedAt.toISOString()" [attr.title]="stamp()">{{ when() }}</time>
           @for (a of item().attributions; track a.instrumentId) {
             <button type="button" class="chip" [class.on]="a.instrumentId === selected()" (click)="pickStock.emit(a.instrumentId)"
-                    [attr.title]="'Show only ' + a.symbol + ' headlines'">
+                    [attr.title]="'Show only {symbol} headlines' | t: { symbol: a.symbol }">
               {{ a.symbol }}
             </button>
           }
@@ -47,18 +49,18 @@ import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
         @if (open()) {
           <div class="why">
             <p>
-              <strong>Mood:</strong>
+              <strong>{{ 'Mood:' | t }}</strong>
               @if (s.matched.length === 0) {
-                no scoring words matched, so it counts as neutral.
+                {{ 'no scoring words matched, so it counts as neutral.' | t }}
               } @else {
-                {{ s.positives }} positive and {{ s.negatives }} negative {{ s.positives + s.negatives === 1 ? 'word' : 'words' }} counted
+                {{ (s.positives + s.negatives === 1 ? '{pos} positive and {neg} negative word counted' : '{pos} positive and {neg} negative words counted') | t: { pos: s.positives, neg: s.negatives } }}
               }
             </p>
             @if (s.matched.length > 0) {
               <div class="terms">
                 @for (m of s.matched; track $index) {
                   <code class="term" [class.pos]="m.counted && m.polarity === 'positive'" [class.neg]="m.counted && m.polarity === 'negative'"
-                        [class.uncounted]="!m.counted" [attr.title]="termTitle(m)">{{ m.term }}{{ m.note ? ' ' + m.note : '' }}{{ m.negated ? ' (negated)' : '' }}{{ m.from === 'summary' ? ' (summary)' : '' }}</code>
+                        [class.uncounted]="!m.counted" [attr.title]="termTitle(m)">{{ m.term }}{{ m.note ? ' ' + (m.note | t) : '' }}{{ m.negated ? ' ' + ('(negated)' | t) : '' }}{{ m.from === 'summary' ? ' ' + ('(summary)' | t) : '' }}</code>
                 }
               </div>
             }
@@ -73,11 +75,11 @@ import { ago, MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
         <!-- In a tone column the column header already says the tone. -->
         @if (variant() !== 'compact') {
           <span class="sent" [class]="'sent-' + tone[s.label]">
-            <i class="glyph">{{ glyph[s.label] }}</i>{{ label[s.label] }}
+            <i class="glyph">{{ glyph[s.label] }}</i>{{ label[s.label] | t }}
           </span>
         }
         <button type="button" class="why-btn" (click)="open.set(!open())" [attr.aria-expanded]="open()">
-          {{ open() ? 'Hide' : 'Why?' }}
+          {{ (open() ? 'Hide' : 'Why?') | t }}
         </button>
       </div>
     </article>
@@ -266,19 +268,20 @@ export class HeadlineRow {
 
   protected readonly firstSymbol = computed(() => this.item().attributions[0]?.symbol ?? null);
   protected readonly when = computed(() => ago(this.item().publishedAt));
+  protected readonly stamp = computed(() => this.item().publishedAt.toLocaleString(currentLocale()));
 
   termTitle(m: MatchedTerm): string {
     const parts = [
-      m.counted ? `Counted as ${m.polarity}` : `Not counted (${m.note})`,
-      m.negated ? 'flipped by a preceding negation' : null,
-      m.from === 'summary' ? "found in the feed's summary, read because the headline matched nothing" : null,
+      m.counted ? translate(m.polarity === 'positive' ? 'Counted as positive' : 'Counted as negative') : translate('Not counted ({note})', { note: translate(m.note ?? '') }),
+      m.negated ? translate('flipped by a preceding negation') : null,
+      m.from === 'summary' ? translate('found in the feed’s summary, read because the headline matched nothing') : null,
     ];
     return parts.filter(Boolean).join('; ');
   }
 
   filedBecause(a: Attribution): string {
     return a.context
-      ? `filed here because the headline says "${a.matched}", confirmed by "${a.context}".`
-      : `filed here because the headline names "${a.matched}".`;
+      ? translate('filed here because the headline says “{matched}”, confirmed by “{context}”.', { matched: a.matched, context: a.context })
+      : translate('filed here because the headline names “{matched}”.', { matched: a.matched });
   }
 }

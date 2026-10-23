@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 import type { SentimentLabel, StockSentiment } from '../../core/news/news';
 import { Icon } from '../../shared/icon';
 import { MOOD_GLYPH, MOOD_LABEL, MOOD_TONE } from './news-format';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { translate } from '../../core/i18n/i18n.service';
 
 /**
  * The pond: one lily pad per stock, placed left to right by net headline tone
@@ -130,26 +132,26 @@ interface Pad {
 @Component({
   selector: 'leap-news-pond',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [TPipe, Icon],
   template: `
-    <section class="pond" aria-label="The pond: where every stock sits">
+    <section class="pond" [attr.aria-label]="'The pond: where every stock sits' | t">
       <div class="head">
         <div class="title">
           <ng-content select="[pondTitle]" />
         </div>
         <div class="keys">
           @if (!collapsed()) {
-            <span class="key"><i class="pk"></i>Size = headlines</span>
-            <span class="key"><i class="pk low"></i>Faded = under {{ low }}</span>
-            <div class="segmented" role="group" aria-label="Pond view">
-              <button type="button" [class.on]="view() === 'pond'" [attr.aria-pressed]="view() === 'pond'" (click)="view.set('pond')">Pond</button>
-              <button type="button" [class.on]="view() === 'table'" [attr.aria-pressed]="view() === 'table'" (click)="view.set('table')">Table</button>
+            <span class="key"><i class="pk"></i>{{ 'Size = headlines' | t }}</span>
+            <span class="key"><i class="pk low"></i>{{ 'Faded = under {n}' | t: { n: low } }}</span>
+            <div class="segmented" role="group" [attr.aria-label]="'Pond view' | t">
+              <button type="button" [class.on]="view() === 'pond'" [attr.aria-pressed]="view() === 'pond'" (click)="view.set('pond')">{{ 'Pond' | t }}</button>
+              <button type="button" [class.on]="view() === 'table'" [attr.aria-pressed]="view() === 'table'" (click)="view.set('table')">{{ 'Table' | t }}</button>
             </div>
           }
           <button type="button" class="btn btn-secondary btn-sm collapse" (click)="toggle()"
                   [attr.aria-expanded]="!collapsed()" aria-controls="pond-body">
             <leap-icon name="chevron-down" [size]="16" class="chev" [class.up]="!collapsed()" />
-            {{ collapsed() ? 'Show pond' : 'Hide pond' }}
+            {{ (collapsed() ? 'Show pond' : 'Hide pond') | t }}
           </button>
         </div>
       </div>
@@ -158,14 +160,14 @@ interface Pad {
       @if (collapsed()) {
         <!-- Folded away: only the title and the stats below show. -->
       } @else if (pads().length === 0) {
-        <p class="none faint">No stock has headlines yet, so the pond is empty.</p>
+        <p class="none faint">{{ 'No stock has headlines yet, so the pond is empty.' | t }}</p>
       } @else if (view() === 'pond') {
         <div class="svg-wrap">
-          <svg [attr.viewBox]="'0 0 ' + w + ' ' + h" role="group" aria-label="Stocks placed by net headline tone: negative left, neutral middle, positive right">
+          <svg [attr.viewBox]="'0 0 ' + w + ' ' + h" role="group" [attr.aria-label]="'Stocks placed by net headline tone: negative left, neutral middle, positive right' | t">
             @for (z of zones; track z.label; let i = $index) {
               <rect [attr.x]="i * zw" y="0" [attr.width]="zw" [attr.height]="h" [attr.class]="'zone z-' + tone[z.label]" />
               <text [attr.x]="i * zw + zw / 2" y="28" text-anchor="middle" [attr.class]="'zone-label t-' + tone[z.label]">
-                {{ glyph[z.label] }} {{ label[z.label] }}
+                {{ glyph[z.label] }} {{ label[z.label] | t }}
               </text>
               <line [attr.x1]="i * zw + 40" [attr.y1]="axis" [attr.x2]="(i + 1) * zw - 40" [attr.y2]="axis" [attr.class]="'axis t-' + tone[z.label]" />
             }
@@ -192,7 +194,7 @@ interface Pad {
                 <rect class="tag" [class.on]="selected() === p.id" [attr.x]="p.x - 36" [attr.y]="p.y + p.ry + 8" width="72" height="29" rx="14.5" />
                 <text class="tag-sym" [attr.x]="p.x" [attr.y]="p.y + p.ry + 21" text-anchor="middle">{{ p.symbol }}</text>
                 <text class="tag-sub" [attr.x]="p.x" [attr.y]="p.y + p.ry + 32" text-anchor="middle">
-                  {{ p.total }} · {{ signed(p.net) }}{{ p.low ? ' · low' : '' }}
+                  {{ p.total }} · {{ signed(p.net) }}{{ p.low ? ' · ' + ('low' | t) : '' }}
                 </text>
               </g>
             }
@@ -201,9 +203,9 @@ interface Pad {
       } @else {
         <div class="table-wrap">
           <table>
-            <caption class="sr-only">Stocks by headline tone, most written about first</caption>
+            <caption class="sr-only">{{ 'Stocks by headline tone, most written about first' | t }}</caption>
             <thead>
-              <tr><th>Stock</th><th class="n">Headlines</th><th class="n">Negative</th><th class="n">Neutral</th><th class="n">Positive</th><th class="n">Net</th><th>Zone</th></tr>
+              <tr><th>{{ 'Stock' | t }}</th><th class="n">{{ 'Headlines' | t }}</th><th class="n">{{ 'Negative' | t }}</th><th class="n">{{ 'Neutral' | t }}</th><th class="n">{{ 'Positive' | t }}</th><th class="n">{{ 'Net' | t }}</th><th>{{ 'Zone' | t }}</th></tr>
             </thead>
             <tbody>
               @for (p of pads(); track p.id) {
@@ -212,12 +214,12 @@ interface Pad {
                     <button type="button" class="sym" [attr.aria-pressed]="selected() === p.id" (click)="pickStock.emit(p.id)">{{ p.symbol }}</button>
                     <span class="faint">{{ p.name }}</span>
                   </td>
-                  <td class="n num">{{ p.total }}@if (p.low) { <span class="faint"> · low</span>}</td>
+                  <td class="n num">{{ p.total }}@if (p.low) { <span class="faint"> · {{ 'low' | t }}</span>}</td>
                   <td class="n num">{{ p.negative }}</td>
                   <td class="n num">{{ p.neutral }}</td>
                   <td class="n num">{{ p.positive }}</td>
                   <td class="n num">{{ signed(p.net) }}</td>
-                  <td><span class="sent" [class]="'sent-' + tone[p.zone]"><i class="glyph">{{ glyph[p.zone] }}</i>{{ label[p.zone] }}</span></td>
+                  <td><span class="sent" [class]="'sent-' + tone[p.zone]"><i class="glyph">{{ glyph[p.zone] }}</i>{{ label[p.zone] | t }}</span></td>
                 </tr>
               }
             </tbody>
@@ -231,9 +233,9 @@ interface Pad {
 
       @if (!collapsed()) {
         <p class="foot faint">
-          Net tone = (positive − negative) ÷ headlines. Within ±0.10 counts as neutral.
+          {{ 'Net tone = (positive − negative) ÷ headlines. Within ±0.10 counts as neutral.' | t }}
           @if (silent().length > 0) {
-            Not shown, no headlines: {{ silent().join(', ') }}.
+            {{ 'Not shown, no headlines: {list}.' | t: { list: silent().join(', ') } }}
           }
         </p>
       }
@@ -541,9 +543,16 @@ export class NewsPond {
           outline: '',
           veins: '',
           shine: { x: 0, y: 0 },
-          label:
-            `${r.symbol}, ${c.total} ${c.total === 1 ? 'headline' : 'headlines'}: ${c.positive} positive, ${c.neutral} neutral, ` +
-            `${c.negative} negative. Net ${signed(net)}, ${MOOD_LABEL[zone].toLowerCase()} zone${low ? ', low volume' : ''}. Press to filter.`,
+          label: translate('{symbol}, {total} headlines: {pos} positive, {neu} neutral, {neg} negative. Net {net}, {zone} zone{low}. Press to filter.', {
+            symbol: r.symbol,
+            total: c.total,
+            pos: c.positive,
+            neu: c.neutral,
+            neg: c.negative,
+            net: signed(net),
+            zone: translate(MOOD_LABEL[zone]).toLowerCase(),
+            low: low ? translate(', low volume') : '',
+          }),
         };
       });
     placeVertically(pads);

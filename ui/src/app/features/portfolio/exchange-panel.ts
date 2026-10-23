@@ -4,6 +4,8 @@ import { formatPrice, formatSignedPct } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { DayChangeStore } from './day-change.store';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk } from '../../core/i18n/i18n.service';
 
 const SHOWN = 3;
 
@@ -16,20 +18,20 @@ type Tab = 'all' | 'gainers' | 'losers';
 @Component({
   selector: 'leap-exchange-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, Icon],
+  imports: [TPipe, RouterLink, InstrumentLogo, Icon],
   template: `
     <section class="card">
       <div class="head">
-        <h2 class="title">Exchange stock</h2>
-        <a class="more" routerLink="/markets" aria-label="Open Markets" title="Open Markets">
+        <h2 class="title">{{ 'Exchange stock' | t }}</h2>
+        <a class="more" routerLink="/markets" [attr.aria-label]="'Open Markets' | t" [attr.title]="'Open Markets' | t">
           <leap-icon name="chevron-right" [size]="16" />
         </a>
       </div>
 
-      <div class="segmented tabs" role="group" aria-label="Filter instruments">
+      <div class="segmented tabs" role="group" [attr.aria-label]="'Filter instruments' | t">
         @for (t of tabs; track t.key) {
           <button type="button" [class.on]="tab() === t.key" [attr.aria-pressed]="tab() === t.key" (click)="tab.set(t.key)">
-            {{ t.label }}
+            {{ t.label | t }}
           </button>
         }
       </div>
@@ -53,18 +55,18 @@ type Tab = 'all' | 'gainers' | 'losers';
               </span>
             </div>
             <div class="actions">
-              <a class="btn btn-secondary btn-sm" [routerLink]="['/instrument', row.id]" [queryParams]="{ side: 'SELL' }">Sell</a>
-              <a class="btn btn-primary btn-sm" [routerLink]="['/instrument', row.id]" [queryParams]="{ side: 'BUY' }">Buy</a>
+              <a class="btn btn-secondary btn-sm" [routerLink]="['/instrument', row.id]" [queryParams]="{ side: 'SELL' }">{{ 'Sell' | t }}</a>
+              <a class="btn btn-primary btn-sm" [routerLink]="['/instrument', row.id]" [queryParams]="{ side: 'BUY' }">{{ 'Buy' | t }}</a>
             </div>
           </li>
         } @empty {
           <li class="empty">
             @if (!store.loaded()) {
-              Loading prices…
+              {{ 'Loading prices…' | t }}
             } @else if (tab() === 'all') {
-              No priced instruments yet.
+              {{ 'No priced instruments yet.' | t }}
             } @else {
-              No instruments {{ tab() === 'gainers' ? 'up' : 'down' }} over the last day.
+              {{ (tab() === 'gainers' ? 'No instruments up over the last day.' : 'No instruments down over the last day.') | t }}
             }
           </li>
         }
@@ -210,9 +212,9 @@ export class ExchangePanel {
   );
 
   readonly tabs: readonly { key: Tab; label: string }[] = [
-    { key: 'all', label: 'All' },
-    { key: 'gainers', label: 'Gainers' },
-    { key: 'losers', label: 'Losers' },
+    { key: 'all', label: tk('All') },
+    { key: 'gainers', label: tk('Gainers') },
+    { key: 'losers', label: tk('Losers') },
   ];
 
   readonly rows = computed(() => {

@@ -33,6 +33,7 @@ import { Injectable } from '@angular/core';
 import type { NewsItem } from './news';
 import { NewsUnavailable, type NewsProvider } from './news-provider';
 import type { CoveredInstrument } from './news-attribution';
+import { tk, translate } from '../i18n/i18n.service';
 
 const PROXY = '/api/news';
 
@@ -111,7 +112,7 @@ export function parseNewsApi(payload: NewsApiResponse): readonly NewsItem[] {
         {
           id: link,
           title,
-          publisher: article.source?.name?.trim() || 'Unknown source',
+          publisher: article.source?.name?.trim() || tk('Unknown source'),
           link,
           publishedAt: at,
           relatedTickers: [],
@@ -142,19 +143,19 @@ export function sweepQuery(covered: readonly CoveredInstrument[]): string {
 export function describeFailure(status: number, body: NewsApiResponse | null): string {
   switch (body?.code) {
     case 'apiKeyMissing':
-      return 'No news API key is configured. Set LEAP_NEWSAPI_KEY in ui/.env.local and restart the dev server.';
+      return tk('No news API key is configured. Set LEAP_NEWSAPI_KEY in ui/.env.local and restart the dev server.');
     case 'apiKeyInvalid':
     case 'apiKeyDisabled':
-      return 'The configured news API key was rejected by the provider.';
+      return tk('The configured news API key was rejected by the provider.');
     case 'rateLimited':
-      return 'The news plan’s daily request limit is used up. Headlines will return tomorrow.';
+      return tk('The news plan’s daily request limit is used up. Headlines will return tomorrow.');
     case 'parametersMissing':
     case 'parameterInvalid':
-      return `The news request was rejected: ${body.message ?? 'invalid parameters'}.`;
+      return translate('The news request was rejected: {why}.', { why: body.message ?? translate('invalid parameters') });
     default:
       return status === 426
-        ? 'The requested date range is beyond what this news plan allows.'
-        : `News request failed (HTTP ${status}).`;
+        ? tk('The requested date range is beyond what this news plan allows.')
+        : translate('News request failed (HTTP {status}).', { status });
   }
 }
 
@@ -191,7 +192,7 @@ export class NewsApiProvider implements NewsProvider {
       response = await fetch(`${PROXY}/v2/everything?${params}`);
     } catch {
       throw new NewsUnavailable(
-        'The news feed could not be reached. NewsAPI headlines are proxied through the dev server (`npm start`); other builds use the Yahoo fallback.',
+        tk('The news feed could not be reached. NewsAPI headlines are proxied through the dev server (`npm start`); other builds use the Yahoo fallback.'),
       );
     }
 

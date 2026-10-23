@@ -1,39 +1,38 @@
 <div class="page-enter">
   <leap-page-header heading="Markets" mascot="markets">
     <span description>
-      {{ resultCount() }} instruments from the database, grouped by market. Every instrument trades and settles in USD;
-      prices refresh from the price feed.
+      {{ '{n} instruments from the database, grouped by market. Every instrument trades and settles in USD; prices refresh from the price feed.' | t: { n: resultCount() } }}
     </span>
   </leap-page-header>
 
   <div class="toolbar panel" role="search">
     <label class="search">
       <leap-icon name="search" [size]="18" />
-      <span class="sr-only">Search instruments</span>
-      <input class="control" type="search" placeholder="Search symbol or name…" [value]="query()" (input)="onSearch($event)" />
+      <span class="sr-only">{{ 'Search instruments' | t }}</span>
+      <input class="control" type="search" [placeholder]="'Search symbol or name…' | t" [value]="query()" (input)="onSearch($event)" />
     </label>
-    <select class="control filter" [value]="marketFilter()" (change)="onMarket($event)" aria-label="Filter by market">
-      <option value="">All markets</option>
+    <select class="control filter" [value]="marketFilter()" (change)="onMarket($event)" [attr.aria-label]="'Filter by market' | t">
+      <option value="">{{ 'All markets' | t }}</option>
       @for (m of marketOptions(); track m.code) {
         <option [value]="m.code">{{ m.label }}</option>
       }
     </select>
-    <select class="control filter" [value]="exchange()" (change)="onExchange($event)" aria-label="Filter by exchange">
-      <option value="">All exchanges</option>
+    <select class="control filter" [value]="exchange()" (change)="onExchange($event)" [attr.aria-label]="'Filter by exchange' | t">
+      <option value="">{{ 'All exchanges' | t }}</option>
       @for (x of exchanges(); track x) {
         <option [value]="x">{{ x }}</option>
       }
     </select>
     @if (hasActiveFilters()) {
       <button type="button" class="btn btn-ghost clear-filters" (click)="clearFilters()">
-        <leap-icon name="x" [size]="16" />Clear filters
+        <leap-icon name="x" [size]="16" />{{ 'Clear filters' | t }}
       </button>
     }
   </div>
 
   @if (market.error(); as e) {
     <div class="panel pad">
-      <p class="state-error"><leap-icon name="alert" [size]="18" />{{ e.message }}</p>
+      <p class="state-error"><leap-icon name="alert" [size]="18" />{{ e.message | t }}</p>
     </div>
   } @else if (!market.loaded()) {
     <section class="panel group" aria-hidden="true">
@@ -46,17 +45,17 @@
         </div>
       }
     </section>
-    <p class="sr-only" role="status">Loading instruments…</p>
+    <p class="sr-only" role="status">{{ 'Loading instruments…' | t }}</p>
   } @else if (groups().length === 0) {
     <div class="panel no-match">
       <span class="no-match-icon"><leap-icon name="search" [size]="24" /></span>
-      <span class="empty-title">Nothing matches “{{ query() }}”</span>
+      <span class="empty-title">{{ 'Nothing matches “{query}”' | t: { query: query() } }}</span>
       @if (liveSearchState() === 'loading') {
-        <p class="faint" role="status">Searching Yahoo Finance…</p>
+        <p class="faint" role="status">{{ 'Searching Yahoo Finance…' | t }}</p>
       } @else if (liveSearchState() === 'error') {
-        <p class="faint">Yahoo Finance search is unavailable right now.</p>
+        <p class="faint">{{ 'Yahoo Finance search is unavailable right now.' | t }}</p>
       } @else {
-        <p class="faint">Try a different symbol or name, or clear the filters.</p>
+        <p class="faint">{{ 'Try a different symbol or name, or clear the filters.' | t }}</p>
       }
     </div>
 
@@ -65,9 +64,9 @@
         <div class="group-head">
           <div>
             <div class="group-title">
-              <h2>Live results from Yahoo Finance</h2>
+              <h2>{{ 'Live results from Yahoo Finance' | t }}</h2>
             </div>
-            <p class="rules">Not in the database — informational only, not tradeable here</p>
+            <p class="rules">{{ 'Not in the database — informational only, not tradeable here' | t }}</p>
           </div>
         </div>
         <ul>
@@ -77,7 +76,7 @@
                 <div class="sym">{{ result.symbol }}</div>
                 <div class="name faint">{{ result.name }} · {{ result.exchange }}</div>
               </div>
-              <span class="pill pill-muted">{{ result.type }}</span>
+              <span class="pill pill-muted">{{ result.type | t }}</span>
             </li>
           }
         </ul>
@@ -93,12 +92,12 @@
             <h2 [id]="'grp-' + group.code">{{ group.label }}</h2>
             @if (group.open !== null) {
               <span class="pill" [class.pill-up]="group.open" [class.pill-muted]="!group.open">
-                <i class="dot"></i>{{ group.open ? 'Open' : 'Closed' }}
+                <i class="dot"></i>{{ (group.open ? 'Open' : 'Closed') | t }}
               </span>
             }
           </div>
           <p class="rules">
-            <span>Settles USD</span>
+            <span>{{ 'Settles USD' | t }}</span>
             <span class="sep">·</span>
             <span>{{ group.exchanges }}</span>
             <span class="sep">·</span>
@@ -110,8 +109,8 @@
 
       <div class="cols" aria-hidden="true">
         <span></span>
-        <span>Instrument</span>
-        <span class="r">Last price</span>
+        <span>{{ 'Instrument' | t }}</span>
+        <span class="r">{{ 'Last price' | t }}</span>
       </div>
 
       <ul>
@@ -123,7 +122,7 @@
               [class.on]="row.watched"
               (click)="toggleWatch($event, row.id)"
               [attr.aria-pressed]="row.watched"
-              [attr.aria-label]="row.watched ? 'Remove ' + row.symbol + ' from watchlist' : 'Add ' + row.symbol + ' to watchlist'"
+              [attr.aria-label]="(row.watched ? 'Remove {symbol} from watchlist' : 'Add {symbol} to watchlist') | t: { symbol: row.symbol }"
             >
               <leap-icon name="star" [size]="18" [filled]="row.watched" />
             </button>
@@ -140,7 +139,7 @@
                 <div class="upd num faint">{{ row.updated ?? '' }}</div>
               } @else {
                 <span class="price faint">—</span>
-                <div class="upd faint">No price yet</div>
+                <div class="upd faint">{{ 'No price yet' | t }}</div>
               }
             </div>
             <leap-icon name="chevron-right" [size]="18" class="chev" />

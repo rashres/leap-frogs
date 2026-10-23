@@ -6,6 +6,7 @@ import { formatQty, formatSignedPct, formatPrice, formatSignedUsd, formatUsd } f
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { LivePrice } from '../../shared/live-price';
+import { TPipe } from '../../core/i18n/t.pipe';
 
 type SortKey = 'instrument' | 'value' | 'return';
 type SortDir = 'asc' | 'desc';
@@ -17,23 +18,23 @@ const FIRST_DIR: Record<SortKey, SortDir> = { instrument: 'asc', value: 'desc', 
 @Component({
   selector: 'leap-holdings-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, LivePrice, Icon],
+  imports: [TPipe, RouterLink, InstrumentLogo, LivePrice, Icon],
   template: `
     <section class="panel">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title">Holdings <span class="count">{{ rows().length }}</span></h2>
+          <h2 class="panel-title">{{ 'Holdings' | t }} <span class="count">{{ rows().length }}</span></h2>
           <p class="panel-sub">
-            Valued at the latest price
+            {{ 'Valued at the latest price' | t }}
             @if (rows().length > 0) {
-              · <span class="num">{{ invested() }}</span> invested
+              · {{ '{amount} invested' | t: { amount: invested() } }}
             }
           </p>
         </div>
       </div>
 
       @if (portfolio.holdings.error(); as e) {
-        <div class="pad"><p class="state-error">{{ e.message }}</p></div>
+        <div class="pad"><p class="state-error">{{ e.message | t }}</p></div>
       } @else if (portfolio.holdings.initialLoading()) {
         <div class="pad loading" aria-hidden="true">
           @for (n of [1, 2, 3]; track n) {
@@ -44,9 +45,9 @@ const FIRST_DIR: Record<SortKey, SortDir> = { instrument: 'asc', value: 'desc', 
             </div>
           }
         </div>
-        <p class="sr-only" role="status">Loading holdings…</p>
+        <p class="sr-only" role="status">{{ 'Loading holdings…' | t }}</p>
       } @else if (rows().length === 0) {
-        <p class="empty"><span class="empty-title">No holdings yet</span>Buy an instrument from Markets and it will appear here.</p>
+        <p class="empty"><span class="empty-title">{{ 'No holdings yet' | t }}</span>{{ 'Buy an instrument from Markets and it will appear here.' | t }}</p>
       } @else {
         <div class="table-wrap">
           <table class="data-table">
@@ -54,24 +55,24 @@ const FIRST_DIR: Record<SortKey, SortDir> = { instrument: 'asc', value: 'desc', 
               <tr>
                 <th [attr.aria-sort]="ariaSort('instrument')">
                   <button type="button" class="sort" (click)="sortBy('instrument')">
-                    Instrument
+                    {{ 'Instrument' | t }}
                     <span class="arrow" [class.on]="sort().key === 'instrument'" aria-hidden="true">{{ arrowFor('instrument') }}</span>
                   </button>
                 </th>
-                <th class="r qty-col">Quantity</th>
+                <th class="r qty-col">{{ 'Quantity' | t }}</th>
                 <th class="r" [attr.aria-sort]="ariaSort('value')">
                   <button type="button" class="sort" (click)="sortBy('value')">
                     <span class="arrow" [class.on]="sort().key === 'value'" aria-hidden="true">{{ arrowFor('value') }}</span>
-                    Market value
+                    {{ 'Market value' | t }}
                   </button>
                 </th>
                 <th class="r" [attr.aria-sort]="ariaSort('return')">
                   <button type="button" class="sort" (click)="sortBy('return')">
                     <span class="arrow" [class.on]="sort().key === 'return'" aria-hidden="true">{{ arrowFor('return') }}</span>
-                    <span class="ret-label"><span class="wide-only">Unrealized </span>return</span>
+                    <span class="ret-label"><span class="wide-only">{{ 'Unrealized' | t }} </span>{{ 'return' | t }}</span>
                   </button>
                 </th>
-                <th class="chev-col"><span class="sr-only">Details</span></th>
+                <th class="chev-col"><span class="sr-only">{{ 'Details' | t }}</span></th>
               </tr>
             </thead>
             <tbody>
@@ -82,9 +83,9 @@ const FIRST_DIR: Record<SortKey, SortDir> = { instrument: 'asc', value: 'desc', 
                     <div class="ident">
                       <leap-instrument-logo [symbol]="row.symbol" [size]="28" />
                       <div class="ident-text">
-                        <a class="sym" [routerLink]="['/instrument', row.instrumentId]" [attr.aria-label]="'View ' + row.symbol + ', ' + row.name">{{ row.symbol }}</a>
+                        <a class="sym" [routerLink]="['/instrument', row.instrumentId]" [attr.aria-label]="'View {symbol}, {name}' | t: { symbol: row.symbol, name: row.name }">{{ row.symbol }}</a>
                         <div class="name">{{ row.name }}</div>
-                        <div class="qty-inline num">Qty {{ row.qty }}</div>
+                        <div class="qty-inline num">{{ 'Qty {n}' | t: { n: row.qty } }}</div>
                       </div>
                     </div>
                   </td>
@@ -108,7 +109,7 @@ const FIRST_DIR: Record<SortKey, SortDir> = { instrument: 'asc', value: 'desc', 
                       class="chev"
                       [attr.aria-expanded]="open"
                       [attr.aria-controls]="'holding-' + row.instrumentId"
-                      [attr.aria-label]="(open ? 'Hide' : 'Show') + ' details for ' + row.symbol"
+                      [attr.aria-label]="(open ? 'Hide details for {symbol}' : 'Show details for {symbol}') | t: { symbol: row.symbol }"
                       (click)="toggle(row.instrumentId); $event.stopPropagation()"
                     >
                       <leap-icon name="chevron-down" [size]="16" />
@@ -120,35 +121,35 @@ const FIRST_DIR: Record<SortKey, SortDir> = { instrument: 'asc', value: 'desc', 
                     <td colspan="5">
                       <dl class="facts">
                         <div>
-                          <dt>Avg cost</dt>
+                          <dt>{{ 'Avg cost' | t }}</dt>
                           <dd class="num">{{ row.avg }}</dd>
                         </div>
                         <div>
-                          <dt>Last price</dt>
+                          <dt>{{ 'Last price' | t }}</dt>
                           <dd>
                             @if (row.lastPrice != null) {
                               <leap-live-price [value]="row.lastPrice" />
                             } @else {
-                              <span class="faint">No price yet</span>
+                              <span class="faint">{{ 'No price yet' | t }}</span>
                             }
                           </dd>
                         </div>
                         <div>
-                          <dt>Book cost</dt>
+                          <dt>{{ 'Book cost' | t }}</dt>
                           <dd class="num">{{ row.book }}</dd>
                         </div>
                         <div>
-                          <dt>Portfolio weight</dt>
+                          <dt>{{ 'Portfolio weight' | t }}</dt>
                           <dd class="num">{{ row.weight }}</dd>
                         </div>
                         <div>
-                          <dt>Market</dt>
+                          <dt>{{ 'Market' | t }}</dt>
                           <dd>{{ row.market }}</dd>
                         </div>
                       </dl>
                       <div class="trade">
-                        <a class="btn btn-secondary btn-sm" [routerLink]="['/instrument', row.instrumentId]" [queryParams]="{ side: 'SELL' }">Sell</a>
-                        <a class="btn btn-primary btn-sm" [routerLink]="['/instrument', row.instrumentId]" [queryParams]="{ side: 'BUY' }">Buy</a>
+                        <a class="btn btn-secondary btn-sm" [routerLink]="['/instrument', row.instrumentId]" [queryParams]="{ side: 'SELL' }">{{ 'Sell' | t }}</a>
+                        <a class="btn btn-primary btn-sm" [routerLink]="['/instrument', row.instrumentId]" [queryParams]="{ side: 'BUY' }">{{ 'Buy' | t }}</a>
                       </div>
                     </td>
                   </tr>

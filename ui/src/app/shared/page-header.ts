@@ -5,18 +5,19 @@
 
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { PageMascot, type MascotName } from './page-mascot';
+import { TPipe } from '../core/i18n/t.pipe';
 
 @Component({
   selector: 'leap-page-header',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PageMascot],
+  imports: [TPipe, PageMascot],
   template: `
     <div class="lead">
       @if (mascot(); as name) {
         <span class="tile"><leap-page-mascot [name]="name" [size]="38" /></span>
       }
       <div class="text">
-        <h1>{{ heading() }}</h1>
+        <h1>{{ heading() | t }}</h1>
         <p class="desc"><ng-content select="[description]" /></p>
       </div>
     </div>

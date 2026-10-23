@@ -20,12 +20,15 @@ import type {
 } from '../core/news/news';
 import { SENTIMENT_DISCLAIMER, summarise } from '../core/news/sentiment';
 import type { FeedState } from '../core/news/news.service';
+import { translate } from '../core/i18n/i18n.service';
+import { TPipe } from '../core/i18n/t.pipe';
 
 /** Headlines shown at first, and added by each "Show more". */
 const PAGE = 25;
 
 @Component({
   selector: 'leap-news-feed',
+  imports: [TPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @let s = summary();
@@ -33,17 +36,17 @@ const PAGE = 25;
     @if (items().length > 0) {
       <div class="bar">
         <div class="counts">
-          <span class="sent sent-pos"><i class="glyph">▲</i>{{ s.positive }} positive</span>
-          <span class="sent sent-neu"><i class="glyph">■</i>{{ s.neutral }} neutral</span>
-          <span class="sent sent-neg"><i class="glyph">▼</i>{{ s.negative }} negative</span>
+          <span class="sent sent-pos"><i class="glyph">▲</i>{{ '{n} positive' | t: { n: s.positive } }}</span>
+          <span class="sent sent-neu"><i class="glyph">■</i>{{ '{n} neutral' | t: { n: s.neutral } }}</span>
+          <span class="sent sent-neg"><i class="glyph">▼</i>{{ '{n} negative' | t: { n: s.negative } }}</span>
         </div>
-        <span class="of faint">of {{ s.total }} headlines</span>
+        <span class="of faint">{{ 'of {n} headlines' | t: { n: s.total } }}</span>
       </div>
     }
 
     @switch (state()) {
       @case ('loading') {
-        <p class="sr-only" role="status">Loading headlines…</p>
+        <p class="sr-only" role="status">{{ 'Loading headlines…' | t }}</p>
         <ul class="loading" aria-hidden="true">
           @for (n of [1, 2, 3, 4]; track n) {
             <li class="row">
@@ -58,17 +61,16 @@ const PAGE = 25;
       }
       @case ('unavailable') {
         <div class="unavailable">
-          <p class="head">Headlines unavailable</p>
-          <p class="faint">{{ error() ?? 'The news feed could not be reached.' }}</p>
+          <p class="head">{{ 'Headlines unavailable' | t }}</p>
+          <p class="faint">{{ (error() ?? 'The news feed could not be reached.') | t }}</p>
           <p class="faint small">
-            Headlines are fetched through the LilyPad server, so it must be running. No placeholder headlines are shown
-            here on purpose — invented news is the one kind of filler a reader might act on.
+            {{ 'Headlines are fetched through the LilyPad server, so it must be running. No placeholder headlines are shown here on purpose — invented news is the one kind of filler a reader might act on.' | t }}
           </p>
         </div>
       }
       @default {
         @if (items().length === 0) {
-          <p class="empty"><span class="empty-title">No headlines yet</span>Nothing has been published for this instrument in the news window.</p>
+          <p class="empty"><span class="empty-title">{{ 'No headlines yet' | t }}</span>{{ 'Nothing has been published for this instrument in the news window.' | t }}</p>
         } @else {
           <ul>
             @for (item of shown(); track item.id) {
@@ -101,7 +103,7 @@ const PAGE = 25;
                   @if (item.sentiment.matched.length > 0) {
                     <span class="dot">·</span>
                     <span class="terms">
-                      matched
+                      {{ 'matched' | t }}
                       @for (m of item.sentiment.matched; track $index) {
                         <code
                           class="term"
@@ -109,8 +111,8 @@ const PAGE = 25;
                           [class.neg]="m.counted && m.polarity === 'negative'"
                           [class.uncounted]="!m.counted"
                           [attr.title]="termTitle(m)"
-                          >{{ m.term }}{{ m.note ? ' ' + m.note : '' }}{{ m.negated ? ' (negated)' : '' }}{{
-                            m.from === 'summary' ? ' (summary)' : ''
+                          >{{ m.term }}{{ m.note ? ' ' + (m.note | t) : '' }}{{ m.negated ? ' ' + ('(negated)' | t) : '' }}{{
+                            m.from === 'summary' ? ' ' + ('(summary)' | t) : ''
                           }}</code
                         >
                       }
@@ -125,12 +127,12 @@ const PAGE = 25;
           @if (hidden() > 0) {
             <div class="more">
               <button type="button" class="btn btn-secondary btn-sm" (click)="showMore()">
-                Show {{ nextBatch() }} more
+                {{ 'Show {n} more' | t: { n: nextBatch() } }}
               </button>
-              <span class="faint">{{ hidden() }} not shown</span>
+              <span class="faint">{{ '{n} not shown' | t: { n: hidden() } }}</span>
             </div>
           }
-          <p class="disclaimer faint">{{ disclaimer }}</p>
+          <p class="disclaimer faint">{{ disclaimer | t }}</p>
         }
       }
     }
@@ -318,15 +320,15 @@ export class NewsFeed {
   /** Tooltip on one matched term: what it counted as and why. */
   termTitle(m: MatchedTerm): string {
     const parts = [
-      m.counted ? `Counted as ${m.polarity}` : `Not counted (${m.note})`,
-      m.negated ? 'flipped by a preceding negation' : null,
-      m.from === 'summary' ? "found in the feed's summary, read because the headline matched nothing" : null,
+      m.counted ? translate(m.polarity === 'positive' ? 'Counted as positive' : 'Counted as negative') : translate('Not counted ({note})', { note: translate(m.note ?? '') }),
+      m.negated ? translate('flipped by a preceding negation') : null,
+      m.from === 'summary' ? translate('found in the feed’s summary, read because the headline matched nothing') : null,
     ];
     return parts.filter(Boolean).join('; ');
   }
 
   label(value: SentimentLabel): string {
-    return value.charAt(0).toUpperCase() + value.slice(1);
+    return translate(value === 'positive' ? 'Positive' : value === 'negative' ? 'Negative' : 'Neutral');
   }
 
   tone(value: SentimentLabel): string {
@@ -350,11 +352,13 @@ export class NewsFeed {
     const counted = score.positives + score.negatives;
     if (counted === 0) {
       return score.matched.length === 0
-        ? 'No lexicon terms matched this headline.'
-        : 'Terms matched, but none counted (the headline is a question).';
+        ? translate('No lexicon terms matched this headline.')
+        : translate('Terms matched, but none counted (the headline is a question).');
     }
-    const parts = [`${score.positives} positive`, `${score.negatives} negative`];
-    return `Counted ${parts.join(' and ')} ${counted === 1 ? 'term' : 'terms'}. Counts of matched words, not a confidence score.`;
+    return translate('Counted {pos} positive and {neg} negative terms. Counts of matched words, not a confidence score.', {
+      pos: score.positives,
+      neg: score.negatives,
+    });
   }
 
   /**
@@ -371,16 +375,16 @@ export class NewsFeed {
   /** The tooltip on a stock chip: the words that put the headline there. */
   why(a: Attribution): string {
     return a.context
-      ? `Filed under ${a.symbol}: the headline says "${a.matched}", confirmed by "${a.context}"`
-      : `Filed under ${a.symbol}: the headline names it`;
+      ? translate('Filed under {symbol}: the headline says “{matched}”, confirmed by “{context}”', { symbol: a.symbol, matched: a.matched, context: a.context })
+      : translate('Filed under {symbol}: the headline names it', { symbol: a.symbol });
   }
 
   ago(at: Date): string {
     const minutes = Math.max(0, Math.round((Date.now() - at.getTime()) / 60000));
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes}m ago`;
+    if (minutes < 1) return translate('just now');
+    if (minutes < 60) return translate('{n}m ago', { n: minutes });
     const hours = Math.round(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.round(hours / 24)}d ago`;
+    if (hours < 24) return translate('{n}h ago', { n: hours });
+    return translate('{n}d ago', { n: Math.round(hours / 24) });
   }
 }

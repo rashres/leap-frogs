@@ -6,7 +6,7 @@
   </main>
 } @else {
 <div class="shell" [class.collapsed]="collapsed()" [class.drawer-open]="drawerOpen()">
-  <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+  <aside class="sidebar" id="sidebar" [attr.aria-label]="'Sidebar' | t">
     <div class="side-top">
       <a class="brand" [routerLink]="auth.me()?.homePath ?? '/login'" [attr.aria-label]="t().home">
         <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
@@ -20,7 +20,7 @@
       </button>
     </div>
 
-    <nav class="side-nav" aria-label="Main">
+    <nav class="side-nav" [attr.aria-label]="'Main' | t">
       <p class="side-label">{{ t().mainMenu }}</p>
       <ul>
         @for (item of nav(); track item.path) {

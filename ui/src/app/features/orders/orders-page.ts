@@ -11,6 +11,8 @@ import { InstrumentLogo } from '../../shared/instrument-logo';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { Icon } from '../../shared/icon';
 import { PageHeader } from '../../shared/page-header';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk, translate } from '../../core/i18n/i18n.service';
 
 type Filter = 'ALL' | 'PENDING' | 'FILLED' | 'REJECTED' | 'COPIED';
 
@@ -56,7 +58,7 @@ interface Row {
 @Component({
   selector: 'leap-orders-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, PageHeader, Icon],
+  imports: [TPipe, RouterLink, InstrumentLogo, PageHeader, Icon],
   templateUrl: './orders-page.html',
   styleUrl: './orders-page.scss',
 })
@@ -68,11 +70,11 @@ export class OrdersPage {
 
   readonly filters: readonly Filter[] = ['ALL', 'PENDING', 'FILLED', 'REJECTED', 'COPIED'];
   readonly filterLabels: Record<Filter, string> = {
-    ALL: 'All',
-    PENDING: 'Pending',
-    FILLED: 'Filled',
-    REJECTED: 'Rejected',
-    COPIED: 'Copy traded',
+    ALL: tk('All'),
+    PENDING: tk('Pending'),
+    FILLED: tk('Filled'),
+    REJECTED: tk('Rejected'),
+    COPIED: tk('Copy traded'),
   };
   readonly filter = signal<Filter>('ALL');
   readonly expanded = signal<number | null>(null);
@@ -84,45 +86,49 @@ export class OrdersPage {
     this.portfolio.orderList().map((o) => {
       const filled = o.status === 'COMPLETE';
       const copy = this.copied.copiedFrom(o.orderId);
-      const waiting = o.limitPrice != null ? `until ${o.symbol} reaches ${formatPrice(o.limitPrice)} or better` : 'for the market to open';
+      const what = { side: translate(o.side === 'BUY' ? 'Buy' : 'Sell'), qty: formatQty(o.quantity), symbol: o.symbol };
+      const waiting =
+        o.limitPrice != null
+          ? translate('Waiting until {symbol} reaches {price} or better.', { symbol: o.symbol, price: formatPrice(o.limitPrice) })
+          : translate('Waiting for the market to open.');
       const steps: Step[] = [
         {
-          state: 'Submitted',
+          state: translate('Submitted'),
           at: formatStamp(o.placedTime),
           detail: copy
             ? copy.leaderOrderId != null
-              ? `${o.side} ${formatQty(o.quantity)} ${o.symbol} copied from ${copy.traderName}'s order #${copy.leaderOrderId}, scaled to your allocation.`
-              : `${o.side} ${formatQty(o.quantity)} ${o.symbol} placed by the stop-loss on your copy of ${copy.traderName}.`
-            : `${o.side} ${formatQty(o.quantity)} ${o.symbol} received by POST /api/accounts/${o.accountId}/orders.`,
+              ? translate('{side} {qty} {symbol} copied from {trader}’s order #{order}, scaled to your allocation.', { ...what, trader: copy.traderName, order: copy.leaderOrderId })
+              : translate('{side} {qty} {symbol} placed by the stop-loss on your copy of {trader}.', { ...what, trader: copy.traderName })
+            : translate('{side} {qty} {symbol} received by POST /api/accounts/{account}/orders.', { ...what, account: o.accountId }),
         },
       ];
       if (filled) {
         // Filled after waiting as Pending. An instant fill is stamped a few microseconds after it was placed.
         const waited = o.fulfilledTime != null && Date.parse(o.fulfilledTime) - Date.parse(o.placedTime) > 1000;
         steps.push({
-          state: waited ? 'Pending → Filled' : 'Submitted → Filled',
+          state: translate(waited ? 'Pending → Filled' : 'Submitted → Filled'),
           at: formatStamp(o.fulfilledTime),
-          detail: `Executed at ${formatPrice(o.price)}; cash and holdings updated.`,
+          detail: translate('Executed at {price}; cash and holdings updated.', { price: formatPrice(o.price) }),
         });
       } else if (o.status === 'FAILED') {
         steps.push({
-          state: 'Submitted → Rejected',
+          state: translate('Submitted → Rejected'),
           at: formatStamp(o.placedTime),
-          detail: 'Failed the cash or holdings check. The API returns the reason on the POST response only; it is not stored.',
+          detail: translate('Failed the cash or holdings check. The reason is only shown when the order is placed.'),
         });
       } else if (o.status === 'PENDING') {
         steps.push({
-          state: 'Pending',
+          state: translate('Pending'),
           at: formatStamp(o.placedTime),
-          detail: `Waiting ${waiting}. ${o.expiresAt ? `Expires ${formatStamp(o.expiresAt)}.` : 'Open until filled or cancelled.'}`,
+          detail: `${waiting} ${o.expiresAt ? translate('Expires {time}.', { time: formatStamp(o.expiresAt) }) : translate('Open until filled or cancelled.')}`,
         });
       } else if (o.status === 'CANCELLED') {
-        steps.push({ state: 'Pending → Cancelled', at: '', detail: 'Cancelled before it filled; nothing was traded.' });
+        steps.push({ state: translate('Pending → Cancelled'), at: '', detail: translate('Cancelled before it filled; nothing was traded.') });
       } else if (o.status === 'EXPIRED') {
         steps.push({
-          state: 'Pending → Expired',
+          state: translate('Pending → Expired'),
           at: formatStamp(o.expiresAt),
-          detail: 'A day order that did not fill before its session closed; nothing was traded.',
+          detail: translate('A day order that did not fill before its session closed; nothing was traded.'),
         });
       }
       return {
@@ -139,8 +145,8 @@ export class OrdersPage {
         price: formatPrice(o.price),
         value: formatUsd(o.value),
         fulfilled: o.fulfilledTime ? formatStamp(o.fulfilledTime) : '—',
-        type: o.limitPrice != null ? `Limit at ${formatPrice(o.limitPrice)}` : 'Market',
-        timeInForce: o.timeInForce === 'GTC' ? "Good 'til cancelled" : 'Day',
+        type: o.limitPrice != null ? translate('Limit at {price}', { price: formatPrice(o.limitPrice) }) : translate('Market'),
+        timeInForce: translate(o.timeInForce === 'GTC' ? 'Good ’til cancelled' : 'Day'),
         expires: o.expiresAt ? formatStamp(o.expiresAt) : '—',
         copiedFrom: copy ? { traderId: copy.copyTraderId, name: copy.traderName, handle: copy.traderHandle, leaderOrderId: copy.leaderOrderId } : null,
         steps,

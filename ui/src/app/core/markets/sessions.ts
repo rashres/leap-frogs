@@ -7,6 +7,8 @@
  * time zone; the hours are displayed in US Central time.
  */
 
+import { currentLocale, translate } from '../i18n/i18n.service';
+
 export type MarketCode = 'EQUITIES_US' | 'EQUITIES_UK' | 'EQUITIES_INDIA' | 'FX' | 'CRYPTO';
 
 export interface MarketPolicy {
@@ -38,7 +40,6 @@ const hm = (hours: number, minutes: number) => hours * 60 + minutes;
 export const DISPLAY_ZONE = 'America/Chicago';
 export const DISPLAY_ZONE_LABEL = 'CT';
 
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MINUTES_PER_DAY = 24 * 60;
 
 /** Minutes the zone's wall clock is ahead of UTC at this instant. */
@@ -64,13 +65,15 @@ function toDisplay(minuteOfDay: number, marketZone: string, at: Date): { minute:
   return { minute: shifted - dayShift * MINUTES_PER_DAY, dayShift };
 }
 
+/** "9:30 AM" in the chosen language. */
 function clockText(minuteOfDay: number): string {
-  const hours = Math.floor(minuteOfDay / 60);
-  const minutes = minuteOfDay % 60;
-  return `${hours % 12 || 12}:${String(minutes).padStart(2, '0')} ${hours < 12 ? 'AM' : 'PM'}`;
+  const at = new Date(Date.UTC(2024, 0, 1, Math.floor(minuteOfDay / 60), minuteOfDay % 60));
+  return at.toLocaleTimeString(currentLocale(), { timeZone: 'UTC', hour: 'numeric', minute: '2-digit' });
 }
 
-const dayName = (weekday: number) => DAYS[(weekday + 7) % 7];
+/** Short weekday name in the chosen language; 7 Jan 2024 was a Sunday. */
+const dayName = (weekday: number) =>
+  new Date(Date.UTC(2024, 0, 7 + ((weekday + 7) % 7))).toLocaleDateString(currentLocale(), { timeZone: 'UTC', weekday: 'short' });
 const dayRange = (shift: number) => `${dayName(1 + shift)}–${dayName(5 + shift)}`;
 
 /** Mon–Fri hours in the display zone; offsets are taken now so daylight saving is current. */
@@ -81,7 +84,13 @@ function weekdayLabel(marketZone: string, open: number, close: number): string {
   if (from.dayShift === to.dayShift) {
     return `${clockText(from.minute)}–${clockText(to.minute)} ${DISPLAY_ZONE_LABEL}, ${dayRange(from.dayShift)}`;
   }
-  return `${clockText(from.minute)} ${dayRange(from.dayShift)} to ${clockText(to.minute)} ${dayRange(to.dayShift)} ${DISPLAY_ZONE_LABEL}`;
+  return translate('{from} {fromDays} to {to} {toDays} {zone}', {
+    from: clockText(from.minute),
+    fromDays: dayRange(from.dayShift),
+    to: clockText(to.minute),
+    toDays: dayRange(to.dayShift),
+    zone: DISPLAY_ZONE_LABEL,
+  });
 }
 
 function weekdaySession(timeZone: string, open: number, close: number) {
@@ -94,7 +103,9 @@ function weekdaySession(timeZone: string, open: number, close: number) {
 export const MARKETS: Readonly<Record<MarketCode, MarketPolicy>> = {
   EQUITIES_US: {
     code: 'EQUITIES_US',
-    label: 'Equities US',
+    get label() {
+      return translate('Equities US');
+    },
     shortLabel: 'US',
     get sessionLabel() {
       return weekdayLabel('America/New_York', hm(9, 30), hm(16, 0));
@@ -103,7 +114,9 @@ export const MARKETS: Readonly<Record<MarketCode, MarketPolicy>> = {
   },
   EQUITIES_UK: {
     code: 'EQUITIES_UK',
-    label: 'Equities UK',
+    get label() {
+      return translate('Equities UK');
+    },
     shortLabel: 'LSE',
     get sessionLabel() {
       return weekdayLabel('Europe/London', hm(8, 0), hm(16, 30));
@@ -112,7 +125,9 @@ export const MARKETS: Readonly<Record<MarketCode, MarketPolicy>> = {
   },
   EQUITIES_INDIA: {
     code: 'EQUITIES_INDIA',
-    label: 'Equities India',
+    get label() {
+      return translate('Equities India');
+    },
     shortLabel: 'NSE',
     get sessionLabel() {
       return weekdayLabel('Asia/Kolkata', hm(9, 15), hm(15, 30));
@@ -126,7 +141,7 @@ export const MARKETS: Readonly<Record<MarketCode, MarketPolicy>> = {
     get sessionLabel() {
       const edge = toDisplay(hm(22, 0), 'UTC', new Date());
       const time = clockText(edge.minute);
-      return `${dayName(edge.dayShift)} ${time} – ${dayName(5 + edge.dayShift)} ${time} ${DISPLAY_ZONE_LABEL}, continuous`;
+      return `${dayName(edge.dayShift)} ${time} – ${dayName(5 + edge.dayShift)} ${time} ${DISPLAY_ZONE_LABEL}, ${translate('continuous')}`;
     },
     isOpen: (at: Date): boolean => {
       const { weekday, minuteOfDay } = zonedClock(at, 'UTC');
@@ -138,9 +153,15 @@ export const MARKETS: Readonly<Record<MarketCode, MarketPolicy>> = {
   },
   CRYPTO: {
     code: 'CRYPTO',
-    label: 'Crypto',
-    shortLabel: 'Crypto',
-    sessionLabel: '24/7, never closes',
+    get label() {
+      return translate('Crypto');
+    },
+    get shortLabel() {
+      return translate('Crypto');
+    },
+    get sessionLabel() {
+      return translate('24/7, never closes');
+    },
     isOpen: () => true,
   },
 };

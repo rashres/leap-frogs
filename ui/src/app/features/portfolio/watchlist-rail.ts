@@ -9,6 +9,7 @@ import { LivePrice } from '../../shared/live-price';
 import { Icon } from '../../shared/icon';
 import { formatSignedPct } from '../../shared/format';
 import { DayChangeStore } from './day-change.store';
+import { TPipe } from '../../core/i18n/t.pipe';
 
 const RESULT_LIMIT = 8;
 const UNDO_MS = 5000;
@@ -17,11 +18,11 @@ const UNDO_MS = 5000;
 @Component({
   selector: 'leap-watchlist-rail',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, LivePrice, Icon],
+  imports: [TPipe, RouterLink, InstrumentLogo, LivePrice, Icon],
   template: `
     <section class="panel card">
       <div class="head">
-        <h2 class="panel-title">My watchlist</h2>
+        <h2 class="panel-title">{{ 'My watchlist' | t }}</h2>
         <span class="count">{{ rows().length }}</span>
       </div>
 
@@ -29,8 +30,8 @@ const UNDO_MS = 5000;
         <leap-icon name="search" [size]="16" />
         <input
           type="search"
-          placeholder="Search to add instruments"
-          aria-label="Search instruments to add to your watchlist"
+          [placeholder]="'Search to add instruments' | t"
+          [attr.aria-label]="'Search instruments to add to your watchlist' | t"
           autocomplete="off"
           [value]="query()"
           (input)="query.set($any($event.target).value)"
@@ -38,14 +39,14 @@ const UNDO_MS = 5000;
           (keydown.enter)="addFirst()"
         />
         @if (query()) {
-          <button type="button" class="clear" aria-label="Clear search" (click)="query.set('')">
+          <button type="button" class="clear" [attr.aria-label]="'Clear search' | t" (click)="query.set('')">
             <leap-icon name="x" [size]="14" />
           </button>
         }
       </div>
 
       @if (query()) {
-        <ul class="list results" aria-label="Search results">
+        <ul class="list results" [attr.aria-label]="'Search results' | t">
           @for (r of results(); track r.id) {
             <li>
               <div class="result">
@@ -58,8 +59,8 @@ const UNDO_MS = 5000;
                   <button
                     type="button"
                     class="add added"
-                    [attr.aria-label]="'Remove ' + r.symbol + ' from watchlist'"
-                    title="In watchlist — click to remove"
+                    [attr.aria-label]="'Remove {symbol} from watchlist' | t: { symbol: r.symbol }"
+                    [attr.title]="'In watchlist — click to remove' | t"
                     (click)="remove(r.id, r.symbol)"
                   >
                     <leap-icon name="check" [size]="15" [stroke]="2.2" />
@@ -68,8 +69,8 @@ const UNDO_MS = 5000;
                   <button
                     type="button"
                     class="add"
-                    [attr.aria-label]="'Add ' + r.symbol + ' to watchlist'"
-                    title="Add to watchlist"
+                    [attr.aria-label]="'Add {symbol} to watchlist' | t: { symbol: r.symbol }"
+                    [attr.title]="'Add to watchlist' | t"
                     (click)="watchlist.add(r.id)"
                   >
                     <leap-icon name="plus" [size]="15" [stroke]="2.2" />
@@ -78,13 +79,13 @@ const UNDO_MS = 5000;
               </div>
             </li>
           } @empty {
-            <li class="no-match">No instruments match “{{ query() }}”.</li>
+            <li class="no-match">{{ 'No instruments match “{query}”.' | t: { query: query() } }}</li>
           }
         </ul>
       } @else if (rows().length === 0) {
         <div class="empty">
           <leap-icon name="star" [size]="20" />
-          <p>Your watchlist is empty. Search above or star instruments on Markets.</p>
+          <p>{{ 'Your watchlist is empty. Search above or star instruments on Markets.' | t }}</p>
         </div>
       } @else {
         <ul class="list">
@@ -96,7 +97,7 @@ const UNDO_MS = 5000;
                   <div class="sym">
                     {{ row.symbol }}
                     @if (!row.open) {
-                      <i class="closed" title="Market closed"></i>
+                      <i class="closed" [attr.title]="'Market closed' | t"></i>
                     }
                   </div>
                   <div class="name">{{ row.name }}</div>
@@ -119,8 +120,8 @@ const UNDO_MS = 5000;
               <button
                 type="button"
                 class="remove"
-                [attr.aria-label]="'Remove ' + row.symbol + ' from watchlist'"
-                title="Remove from watchlist"
+                [attr.aria-label]="'Remove {symbol} from watchlist' | t: { symbol: row.symbol }"
+                [attr.title]="'Remove from watchlist' | t"
                 (click)="remove(row.id, row.symbol)"
               >
                 <leap-icon name="trash" [size]="15" />
@@ -133,11 +134,11 @@ const UNDO_MS = 5000;
       <div class="foot">
         @if (undo(); as u) {
           <div class="undo" role="status">
-            <span>Removed <b>{{ u.symbol }}</b></span>
-            <button type="button" class="undo-btn" (click)="restore()">Undo</button>
+            <span>{{ 'Removed' | t }} <b>{{ u.symbol }}</b></span>
+            <button type="button" class="undo-btn" (click)="restore()">{{ 'Undo' | t }}</button>
           </div>
         } @else {
-          <a class="btn btn-secondary btn-sm" routerLink="/markets">Browse all on Markets</a>
+          <a class="btn btn-secondary btn-sm" routerLink="/markets">{{ 'Browse all on Markets' | t }}</a>
         }
       </div>
     </section>

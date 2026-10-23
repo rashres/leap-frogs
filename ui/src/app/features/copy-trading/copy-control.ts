@@ -6,6 +6,8 @@ import type { CopySettings, CopySubscription, CopyTrader } from '../../core/api/
 import { ActiveAccountService } from '../../core/state/active-account.service';
 import { formatUsd } from '../../shared/format';
 import { Icon } from '../../shared/icon';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk, translate } from '../../core/i18n/i18n.service';
 
 type Mode = 'closed' | 'follow' | 'edit';
 
@@ -26,13 +28,13 @@ function optionalNumber(text: string): number | null {
 @Component({
   selector: 'leap-copy-control',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [Icon],
+  imports: [TPipe, Icon],
   template: `
     @if (isSelf()) {
-      <span class="pill pill-muted">This is you</span>
+      <span class="pill pill-muted">{{ 'This is you' | t }}</span>
     } @else if (mode() !== 'closed') {
       <form class="form" (submit)="submit($event)">
-        <label class="field-label" [for]="inputId()">{{ mode() === 'edit' ? 'Allocation' : 'Amount to allocate' }}</label>
+        <label class="field-label" [for]="inputId()">{{ (mode() === 'edit' ? 'Allocation' : 'Amount to allocate') | t }}</label>
         <div class="amount">
           <span class="affix" aria-hidden="true">$</span>
           <input
@@ -47,28 +49,27 @@ function optionalNumber(text: string): number | null {
           />
         </div>
         @if (mode() === 'follow') {
-          <div class="quick" role="group" aria-label="Quick amounts">
+          <div class="quick" role="group" [attr.aria-label]="'Quick amounts' | t">
             @for (pct of quickPercents; track pct) {
               <button type="button" (click)="setPercent(pct)">{{ pct }}%</button>
             }
           </div>
           <p class="hint">
-            {{ formatUsd(cash()) }} cash available. Only {{ trader().name }}'s new trades are copied, scaled to this amount.
-            Buys stop once this much is invested.
+            {{ '{cash} cash available. Only {name}’s new trades are copied, scaled to this amount. Buys stop once this much is invested.' | t: { cash: formatUsd(cash()), name: trader().name } }}
           </p>
         } @else if (subscription(); as sub) {
-          <p class="hint">{{ formatUsd(sub.invested) }} invested · {{ formatUsd(sub.budgetLeft) }} left to copy buys with.</p>
+          <p class="hint">{{ '{invested} invested · {left} left to copy buys with.' | t: { invested: formatUsd(sub.invested), left: formatUsd(sub.budgetLeft) } }}</p>
         }
 
         <button type="button" class="toggle" [attr.aria-expanded]="showLimits()" (click)="showLimits.set(!showLimits())">
-          <leap-icon [name]="showLimits() ? 'chevron-down' : 'chevron-right'" [size]="14" />Limits
+          <leap-icon [name]="showLimits() ? 'chevron-down' : 'chevron-right'" [size]="14" />{{ 'Limits' | t }}
           @if (!showLimits() && limitsSummary(); as summary) {
             <span class="faint">· {{ summary }}</span>
           }
         </button>
         @if (showLimits()) {
           <div class="limits">
-            <label class="field-label" [for]="inputId() + '-max'">Max per trade</label>
+            <label class="field-label" [for]="inputId() + '-max'">{{ 'Max per trade' | t }}</label>
             <div class="amount">
               <span class="affix" aria-hidden="true">$</span>
               <input
@@ -77,15 +78,15 @@ function optionalNumber(text: string): number | null {
                 min="1"
                 step="any"
                 inputmode="decimal"
-                placeholder="No cap"
+                [placeholder]="'No cap' | t"
                 [id]="inputId() + '-max'"
                 [value]="maxPerTrade()"
                 (input)="maxPerTrade.set(value($event))"
               />
             </div>
-            <p class="hint">No single copied buy will cost more than this.</p>
+            <p class="hint">{{ 'No single copied buy will cost more than this.' | t }}</p>
 
-            <label class="field-label" [for]="inputId() + '-stop'">Stop-loss</label>
+            <label class="field-label" [for]="inputId() + '-stop'">{{ 'Stop-loss' | t }}</label>
             <div class="amount">
               <input
                 class="control num suffixed"
@@ -94,31 +95,31 @@ function optionalNumber(text: string): number | null {
                 max="100"
                 step="any"
                 inputmode="decimal"
-                placeholder="None"
+                [placeholder]="'None' | t"
                 [id]="inputId() + '-stop'"
                 [value]="stopLoss()"
                 (input)="stopLoss.set(value($event))"
               />
               <span class="affix right" aria-hidden="true">%</span>
             </div>
-            <p class="hint">Pause copying once this copy has lost this much of its allocation.</p>
+            <p class="hint">{{ 'Pause copying once this copy has lost this much of its allocation.' | t }}</p>
             <label class="check" [class.off]="!stopLoss().trim()">
               <input type="checkbox" [checked]="sellOnStopLoss()" [disabled]="!stopLoss().trim()" (change)="sellOnStopLoss.set(checked($event))" />
-              Also sell this copy's shares when it hits
+              {{ 'Also sell this copy’s shares when it hits' | t }}
             </label>
           </div>
         }
 
         @if (error(); as message) {
-          <p class="error" role="alert">{{ message }}</p>
+          <p class="error" role="alert">{{ message | t }}</p>
         }
         <div class="row end">
-          <button type="button" class="btn btn-secondary btn-sm" (click)="close()">Cancel</button>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="close()">{{ 'Cancel' | t }}</button>
           <button type="submit" class="btn btn-primary btn-sm" [disabled]="busy()">
             @if (mode() === 'edit') {
-              {{ busy() ? 'Saving…' : 'Save' }}
+              {{ (busy() ? 'Saving…' : 'Save') | t }}
             } @else {
-              {{ busy() ? 'Starting…' : 'Start copying' }}
+              {{ (busy() ? 'Starting…' : 'Start copying') | t }}
             }
           </button>
         </div>
@@ -126,29 +127,29 @@ function optionalNumber(text: string): number | null {
     } @else if (subscription(); as sub) {
       <div class="row">
         @if (sub.pauseReason === 'STOP_LOSS') {
-          <span class="pill pill-down" title="This copy lost {{ sub.stopLossPercent }}% of its allocation">Stop-loss hit · {{ formatUsd(sub.allocation) }}</span>
+          <span class="pill pill-down" [attr.title]="'This copy lost {pct}% of its allocation' | t: { pct: sub.stopLossPercent ?? 0 }">{{ 'Stop-loss hit' | t }} · {{ formatUsd(sub.allocation) }}</span>
         } @else if (sub.paused) {
-          <span class="pill pill-muted">Paused · {{ formatUsd(sub.allocation) }}</span>
+          <span class="pill pill-muted">{{ 'Paused' | t }} · {{ formatUsd(sub.allocation) }}</span>
         } @else {
-          <span class="pill pill-up"><leap-icon name="check" [size]="14" />Copying · {{ formatUsd(sub.allocation) }}</span>
+          <span class="pill pill-up"><leap-icon name="check" [size]="14" />{{ 'Copying' | t }} · {{ formatUsd(sub.allocation) }}</span>
         }
         @if (allowStop()) {
-          <button type="button" class="btn btn-ghost btn-sm" [disabled]="busy()" (click)="edit(sub)">Edit</button>
+          <button type="button" class="btn btn-ghost btn-sm" [disabled]="busy()" (click)="edit(sub)">{{ 'Edit' | t }}</button>
           <button type="button" class="btn btn-ghost btn-sm" [disabled]="busy()" (click)="setPaused(sub, !sub.paused)">
-            {{ sub.paused ? 'Resume' : 'Pause' }}
+            {{ (sub.paused ? 'Resume' : 'Pause') | t }}
           </button>
           <button type="button" class="btn btn-secondary btn-sm" [disabled]="busy()" (click)="stop(sub.subscriptionId)">
-            {{ busy() ? 'Working…' : 'Stop copying' }}
+            {{ (busy() ? 'Working…' : 'Stop copying') | t }}
           </button>
         }
       </div>
     } @else {
       <button type="button" class="btn btn-primary btn-sm" [disabled]="account.activeId() == null" (click)="start()">
-        <leap-icon name="copy" [size]="16" />Copy
+        <leap-icon name="copy" [size]="16" />{{ 'Copy' | t }}
       </button>
     }
     @if (actionError(); as message) {
-      <p class="error" role="alert">{{ message }}</p>
+      <p class="error" role="alert">{{ message | t }}</p>
     }
   `,
   styles: [
@@ -291,8 +292,8 @@ export class CopyControl {
   /** The limits in a few words, shown while the section is collapsed. */
   readonly limitsSummary = computed(() => {
     const parts: string[] = [];
-    if (this.maxPerTrade().trim()) parts.push(`max ${formatUsd(Number(this.maxPerTrade()))} a trade`);
-    if (this.stopLoss().trim()) parts.push(`stop-loss ${this.stopLoss().trim()}%`);
+    if (this.maxPerTrade().trim()) parts.push(translate('max {amount} a trade', { amount: formatUsd(Number(this.maxPerTrade())) }));
+    if (this.stopLoss().trim()) parts.push(translate('stop-loss {pct}%', { pct: this.stopLoss().trim() }));
     return parts.join(', ');
   });
 
@@ -346,7 +347,7 @@ export class CopyControl {
       return;
     }
     if (settings.allocation > this.cash()) {
-      this.error.set(`That is more than your cash balance of ${formatUsd(this.cash())}.`);
+      this.error.set(translate('That is more than your cash balance of {amount}.', { amount: formatUsd(this.cash()) }));
       return;
     }
     this.send(this.api.follow(accountId, this.trader().copyTraderId, settings), this.error);
@@ -374,18 +375,18 @@ export class CopyControl {
   private readSettings(): CopySettings | null {
     const allocation = Number(this.amount());
     if (!Number.isFinite(allocation) || allocation <= 0) {
-      this.error.set('Enter an amount greater than $0.');
+      this.error.set(tk('Enter an amount greater than $0.'));
       return null;
     }
     const maxPerTrade = optionalNumber(this.maxPerTrade());
     if (Number.isNaN(maxPerTrade)) {
-      this.error.set('Max per trade must be greater than $0, or empty for no cap.');
+      this.error.set(tk('Max per trade must be greater than $0, or empty for no cap.'));
       this.showLimits.set(true);
       return null;
     }
     const stopLossPercent = optionalNumber(this.stopLoss());
     if (Number.isNaN(stopLossPercent) || (stopLossPercent != null && stopLossPercent > 100)) {
-      this.error.set('Stop-loss must be between 0 and 100%, or empty for none.');
+      this.error.set(tk('Stop-loss must be between 0 and 100%, or empty for none.'));
       this.showLimits.set(true);
       return null;
     }

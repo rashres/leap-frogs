@@ -11,6 +11,8 @@ import { formatQty, formatSignedUsd, formatPrice, formatStamp, formatTime, forma
 import { Icon } from '../../shared/icon';
 import { LivePrice } from '../../shared/live-price';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk, translate } from '../../core/i18n/i18n.service';
 
 type Step = 'edit' | 'review';
 
@@ -42,7 +44,7 @@ interface Placed {
 @Component({
   selector: 'leap-order-ticket',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LivePrice, KeyValuePipe, Icon],
+  imports: [TPipe, LivePrice, KeyValuePipe, Icon],
   templateUrl: './order-ticket.html',
   styleUrl: './order-ticket.scss',
   host: { '(document:keydown.escape)': 'onEscape()' },
@@ -99,8 +101,9 @@ export class OrderTicket {
 
   /** A waiting limit order is bounded by its limit: a buy costs at most that, a sell raises at least that. */
   readonly totalQualifier = computed(() => {
-    if (this.fillsNow() || !this.isLimit()) return 'Estimated';
-    return this.side() === 'BUY' ? 'At most' : 'At least';
+    const buy = this.side() === 'BUY';
+    if (this.fillsNow() || !this.isLimit()) return buy ? tk('Estimated cost') : tk('Estimated proceeds');
+    return buy ? tk('At most, cost') : tk('At least, proceeds');
   });
 
   readonly consideration = computed(() => {
@@ -118,12 +121,12 @@ export class OrderTicket {
   readonly rejection = computed<string | null>(() => {
     const quantity = this.quantity();
     if (!quantity) return null;
-    if (this.price() == null) return 'This instrument has no price yet, so the API cannot take an order.';
+    if (this.price() == null) return translate('This instrument has no price yet, so the API cannot take an order.');
     if (this.side() === 'BUY' && this.consideration()! > this.cash()) {
-      return `Insufficient cash: needs ${formatUsd(this.consideration())}, ${formatUsd(this.cash())} available.`;
+      return translate('Insufficient cash: needs {need}, {have} available.', { need: formatUsd(this.consideration()), have: formatUsd(this.cash()) });
     }
     if (this.side() === 'SELL' && quantity > this.held()) {
-      return `Insufficient shares: selling ${formatQty(quantity)}, ${formatQty(this.held())} available.`;
+      return translate('Insufficient shares: selling {need}, {have} available.', { need: formatQty(quantity), have: formatQty(this.held()) });
     }
     return null;
   });
@@ -131,10 +134,10 @@ export class OrderTicket {
   /** Reasons no order can go in right now, whatever the quantity. */
   readonly lockout = computed<{ label: string; text: string } | null>(() => {
     if (this.account.active()?.status === 'FROZEN') {
-      return { label: 'Account frozen', text: 'This account is frozen, so it cannot place new orders.' };
+      return { label: translate('Account frozen'), text: translate('This account is frozen, so it cannot place new orders.') };
     }
     if (!this.marketOpen()) {
-      return { label: 'Market closed', text: `The market is closed (${this.sessionHours()}). You can trade when it opens.` };
+      return { label: translate('Market closed'), text: translate('The market is closed ({hours}). You can trade when it opens.', { hours: this.sessionHours() }) };
     }
     return null;
   });
@@ -164,8 +167,14 @@ export class OrderTicket {
     // A closed market blocks the order outright (see lockout), so there is nothing to wait for.
     if (this.fillsNow() || !this.marketOpen()) return null;
     const symbol = this.instrument().symbol;
-    const expiry = this.timeInForce() === 'DAY' ? 'If it has not filled by the close, it expires.' : 'It stays open until it fills or you cancel it.';
-    return `${symbol} is ${this.side() === 'BUY' ? 'above' : 'below'} your limit, so this order will wait as Pending until it reaches ${formatPrice(this.limitPrice())}. ${expiry}`;
+    const expiry =
+      this.timeInForce() === 'DAY' ? translate('If it has not filled by the close, it expires.') : translate('It stays open until it fills or you cancel it.');
+    const params = { symbol, price: formatPrice(this.limitPrice()) };
+    const wait =
+      this.side() === 'BUY'
+        ? translate('{symbol} is above your limit, so this order will wait as Pending until it reaches {price}.', params)
+        : translate('{symbol} is below your limit, so this order will wait as Pending until it reaches {price}.', params);
+    return `${wait} ${expiry}`;
   });
 
   readonly priceText = computed(() => formatPrice(this.price()));
@@ -184,8 +193,8 @@ export class OrderTicket {
     return {
       quantity: formatQty(quantity),
       priceText: formatPrice(currentPrice),
-      type: this.isLimit() ? `Limit at ${formatPrice(limit)}` : 'Market',
-      timeInForce: this.timeInForce() === 'DAY' ? 'Day' : "Good 'til cancelled",
+      type: this.isLimit() ? translate('Limit at {price}', { price: formatPrice(limit) }) : translate('Market'),
+      timeInForce: this.timeInForce() === 'DAY' ? translate('Day') : translate('Good ’til cancelled'),
       consideration: at != null ? formatUsd(at * quantity) : '—',
     };
   });
@@ -206,29 +215,36 @@ export class OrderTicket {
     const slip = filled && confirmedPrice != null && order.price !== confirmedPrice ? order.price - confirmedPrice : null;
     const outcome = filled
       ? {
-          state: 'Filled',
+          state: translate('Filled'),
           at: formatTime(order.fulfilledTime),
-          detail: `Executed at ${formatPrice(order.price)} for ${formatUsd(order.value)}.`,
+          detail: translate('Executed at {price} for {value}.', { price: formatPrice(order.price), value: formatUsd(order.value) }),
         }
       : order.status === 'PENDING'
         ? {
-            state: 'Pending',
+            state: translate('Pending'),
             at: formatTime(order.placedTime),
-            detail:
-              (order.limitPrice != null ? `Waiting to fill at ${formatPrice(order.limitPrice)} or better. ` : 'Waiting for the market to open. ') +
-              (order.expiresAt ? `Expires ${formatStamp(order.expiresAt)}.` : 'Open until filled or cancelled.') +
-              ' Cancel it from the Orders page.',
+            detail: [
+              order.limitPrice != null
+                ? translate('Waiting to fill at {price} or better.', { price: formatPrice(order.limitPrice) })
+                : translate('Waiting for the market to open.'),
+              order.expiresAt ? translate('Expires {time}.', { time: formatStamp(order.expiresAt) }) : translate('Open until filled or cancelled.'),
+              translate('Cancel it from the Orders page.'),
+            ].join(' '),
           }
-        : { state: 'Rejected', at: formatTime(order.placedTime), detail: reason ?? 'Rejected by the API.' };
+        : { state: translate('Rejected'), at: formatTime(order.placedTime), detail: reason ? translate(reason) : translate('Rejected by the API.') };
     return {
       ref: `#${order.orderId}`,
-      label: ORDER_STATUS_LABELS[order.status],
+      label: translate(ORDER_STATUS_LABELS[order.status]),
       tone: statusTone(order.status),
       steps: [
         {
-          state: 'Submitted',
+          state: translate('Submitted'),
           at: formatTime(order.placedTime),
-          detail: `${order.side} ${formatQty(order.quantity)} ${order.symbol} sent to the API.`,
+          detail: translate('{side} {qty} {symbol} sent to the API.', {
+            side: translate(order.side === 'BUY' ? 'Buy' : 'Sell'),
+            qty: formatQty(order.quantity),
+            symbol: order.symbol,
+          }),
         },
         outcome,
       ],

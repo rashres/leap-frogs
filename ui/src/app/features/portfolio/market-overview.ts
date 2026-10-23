@@ -6,10 +6,12 @@ import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { Sparkline } from '../../shared/sparkline';
 import { DayChangeStore } from './day-change.store';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { currentLocale, tk } from '../../core/i18n/i18n.service';
 
 const SHOWN = 5;
 
-const compact = new Intl.NumberFormat('en-US', { notation: 'compact', maximumFractionDigits: 1 });
+const compact = { format: (v: number) => v.toLocaleString(currentLocale(), { notation: 'compact', maximumFractionDigits: 1 }) };
 
 function formatVolume(v: Volume | null): string {
   if (!v) return '—';
@@ -20,24 +22,24 @@ function formatVolume(v: Volume | null): string {
 @Component({
   selector: 'leap-market-overview',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, InstrumentLogo, Sparkline, Icon],
+  imports: [TPipe, RouterLink, InstrumentLogo, Sparkline, Icon],
   template: `
     <section class="card">
       <div class="head">
-        <h2 class="title">Market Overview</h2>
-        <a class="btn btn-secondary btn-sm" routerLink="/markets">View All <leap-icon name="external" [size]="14" /></a>
+        <h2 class="title">{{ 'Market Overview' | t }}</h2>
+        <a class="btn btn-secondary btn-sm" routerLink="/markets">{{ 'View All' | t }} <leap-icon name="external" [size]="14" /></a>
       </div>
 
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Symbol</th>
-              <th>24H trend</th>
-              <th class="r">Price</th>
+              <th>{{ 'Symbol' | t }}</th>
+              <th>{{ '24H trend' | t }}</th>
+              <th class="r">{{ 'Price' | t }}</th>
               <th class="r">24H%</th>
-              <th class="r opt">Volume</th>
-              <th class="r opt">Updated</th>
+              <th class="r opt">{{ 'Volume' | t }}</th>
+              <th class="r opt">{{ 'Updated' | t }}</th>
             </tr>
           </thead>
           <tbody>
@@ -47,7 +49,7 @@ function formatVolume(v: Volume | null): string {
                   <div class="ident">
                     <leap-instrument-logo [symbol]="row.symbol" [size]="30" />
                     <div class="ident-text">
-                      <a class="sym stretch-link" [routerLink]="['/instrument', row.id]" [attr.aria-label]="'View ' + row.symbol + ', ' + row.name">{{
+                      <a class="sym stretch-link" [routerLink]="['/instrument', row.id]" [attr.aria-label]="'View {symbol}, {name}' | t: { symbol: row.symbol, name: row.name }">{{
                         row.symbol
                       }}</a>
                       <span class="name">{{ row.name }}</span>
@@ -62,7 +64,7 @@ function formatVolume(v: Volume | null): string {
                   }
                 </td>
                 <td class="r num pct" [class.up]="row.dir > 0" [class.down]="row.dir < 0">{{ row.pct ?? '—' }}</td>
-                <td class="r num vol opt" [attr.title]="row.volumeTitle">{{ row.volume }}</td>
+                <td class="r num vol opt" [attr.title]="row.volumeTitle | t">{{ row.volume }}</td>
                 <td class="r num when opt">{{ row.updated }}</td>
               </tr>
             }
@@ -71,9 +73,9 @@ function formatVolume(v: Volume | null): string {
         @if (rows().length === 0) {
           <p class="empty">
             @if (!store.loaded()) {
-              Loading prices…
+              {{ 'Loading prices…' | t }}
             } @else {
-              No instruments in the database.
+              {{ 'No instruments in the database.' | t }}
             }
           </p>
         }
@@ -249,7 +251,7 @@ export class MarketOverview {
       delta: r.change != null ? `${r.change < 0 ? '−' : '+'}${formatPrice(Math.abs(r.change), r.price)}` : '',
       dir: Math.sign(r.change ?? 0),
       volume: formatVolume(this.volumes.get(r.symbol)),
-      volumeTitle: this.volumes.get(r.symbol)?.isValue ? 'Value traded today (Yahoo Finance)' : 'Units traded today (Yahoo Finance)',
+      volumeTitle: this.volumes.get(r.symbol)?.isValue ? tk('Value traded today (Yahoo Finance)') : tk('Units traded today (Yahoo Finance)'),
       updated: r.updatedAt ? formatTime(r.updatedAt) : '—',
     })),
   );

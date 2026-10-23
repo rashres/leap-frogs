@@ -1,8 +1,8 @@
 <div class="page-enter">
-  <a class="back" routerLink="/copy-trading"><leap-icon name="arrow-left" [size]="16" />All lead traders</a>
+  <a class="back" routerLink="/copy-trading"><leap-icon name="arrow-left" [size]="16" />{{ 'All lead traders' | t }}</a>
 
   @if (trader.error(); as e) {
-    <p class="state-error">{{ e.message }}</p>
+    <p class="state-error">{{ e.message | t }}</p>
   } @else if (view(); as v) {
     <!-- Profile -->
     <section class="panel hero" aria-labelledby="trader-name">
@@ -10,7 +10,7 @@
         <span class="avatar lg">{{ v.initials }}</span>
         <div class="hero-text">
           <h1 id="trader-name">{{ v.t.name }}</h1>
-          <p class="hero-handle">{{ v.t.handle }} · Lead trader since {{ v.since }}</p>
+          <p class="hero-handle">{{ v.t.handle }} · {{ 'Lead trader since {date}' | t: { date: v.since } }}</p>
           <div class="tags">
             <span class="strategy">{{ v.t.strategy }}</span>
             @for (m of v.t.markets; track m) {
@@ -25,7 +25,7 @@
         <leap-copy-control [trader]="v.t" [subscription]="subscription()" [allowStop]="true" (changed)="refresh()" />
         <p class="hero-note faint">
           <leap-icon name="users" [size]="14" />
-          {{ v.t.copiers }} {{ v.t.copiers === 1 ? 'account copies' : 'accounts copy' }} this trader
+          {{ (v.t.copiers === 1 ? '1 account copies this trader' : '{n} accounts copy this trader') | t: { n: v.t.copiers } }}
         </p>
       </div>
     </section>
@@ -36,23 +36,23 @@
         <div class="perf-chart">
           <div class="perf-head">
             <div>
-              <h2 class="label" id="perf-title">Equity</h2>
+              <h2 class="label" id="perf-title">{{ 'Equity' | t }}</h2>
               @if (headline(); as h) {
                 <p class="equity num">{{ h.equity }}</p>
                 <p class="change num" [class]="h.tone">
                   {{ h.delta }} ({{ h.pct }})
                   @if (!scrubbed()) {
-                    <span class="faint">{{ h.period }}{{ range() === 'All' ? ' · started with ' + v.started : '' }}</span>
+                    <span class="faint">{{ h.period }}{{ range() === 'All' ? ' · ' + ('started with {amount}' | t: { amount: v.started }) : '' }}</span>
                     @if (live()) {
-                      <span class="live-tag"><i aria-hidden="true"></i>Live</span>
+                      <span class="live-tag"><i aria-hidden="true"></i>{{ 'Live' | t }}</span>
                     }
                   }
                 </p>
               }
             </div>
-            <div class="segmented" role="group" aria-label="Chart range">
+            <div class="segmented" role="group" [attr.aria-label]="'Chart range' | t">
               @for (r of ranges; track r) {
-                <button type="button" [class.on]="range() === r" [attr.aria-pressed]="range() === r" (click)="setRange(r)">{{ r }}</button>
+                <button type="button" [class.on]="range() === r" [attr.aria-pressed]="range() === r" (click)="setRange(r)">{{ r | t }}</button>
               }
             </div>
           </div>
@@ -71,26 +71,26 @@
             <div class="chart-empty">
               @if (todayLoading() || (range() !== '1D' && range() !== 'All' && history.initialLoading())) {
                 <span class="skeleton" style="width: 100%; height: 100%; border-radius: 10px"></span>
-                <span class="sr-only" role="status">Loading equity…</span>
+                <span class="sr-only" role="status">{{ 'Loading equity…' | t }}</span>
               } @else {
-                <p class="faint">Not enough history for a chart yet.</p>
+                <p class="faint">{{ 'Not enough history for a chart yet.' | t }}</p>
               }
             </div>
           }
         </div>
 
         <div class="perf-alloc">
-          <h2 class="label">Allocation</h2>
+          <h2 class="label">{{ 'Allocation' | t }}</h2>
           @if (holdings.initialLoading()) {
             <div class="alloc-empty" aria-hidden="true"><span class="skeleton" style="width: 150px; height: 150px; border-radius: 50%"></span></div>
           } @else if (allocation().segments.length === 0) {
-            <div class="alloc-empty faint">Nothing held yet.</div>
+            <div class="alloc-empty faint">{{ 'Nothing held yet.' | t }}</div>
           } @else {
             <leap-allocation-donut
               [segments]="allocation().segments"
               idleLabel="Invested"
               [idleValue]="allocation().invested"
-              [idleSub]="allocation().holdings + (allocation().holdings === 1 ? ' holding' : ' holdings')"
+              [idleSub]="(allocation().holdings === 1 ? '1 holding' : '{n} holdings') | t: { n: allocation().holdings }"
             />
           }
         </div>
@@ -105,8 +105,7 @@
         }
       </dl>
       <p class="foot-note faint">
-        {{ v.t.totalTrades }} filled trades, {{ v.t.closedTrades }} of them closing sells. MDD and Sharpe ratio come from the
-        daily equity curve above. Hover any number for what it means.
+        {{ '{total} filled trades, {closed} of them closing sells. MDD and Sharpe ratio come from the daily equity curve above. Hover any number for what it means.' | t: { total: v.t.totalTrades, closed: v.t.closedTrades } }}
       </p>
     </section>
 
@@ -114,34 +113,34 @@
     <section class="panel" aria-labelledby="portfolio-title">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title" id="portfolio-title">Portfolio</h2>
-          <p class="panel-sub">What {{ v.t.name }} holds right now, at today's prices</p>
+          <h2 class="panel-title" id="portfolio-title">{{ 'Portfolio' | t }}</h2>
+          <p class="panel-sub">{{ 'What {name} holds right now, at today’s prices' | t: { name: v.t.name } }}</p>
         </div>
         @if (unrealised(); as u) {
           <div class="head-stat">
-            <span class="faint">Unrealised PnL</span>
+            <span class="faint">{{ 'Unrealised PnL' | t }}</span>
             <strong class="num" [class]="u.tone">{{ u.value }}</strong>
           </div>
         }
       </div>
 
       @if (holdings.error(); as e) {
-        <div class="pad"><p class="state-error">{{ e.message }}</p></div>
+        <div class="pad"><p class="state-error">{{ e.message | t }}</p></div>
       } @else if (holdings.initialLoading()) {
         <div class="pad" aria-hidden="true"><span class="skeleton" style="width: 50%"></span></div>
-        <p class="sr-only" role="status">Loading portfolio…</p>
+        <p class="sr-only" role="status">{{ 'Loading portfolio…' | t }}</p>
       } @else {
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Holding</th>
-                <th class="r">Quantity</th>
-                <th class="r">Avg cost</th>
-                <th class="r">Last price</th>
-                <th class="r">Market value</th>
-                <th class="r">Unrealised PnL</th>
-                <th>Weight</th>
+                <th>{{ 'Holding' | t }}</th>
+                <th class="r">{{ 'Quantity' | t }}</th>
+                <th class="r">{{ 'Avg cost' | t }}</th>
+                <th class="r">{{ 'Last price' | t }}</th>
+                <th class="r">{{ 'Market value' | t }}</th>
+                <th class="r">{{ 'Unrealised PnL' | t }}</th>
+                <th>{{ 'Weight' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -177,7 +176,7 @@
                   <td>
                     <span class="ident">
                       <span class="cash-icon"><leap-icon name="dollar" [size]="16" /></span>
-                      <span class="sym">Cash</span>
+                      <span class="sym">{{ 'Cash' | t }}</span>
                     </span>
                   </td>
                   <td colspan="3"></td>
@@ -201,35 +200,35 @@
     <section class="panel trades" aria-labelledby="trades-title">
       <div class="panel-head">
         <div>
-          <h2 class="panel-title" id="trades-title">Trade history</h2>
-          <p class="panel-sub">Every filled order, newest first. Copiers get these trades scaled to their allocation.</p>
+          <h2 class="panel-title" id="trades-title">{{ 'Trade history' | t }}</h2>
+          <p class="panel-sub">{{ 'Every filled order, newest first. Copiers get these trades scaled to their allocation.' | t }}</p>
         </div>
-        <div class="segmented" role="group" aria-label="Filter trades">
+        <div class="segmented" role="group" [attr.aria-label]="'Filter trades' | t">
           @for (f of tradeFilters; track f.key) {
             <button type="button" [class.on]="tradeFilter() === f.key" [attr.aria-pressed]="tradeFilter() === f.key" (click)="setTradeFilter(f.key)">
-              {{ f.label }} <span class="faint">{{ tradeCounts()[f.key] }}</span>
+              {{ f.label | t }} <span class="faint">{{ tradeCounts()[f.key] }}</span>
             </button>
           }
         </div>
       </div>
 
       @if (trades.error(); as e) {
-        <div class="pad"><p class="state-error">{{ e.message }}</p></div>
+        <div class="pad"><p class="state-error">{{ e.message | t }}</p></div>
       } @else if (trades.initialLoading()) {
         <div class="pad" aria-hidden="true"><span class="skeleton" style="width: 50%"></span></div>
-        <p class="sr-only" role="status">Loading trades…</p>
+        <p class="sr-only" role="status">{{ 'Loading trades…' | t }}</p>
       } @else if (tradeRows().rows.length === 0) {
-        <p class="none faint">No trades here yet.</p>
+        <p class="none faint">{{ 'No trades here yet.' | t }}</p>
       } @else {
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Filled</th>
-                <th>Trade</th>
-                <th class="r">Quantity</th>
-                <th class="r">Price</th>
-                <th class="r">Value</th>
+                <th>{{ 'Filled' | t }}</th>
+                <th>{{ 'Trade' | t }}</th>
+                <th class="r">{{ 'Quantity' | t }}</th>
+                <th class="r">{{ 'Price' | t }}</th>
+                <th class="r">{{ 'Value' | t }}</th>
               </tr>
             </thead>
             <tbody>
@@ -240,7 +239,7 @@
                     <a class="ident" [routerLink]="['/instrument', o.instrumentId]">
                       <leap-instrument-logo [symbol]="o.symbol" [size]="30" />
                       <span class="sym">{{ o.symbol }}</span>
-                      <span class="side" [class.buy]="o.side === 'BUY'" [class.sell]="o.side === 'SELL'">{{ o.side }}</span>
+                      <span class="side" [class.buy]="o.side === 'BUY'" [class.sell]="o.side === 'SELL'">{{ (o.side === 'BUY' ? 'BUY' : 'SELL') | t }}</span>
                     </a>
                   </td>
                   <td class="r num">{{ o.quantity }}</td>
@@ -254,7 +253,7 @@
         @if (tradeRows().hidden > 0) {
           <div class="more">
             <button type="button" class="btn btn-secondary btn-sm" (click)="showAllTrades.set(true)">
-              Show all {{ tradeRows().total }} trades
+              {{ 'Show all {n} trades' | t: { n: tradeRows().total } }}
             </button>
           </div>
         }
@@ -265,6 +264,6 @@
       <span class="skeleton" style="width: 30%; height: 20px"></span>
       <span class="skeleton" style="width: 60%; margin-top: 12px"></span>
     </div>
-    <p class="sr-only" role="status">Loading trader…</p>
+    <p class="sr-only" role="status">{{ 'Loading trader…' | t }}</p>
   }
 </div>

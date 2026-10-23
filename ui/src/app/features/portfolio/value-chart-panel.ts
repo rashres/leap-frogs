@@ -11,6 +11,8 @@ import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatSignedPct, formatSignedUsd, formatStamp, formatUsd } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk } from '../../core/i18n/i18n.service';
 
 /** How often the live 1D line asks for new minutes; the API caches them for 10 seconds. */
 const LIVE_REFRESH_MS = 15_000;
@@ -23,29 +25,29 @@ const LIVE_REFRESH_MS = 15_000;
 @Component({
   selector: 'leap-value-chart-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [PriceChart, Icon],
+  imports: [TPipe, PriceChart, Icon],
   template: `
     <section class="panel card">
       <div class="head">
         <div class="head-text">
-          <h2 class="label">Portfolio performance</h2>
+          <h2 class="label">{{ 'Portfolio performance' | t }}</h2>
           <p class="value num">{{ scrubbed() ? scrubbedText() : totalText() }}</p>
           @if (change(); as c) {
             <p class="chg num" [class.up]="!c.negative" [class.down]="c.negative">
               <leap-icon [name]="c.negative ? 'trending-down' : 'trending-up'" [size]="14" />
               {{ c.percentText }} <span class="delta">{{ c.deltaText }}</span>
-              <span class="lbl">{{ scrubbed() ? 'at ' + c.at : todayWindow() ? 'Today' : periods[range()] }}</span>
+              <span class="lbl">{{ scrubbed() ? ('at {time}' | t: { time: c.at }) : ((todayWindow() ? 'Today' : periods[range()]) | t) }}</span>
               @if (live()) {
-                <span class="live-tag"><i aria-hidden="true"></i>Live</span>
+                <span class="live-tag"><i aria-hidden="true"></i>{{ 'Live' | t }}</span>
               }
             </p>
           } @else {
-            <p class="chg lbl">Cash plus holdings, from filled orders</p>
+            <p class="chg lbl">{{ 'Cash plus holdings, from filled orders' | t }}</p>
           }
         </div>
-        <div class="segmented" role="group" aria-label="Chart range">
+        <div class="segmented" role="group" [attr.aria-label]="'Chart range' | t">
           @for (r of ranges; track r) {
-            <button type="button" [class.on]="range() === r" [attr.aria-pressed]="range() === r" (click)="range.set(r)">{{ r }}</button>
+            <button type="button" [class.on]="range() === r" [attr.aria-pressed]="range() === r" (click)="range.set(r)">{{ r | t }}</button>
           }
         </div>
       </div>
@@ -66,20 +68,20 @@ const LIVE_REFRESH_MS = 15_000;
           <div class="chart-empty">
             @if (history.initialLoading() || todayLoading()) {
               <span class="skeleton" style="width: 100%; height: 100%; border-radius: 10px"></span>
-              <span class="sr-only" role="status">Loading value history…</span>
+              <span class="sr-only" role="status">{{ 'Loading value history…' | t }}</span>
             } @else if (history.error(); as e) {
-              <p class="state-error">{{ e.message }}</p>
+              <p class="state-error">{{ e.message | t }}</p>
             } @else {
-              <p class="faint">No value history for this account yet.</p>
+              <p class="faint">{{ 'No value history for this account yet.' | t }}</p>
             }
           </div>
         }
       </div>
       <p class="note faint">
         @if (todayWindow()) {
-          Cash plus today's holdings at each minute's price, previous close dotted. Times in Central.
+          {{ 'Cash plus today’s holdings at each minute’s price, previous close dotted. Times in Central.' | t }}
         } @else {
-          Cash plus each holding at the price recorded at that time, worked out from this account's filled orders.
+          {{ 'Cash plus each holding at the price recorded at that time, worked out from this account’s filled orders.' | t }}
         }
       </p>
     </section>
@@ -181,12 +183,12 @@ export class ValueChartPanel {
   readonly range = signal<PriceRange>('1M');
   /** Plain-language name for the period the change is measured over. */
   readonly periods: Readonly<Record<PriceRange, string>> = {
-    '1D': 'Past day',
-    '1W': 'Past week',
-    '1M': 'Past month',
-    '3M': 'Past 3 months',
-    '1Y': 'Past year',
-    All: 'All time',
+    '1D': tk('Past day'),
+    '1W': tk('Past week'),
+    '1M': tk('Past month'),
+    '3M': tk('Past 3 months'),
+    '1Y': tk('Past year'),
+    All: tk('All time'),
   };
   readonly history = createLoader(() => this.api.valueHistory(this.account.activeId()!, this.range()));
   readonly scrubbed = signal<PricePoint | null>(null);

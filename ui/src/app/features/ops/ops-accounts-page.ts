@@ -6,11 +6,12 @@ import { toApiError } from '../../core/api/api-error';
 import { formatUsd } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { PageHeader } from '../../shared/page-header';
+import { TPipe } from '../../core/i18n/t.pipe';
 
 @Component({
   selector: 'leap-ops-accounts-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, PageHeader],
+  imports: [TPipe, RouterLink, Icon, PageHeader],
   templateUrl: './ops-accounts-page.html',
   styleUrl: './ops-accounts-page.scss',
 })

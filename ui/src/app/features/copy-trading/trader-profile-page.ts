@@ -17,6 +17,8 @@ import { InstrumentLogo } from '../../shared/instrument-logo';
 import { PriceChart, type PricePoint } from '../../shared/price-chart';
 import { CopyControl } from './copy-control';
 import { equitySeries, initials, riskLabel, riskTone, signTone, since, traderMetrics } from './trader-view';
+import { TPipe } from '../../core/i18n/t.pipe';
+import { tk, translate } from '../../core/i18n/i18n.service';
 
 type TradeFilter = 'ALL' | 'BUY' | 'SELL';
 
@@ -37,7 +39,7 @@ const SLICE_COLORS = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', '
 @Component({
   selector: 'leap-trader-profile-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, Icon, InstrumentLogo, PriceChart, CopyControl, AllocationDonut],
+  imports: [TPipe, RouterLink, Icon, InstrumentLogo, PriceChart, CopyControl, AllocationDonut],
   templateUrl: './trader-profile-page.html',
   styleUrl: './trader-profile-page.scss',
 })
@@ -62,12 +64,12 @@ export class TraderProfilePage {
   readonly ranges: readonly PriceRange[] = ['1D', '1W', '1M', '3M', '1Y', 'All'];
   readonly range = signal<PriceRange>('1D');
   readonly periods: Readonly<Record<PriceRange, string>> = {
-    '1D': 'Today',
-    '1W': 'Past week',
-    '1M': 'Past month',
-    '3M': 'Past 3 months',
-    '1Y': 'Past year',
-    All: 'All time',
+    '1D': tk('Today'),
+    '1W': tk('Past week'),
+    '1M': tk('Past month'),
+    '3M': tk('Past 3 months'),
+    '1Y': tk('Past year'),
+    All: tk('All time'),
   };
 
   readonly scrubbed = signal<PricePoint | null>(null);
@@ -157,7 +159,7 @@ export class TraderProfilePage {
       delta: formatSignedUsd(delta),
       pct: formatSignedPct(base > 0 ? (delta / base) * 100 : null),
       tone: signTone(delta),
-      period: this.scrubbed() ? formatStamp(point.at) : this.periods[this.range()],
+      period: this.scrubbed() ? formatStamp(point.at) : translate(this.periods[this.range()]),
     };
   });
 
@@ -220,7 +222,7 @@ export class TraderProfilePage {
       const other = rest.reduce((sum, p) => sum + p.sortValue, 0);
       segments.push({
         key: 'other',
-        label: `Other (${rest.length})`,
+        label: translate('Other ({n})', { n: rest.length }),
         sub: rest.map((p) => p.symbol).join(', '),
         value: other,
         valueLabel: formatUsd(other),
@@ -229,7 +231,7 @@ export class TraderProfilePage {
     }
     const cash = this.cash();
     if (cash && cash.amount > 0) {
-      segments.push({ key: 'cash', label: 'Cash', sub: 'Not invested', value: cash.amount, valueLabel: cash.value, color: 'var(--series-neutral)' });
+      segments.push({ key: 'cash', label: tk('Cash'), sub: tk('Not invested'), value: cash.amount, valueLabel: cash.value, color: 'var(--series-neutral)' });
     }
     const invested = 100 - (cash?.weight ?? 0);
     return { segments, invested: `${invested.toFixed(0)}%`, holdings: positions.length };
@@ -267,9 +269,9 @@ export class TraderProfilePage {
   });
 
   readonly tradeFilters: readonly { key: TradeFilter; label: string }[] = [
-    { key: 'ALL', label: 'All' },
-    { key: 'BUY', label: 'Buys' },
-    { key: 'SELL', label: 'Sells' },
+    { key: 'ALL', label: tk('All') },
+    { key: 'BUY', label: tk('Buys') },
+    { key: 'SELL', label: tk('Sells') },
   ];
 
   constructor() {

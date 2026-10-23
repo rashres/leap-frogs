@@ -1,6 +1,7 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { catchError, throwError } from 'rxjs';
 import type { ErrorResponse } from './models';
+import { tk, translate } from '../i18n/i18n.service';
 
 /** A failed API call, normalised so every page handles errors the same way. */
 export class ApiError extends Error {
@@ -37,17 +38,17 @@ export function toApiError(error: unknown): ApiError {
   }
   if (error instanceof HttpErrorResponse) {
     if (error.status === 0) {
-      return new ApiError(0, 'API unreachable', 'Cannot reach the API. Is the Spring Boot app running on port 8081?');
+      return new ApiError(0, 'API unreachable', tk('Cannot reach the API. Is the Spring Boot app running on port 8081?'));
     }
     // The dev proxy answers 504 (or 502) when nothing is listening on the target port.
     if ((error.status === 502 || error.status === 504) && !isErrorResponse(error.error)) {
-      return new ApiError(0, 'API unreachable', 'The dev proxy could not reach the API. Is the Spring Boot app running on port 8081?');
+      return new ApiError(0, 'API unreachable', tk('The dev proxy could not reach the API. Is the Spring Boot app running on port 8081?'));
     }
     if (isErrorResponse(error.error)) {
       const body = error.error;
       return new ApiError(body.status, body.error, body.message, body.fieldErrors ?? {}, body);
     }
-    return new ApiError(error.status, error.statusText || 'Error', `Request failed with status ${error.status}.`, {}, error.error);
+    return new ApiError(error.status, error.statusText || 'Error', translate('Request failed with status {status}.', { status: error.status }), {}, error.error);
   }
   return new ApiError(-1, 'Unexpected error', error instanceof Error ? error.message : String(error));
 }
