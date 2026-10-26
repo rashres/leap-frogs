@@ -5,11 +5,14 @@ import java.util.List;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.neueda.leap.controllers.dto.AccountResponse;
+import com.neueda.leap.controllers.dto.DepositRequest;
 import com.neueda.leap.controllers.dto.PortfolioValuePointResponse;
 import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.AccountService;
@@ -24,9 +27,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 /**
- * REST API Controller for Accounts (read-only for now)
+ * REST API Controller for Accounts: read accounts and value history, and add cash.
  */
 @RestController
 @RequestMapping("/accounts")
@@ -109,5 +113,29 @@ public class AccountController {
         return portfolioHistoryService.valueHistory(id, ChartRanges.parse(range)).stream()
                 .map(PortfolioValuePointResponse::from)
                 .toList();
+    }
+
+    /**
+     * POST /api/accounts/{id}/deposits
+     */
+    @PostMapping("/{id}/deposits")
+    @Operation(summary = "Add cash",
+            description = "Adds cash to the account and records the deposit. Only the account's trader "
+                    + "(or the Super Admin) may add cash, and not while the account is frozen. In USD.")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Cash added; returns the account with its new balance",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AccountResponse.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid amount, or the account is frozen"),
+        @ApiResponse(responseCode = "403", description = "Not allowed to add cash to this account"),
+        @ApiResponse(responseCode = "404", description = "Account not found")
+    })
+    public AccountResponse deposit(
+            @PathVariable @Parameter(description = "The unique identifier of the account", example = "1001") int id,
+            @Valid @RequestBody DepositRequest body) {
+        access.assertCanTrade(id);
+        return AccountResponse.from(accountService.deposit(id, body.amount()));
     }
 }

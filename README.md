@@ -206,6 +206,13 @@ If copy trading fails with a missing `max_per_trade`, `stop_loss_percent` or
 docker exec -i leap-frogs-postgres psql -U postgres -d leapfrogsdb < database/copy-trading-settings.sql
 ```
 
+If adding cash or the portfolio chart fails with `relation "cash_deposit" does
+not exist`, add the deposits table (safe to run more than once):
+
+```bash
+docker exec -i leap-frogs-postgres psql -U postgres -d leapfrogsdb < database/cash-deposits.sql
+```
+
 Do not run `docker compose down -v` unless you intend to delete the database
 volume and all of its data.
 
