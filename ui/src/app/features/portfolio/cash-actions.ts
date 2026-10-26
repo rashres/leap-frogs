@@ -23,6 +23,10 @@ type Mode = 'deposit' | 'withdraw';
  * small form that posts to /api/accounts/{id}/deposits or /withdrawals, then
  * refreshes everything that shows cash. Only available cash can be withdrawn
  * (cash held for pending buy orders stays put). A frozen account can do neither.
+ *
+ * The form opens from the left edge of the nearest positioned ancestor (the
+ * Available cash card), never leftwards from the buttons: when the buttons wrap
+ * to the card's left edge, a box opening leftwards slid under the fixed sidebar.
  */
 @Component({
   selector: 'leap-cash-actions',
@@ -118,7 +122,6 @@ type Mode = 'deposit' | 'withdraw';
   styles: [
     `
       :host {
-        position: relative;
         display: inline-flex;
         align-items: center;
         flex-wrap: wrap;
@@ -141,8 +144,8 @@ type Mode = 'deposit' | 'withdraw';
       .pop {
         position: absolute;
         z-index: 30;
-        top: calc(100% + 6px);
-        right: 0;
+        top: calc(100% - 6px);
+        left: 12px;
         width: 280px;
         padding: 14px;
         border: 1px solid var(--border);
@@ -213,7 +216,6 @@ type Mode = 'deposit' | 'withdraw';
       }
       @media (max-width: 560px) {
         .pop {
-          right: auto;
           left: 0;
           width: min(280px, calc(100vw - 48px));
         }
