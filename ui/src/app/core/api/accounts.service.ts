@@ -15,6 +15,11 @@ export class AccountsService {
     return this.http.get<Account>(`/api/accounts/${accountId}`);
   }
 
+  /** Adds cash to the account; the response is the account with its new balance. */
+  deposit(accountId: number, amount: number): Observable<Account> {
+    return this.http.post<Account>(`/api/accounts/${accountId}/deposits`, { amount });
+  }
+
   holdings(accountId: number): Observable<Holding[]> {
     return this.http.get<Holding[]>(`/api/accounts/${accountId}/holdings`);
   }
