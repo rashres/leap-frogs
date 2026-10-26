@@ -20,6 +20,11 @@ export class AccountsService {
     return this.http.post<Account>(`/api/accounts/${accountId}/deposits`, { amount });
   }
 
+  /** Takes cash out of the account; the response is the account with its new balance. */
+  withdraw(accountId: number, amount: number): Observable<Account> {
+    return this.http.post<Account>(`/api/accounts/${accountId}/withdrawals`, { amount });
+  }
+
   holdings(accountId: number): Observable<Holding[]> {
     return this.http.get<Holding[]>(`/api/accounts/${accountId}/holdings`);
   }

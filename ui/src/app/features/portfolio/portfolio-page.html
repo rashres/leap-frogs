@@ -15,7 +15,7 @@
     <div class="metric cash-metric">
       <div class="m-head">
         <h2 class="m-label">{{ 'Available cash' | t }}</h2>
-        <leap-add-cash (click)="cashOpen.set(false)" />
+        <leap-cash-actions (click)="cashOpen.set(false)" />
       </div>
       <p class="m-value num">{{ cashText() }}</p>
       <button

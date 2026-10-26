@@ -1,25 +1,31 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, inject, signal } from '@angular/core';
+import type { Observable } from 'rxjs';
 import { AccountsService } from '../../core/api/accounts.service';
 import { toApiError } from '../../core/api/api-error';
+import type { Account } from '../../core/api/models';
 import { OrdersService } from '../../core/api/orders.service';
 import { tk, translate } from '../../core/i18n/i18n.service';
 import { TPipe } from '../../core/i18n/t.pipe';
 import { ActiveAccountService } from '../../core/state/active-account.service';
+import { PortfolioStore } from '../../core/state/portfolio.store';
 import { formatUsd } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 
 /** The API takes up to this much in one deposit. */
 const MAX_DEPOSIT = 1_000_000;
-const QUICK = [100, 1_000, 10_000] as const;
+const QUICK_DEPOSITS = [100, 1_000, 10_000] as const;
 const AMOUNT = /^\d+(\.\d{1,2})?$/;
 
+type Mode = 'deposit' | 'withdraw';
+
 /**
- * "Add cash" next to the Available cash figure: a small form that posts a
- * deposit to /api/accounts/{id}/deposits, then refreshes everything that shows
- * cash. A frozen account takes no deposits, so the button is turned off.
+ * "Add cash" and "Withdraw" next to the Available cash figure. Each opens a
+ * small form that posts to /api/accounts/{id}/deposits or /withdrawals, then
+ * refreshes everything that shows cash. Only available cash can be withdrawn
+ * (cash held for pending buy orders stays put). A frozen account can do neither.
  */
 @Component({
-  selector: 'leap-add-cash',
+  selector: 'leap-cash-actions',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [TPipe, Icon],
   host: {
@@ -27,25 +33,40 @@ const AMOUNT = /^\d+(\.\d{1,2})?$/;
     '(document:click)': 'closeOutside($event)',
   },
   template: `
-    <button
-      type="button"
-      class="btn btn-secondary btn-sm add-btn"
-      [disabled]="frozen() || account.activeId() == null"
-      [attr.title]="frozen() ? ('This account is frozen, so cash cannot be added.' | t) : null"
-      aria-controls="add-cash-panel"
-      [attr.aria-expanded]="open()"
-      (click)="toggle()"
-    >
-      <leap-icon name="plus" [size]="14" />{{ 'Add cash' | t }}
-    </button>
+    <div class="buttons">
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm act"
+        [class.on]="mode() === 'deposit'"
+        [disabled]="locked()"
+        [attr.title]="frozen() ? ('This account is frozen, so cash cannot be added or withdrawn.' | t) : null"
+        aria-controls="cash-panel"
+        [attr.aria-expanded]="mode() === 'deposit'"
+        (click)="toggle('deposit')"
+      >
+        <leap-icon name="plus" [size]="14" />{{ 'Add cash' | t }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-secondary btn-sm act"
+        [class.on]="mode() === 'withdraw'"
+        [disabled]="locked() || available() <= 0"
+        [attr.title]="frozen() ? ('This account is frozen, so cash cannot be added or withdrawn.' | t) : available() <= 0 ? ('No cash available to withdraw.' | t) : null"
+        aria-controls="cash-panel"
+        [attr.aria-expanded]="mode() === 'withdraw'"
+        (click)="toggle('withdraw')"
+      >
+        <leap-icon name="minus" [size]="14" />{{ 'Withdraw' | t }}
+      </button>
+    </div>
 
-    @if (open()) {
-      <form class="pop" id="add-cash-panel" [attr.aria-label]="'Add cash' | t" (submit)="submit($event)" novalidate>
-        <label class="field-label" for="add-cash-amount">{{ 'Amount (USD)' | t }}</label>
+    @if (mode(); as m) {
+      <form class="pop" id="cash-panel" [attr.aria-label]="(m === 'deposit' ? 'Add cash' : 'Withdraw cash') | t" (submit)="submit($event)" novalidate>
+        <label class="field-label" for="cash-amount">{{ 'Amount (USD)' | t }}</label>
         <div class="amount" [class.bad]="error()">
           <span class="affix" aria-hidden="true">$</span>
           <input
-            id="add-cash-amount"
+            id="cash-amount"
             class="control num"
             type="text"
             inputmode="decimal"
@@ -57,8 +78,14 @@ const AMOUNT = /^\d+(\.\d{1,2})?$/;
           />
         </div>
         <div class="quick" role="group" [attr.aria-label]="'Quick amounts' | t">
-          @for (q of quick; track q) {
-            <button type="button" (click)="setAmount(q.toString())">+{{ usd(q) }}</button>
+          @if (m === 'deposit') {
+            @for (q of quickDeposits; track q) {
+              <button type="button" (click)="setAmount(q.toString())">+{{ usd(q) }}</button>
+            }
+          } @else {
+            @for (q of quickWithdrawals(); track q.label) {
+              <button type="button" (click)="setAmount(q.value)">{{ q.label | t }}</button>
+            }
           }
         </div>
         @if (error(); as message) {
@@ -66,14 +93,26 @@ const AMOUNT = /^\d+(\.\d{1,2})?$/;
         }
         <div class="actions">
           <button type="button" class="btn btn-ghost btn-sm" (click)="close()">{{ 'Cancel' | t }}</button>
-          <button type="submit" class="btn btn-primary btn-sm" [disabled]="busy()">{{ (busy() ? 'Adding…' : 'Add cash') | t }}</button>
+          <button type="submit" class="btn btn-primary btn-sm" [disabled]="busy()">
+            @if (m === 'deposit') {
+              {{ (busy() ? 'Adding…' : 'Add cash') | t }}
+            } @else {
+              {{ (busy() ? 'Withdrawing…' : 'Withdraw') | t }}
+            }
+          </button>
         </div>
-        <p class="note">{{ 'Cash is added straight away. Up to {max} at a time.' | t: { max: usd(max) } }}</p>
+        <p class="note">
+          @if (m === 'deposit') {
+            {{ 'Cash is added straight away. Up to {max} at a time.' | t: { max: usd(max) } }}
+          } @else {
+            {{ '{amount} available to withdraw. Cash held for pending orders stays in the account.' | t: { amount: usd(available()) } }}
+          }
+        </p>
       </form>
     }
 
-    @if (added(); as text) {
-      <p class="added" role="status">{{ text }}</p>
+    @if (done(); as text) {
+      <p class="done" role="status">{{ text }}</p>
     }
   `,
   styles: [
@@ -82,20 +121,29 @@ const AMOUNT = /^\d+(\.\d{1,2})?$/;
         position: relative;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        flex-wrap: wrap;
+        gap: 4px 8px;
       }
-      .add-btn {
+      .buttons {
+        display: inline-flex;
+        gap: 6px;
+      }
+      .act {
         gap: 4px;
         height: 26px;
         padding: 0 9px;
         font-size: 12px;
+      }
+      .act.on {
+        border-color: var(--accent);
+        color: var(--accent);
       }
       .pop {
         position: absolute;
         z-index: 30;
         top: calc(100% + 6px);
         right: 0;
-        width: 270px;
+        width: 280px;
         padding: 14px;
         border: 1px solid var(--border);
         border-radius: var(--radius);
@@ -157,7 +205,7 @@ const AMOUNT = /^\d+(\.\d{1,2})?$/;
         line-height: 1.45;
         color: var(--text-3);
       }
-      .added {
+      .done {
         margin: 0;
         font-size: 12px;
         font-weight: 600;
@@ -167,49 +215,63 @@ const AMOUNT = /^\d+(\.\d{1,2})?$/;
         .pop {
           right: auto;
           left: 0;
-          width: min(270px, calc(100vw - 48px));
+          width: min(280px, calc(100vw - 48px));
         }
       }
     `,
   ],
 })
-export class AddCash {
+export class CashActions {
   protected readonly account = inject(ActiveAccountService);
+  private readonly portfolio = inject(PortfolioStore);
   private readonly accountsApi = inject(AccountsService);
   private readonly ordersApi = inject(OrdersService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
-  protected readonly quick = QUICK;
+  protected readonly quickDeposits = QUICK_DEPOSITS;
   protected readonly max = MAX_DEPOSIT;
   protected readonly usd = (value: number) => formatUsd(value);
 
-  readonly open = signal(false);
+  /** Which form is open, if any. */
+  readonly mode = signal<Mode | null>(null);
   readonly amount = signal('');
   readonly busy = signal(false);
   readonly error = signal<string | null>(null);
-  /** "Added $500.00" for a few seconds after a deposit. */
-  readonly added = signal<string | null>(null);
+  /** "Added $500.00" or "Withdrew $500.00" for a few seconds afterwards. */
+  readonly done = signal<string | null>(null);
+
   readonly frozen = computed(() => this.account.active()?.status === 'FROZEN');
+  readonly locked = computed(() => this.frozen() || this.account.activeId() == null);
+  /** Cash not held back for pending buy orders, rounded down to the cent. */
+  readonly available = computed(() => Math.max(0, Math.floor((this.portfolio.availableCash() ?? 0) * 100) / 100));
+  readonly quickWithdrawals = computed(() => {
+    const all = this.available();
+    const half = Math.floor(all * 50) / 100;
+    return [
+      { label: tk('Half'), value: half.toFixed(2) },
+      { label: tk('All available'), value: all.toFixed(2) },
+    ];
+  });
 
-  private addedTimer: ReturnType<typeof setTimeout> | undefined;
+  private doneTimer: ReturnType<typeof setTimeout> | undefined;
 
-  toggle(): void {
-    if (this.open()) {
+  toggle(mode: Mode): void {
+    if (this.mode() === mode) {
       this.close();
       return;
     }
     this.amount.set('');
     this.error.set(null);
-    this.open.set(true);
-    queueMicrotask(() => this.host.nativeElement.querySelector<HTMLInputElement>('#add-cash-amount')?.focus());
+    this.mode.set(mode);
+    queueMicrotask(() => this.host.nativeElement.querySelector<HTMLInputElement>('#cash-amount')?.focus());
   }
 
   close(): void {
-    this.open.set(false);
+    this.mode.set(null);
   }
 
   closeOutside(event: MouseEvent): void {
-    if (this.open() && !this.host.nativeElement.contains(event.target as Node)) this.close();
+    if (this.mode() && !this.host.nativeElement.contains(event.target as Node)) this.close();
   }
 
   setAmount(text: string): void {
@@ -219,24 +281,32 @@ export class AddCash {
 
   submit(event: Event): void {
     event.preventDefault();
+    const mode = this.mode();
     const accountId = this.account.activeId();
-    if (accountId == null || this.busy()) return;
+    if (!mode || accountId == null || this.busy()) return;
     const text = this.amount().trim().replace(/,/g, '');
     const value = Number(text);
     if (!AMOUNT.test(text) || !(value > 0)) {
       this.error.set(tk('Enter an amount above $0 with at most 2 decimal places.'));
       return;
     }
-    if (value > MAX_DEPOSIT) {
+    if (mode === 'deposit' && value > MAX_DEPOSIT) {
       this.error.set(translate('You can add up to {max} at a time.', { max: formatUsd(MAX_DEPOSIT) }));
       return;
     }
+    if (mode === 'withdraw' && value > this.available()) {
+      this.error.set(translate('You can withdraw up to {max}.', { max: formatUsd(this.available()) }));
+      return;
+    }
+
+    const request: Observable<Account> =
+      mode === 'deposit' ? this.accountsApi.deposit(accountId, value) : this.accountsApi.withdraw(accountId, value);
     this.busy.set(true);
-    this.accountsApi.deposit(accountId, value).subscribe({
+    request.subscribe({
       next: () => {
         this.busy.set(false);
-        this.open.set(false);
-        this.showAdded(value);
+        this.mode.set(null);
+        this.showDone(mode, value);
         // Cash shows in the header, metrics, chart and order ticket: reload them all.
         this.ordersApi.notifyChanged();
       },
@@ -247,9 +317,10 @@ export class AddCash {
     });
   }
 
-  private showAdded(value: number): void {
-    clearTimeout(this.addedTimer);
-    this.added.set(translate('Added {amount}', { amount: formatUsd(value) }));
-    this.addedTimer = setTimeout(() => this.added.set(null), 4000);
+  private showDone(mode: Mode, value: number): void {
+    clearTimeout(this.doneTimer);
+    const amount = formatUsd(value);
+    this.done.set(mode === 'deposit' ? translate('Added {amount}', { amount }) : translate('Withdrew {amount}', { amount }));
+    this.doneTimer = setTimeout(() => this.done.set(null), 4000);
   }
 }

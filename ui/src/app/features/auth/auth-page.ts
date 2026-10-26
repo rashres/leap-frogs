@@ -57,10 +57,10 @@ export class AuthPage {
   readonly remember = signal(true);
 
   readonly title = computed(() =>
-    this.signup() ? tk('Create Your Account') : this.admin() ? tk('Super Admin Sign In') : tk('Login to Your Account!'),
+    this.signup() ? tk('Create Your Account') : this.admin() ? tk('Super Admin Sign In') : tk('Log In to Your Account!'),
   );
   readonly submitLabel = computed(() =>
-    this.signup() ? tk('Create Account') : this.admin() ? tk('Sign In as Admin') : tk('Login To Your Account'),
+    this.signup() ? tk('Create Account') : this.admin() ? tk('Sign In as Admin') : tk('Log In to Your Account'),
   );
   readonly busyLabel = computed(() => (this.signup() ? tk('Creating account…') : tk('Signing in…')));
 
