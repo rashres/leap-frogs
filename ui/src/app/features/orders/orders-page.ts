@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, linkedSignal, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { toApiError } from '../../core/api/api-error';
 import type { Order } from '../../core/api/models';
@@ -11,10 +11,14 @@ import { InstrumentLogo } from '../../shared/instrument-logo';
 import { ORDER_STATUS_LABELS, statusTone } from '../../shared/order-status';
 import { Icon } from '../../shared/icon';
 import { PageHeader } from '../../shared/page-header';
+import { Pager, pageOf } from '../../shared/pager';
 import { TPipe } from '../../core/i18n/t.pipe';
 import { tk, translate } from '../../core/i18n/i18n.service';
 
 type Filter = 'ALL' | 'PENDING' | 'FILLED' | 'REJECTED' | 'COPIED';
+
+/** Orders shown per page. */
+const PAGE_SIZE = 20;
 
 interface Step {
   readonly state: string;
@@ -58,7 +62,7 @@ interface Row {
 @Component({
   selector: 'leap-orders-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TPipe, RouterLink, InstrumentLogo, PageHeader, Icon],
+  imports: [TPipe, RouterLink, InstrumentLogo, PageHeader, Icon, Pager],
   templateUrl: './orders-page.html',
   styleUrl: './orders-page.scss',
 })
@@ -169,6 +173,16 @@ export class OrdersPage {
         return all;
     }
   });
+
+  readonly pageSize = PAGE_SIZE;
+  /** Zero-based; back to the first page when the filter or account changes. Orders refreshing in place keep the page. */
+  readonly page = linkedSignal({
+    source: () => `${this.filter()}|${this.portfolio.account.activeId()}`,
+    computation: () => 0,
+  });
+  /** Never past the last page, e.g. after cancelling the only order on it. */
+  readonly currentPage = computed(() => Math.min(this.page(), Math.max(0, Math.ceil(this.rows().length / PAGE_SIZE) - 1)));
+  readonly pageRows = computed(() => pageOf(this.rows(), this.currentPage(), PAGE_SIZE));
 
   readonly counts = computed<Record<Filter, number>>(() => {
     const all = this.all();
