@@ -3,7 +3,6 @@ package com.neueda.leap.services;
 
 import com.neueda.leap.mappers.AccountMapper;
 import com.neueda.leap.mappers.CashTransferMapper;
-import com.neueda.leap.mappers.OrderMapper;
 import com.neueda.leap.services.domain.Account;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,13 +16,14 @@ import java.util.List;
 public class AccountService {
 
     private final AccountMapper accountMapper;
-    private final CashTransferMapper cashTransferMapper;
-    private final OrderMapper orderMapper;
+    /** Most a single deposit can add. Withdrawals have no cap beyond the balance. */
+    private static final BigDecimal MAX_DEPOSIT = new BigDecimal("1000000");
 
-    public AccountService(AccountMapper accountMapper, CashTransferMapper cashTransferMapper, OrderMapper orderMapper) {
+    private final CashTransferMapper cashTransferMapper;
+
+    public AccountService(AccountMapper accountMapper, CashTransferMapper cashTransferMapper) {
         this.accountMapper = accountMapper;
         this.cashTransferMapper = cashTransferMapper;
-        this.orderMapper = orderMapper;
     }
 
     public List<Account> findAll() {
@@ -49,15 +49,18 @@ public class AccountService {
             throw new InvalidCashException("Account is frozen; deposits are not allowed");
         }
         requirePositive(amount);
+        if (amount.compareTo(MAX_DEPOSIT) > 0) {
+            throw new InvalidCashException("amount must be at most 1,000,000");
+        }
         accountMapper.addCash(accountId, amount);
         cashTransferMapper.insertDeposit(accountId, amount);
         return findById(accountId);
     }
 
     /**
-     * Takes cash out of an account and records the withdrawal. Cash held back
-     * for pending buy orders cannot be withdrawn, and a frozen account cannot
-     * withdraw at all.
+     * Takes cash out of an account and records the withdrawal. Anything up to
+     * the whole balance can go; a pending buy left without the cash is rejected
+     * when it tries to fill. A frozen account cannot withdraw.
      */
     @Transactional
     public Account withdraw(int accountId, BigDecimal amount) {
@@ -66,10 +69,9 @@ public class AccountService {
             throw new InvalidCashException("Account is frozen; withdrawals are not allowed");
         }
         requirePositive(amount);
-        BigDecimal reserved = orderMapper.reservedCash(accountId);
-        if (accountMapper.withdrawCash(accountId, amount, reserved) == 0) {
-            BigDecimal available = account.getCashBalance().subtract(reserved).max(BigDecimal.ZERO);
-            throw new InvalidCashException("Insufficient cash to withdraw: available " + available.setScale(2, RoundingMode.HALF_UP));
+        if (accountMapper.withdrawCash(accountId, amount) == 0) {
+            BigDecimal balance = accountMapper.findById(accountId).getCashBalance();
+            throw new InvalidCashException("Insufficient cash to withdraw: available " + balance.setScale(2, RoundingMode.HALF_UP));
         }
         cashTransferMapper.insertWithdrawal(accountId, amount);
         return findById(accountId);

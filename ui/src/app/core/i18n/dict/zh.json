@@ -806,7 +806,6 @@
   "This account is frozen, so cash cannot be added or withdrawn.": "此账户已冻结，无法存入或取出现金。",
   "No cash available to withdraw.": "没有可取出的现金。",
   "Withdraw": "取出",
-  "{amount} available to withdraw. Cash held for pending orders stays in the account.": "可取出 {amount}。为待成交订单冻结的现金会留在账户中。",
   "Half": "一半",
   "All available": "全部可用",
   "You can withdraw up to {max}.": "最多可取出 {max}。",
@@ -814,5 +813,8 @@
   "Withdraw cash": "取出现金",
   "Withdrawing…": "正在取出…",
   "Log In to Your Account!": "登录你的账户！",
-  "Log In to Your Account": "登录你的账户"
+  "Log In to Your Account": "登录你的账户",
+  "amount must be at most 1,000,000": "金额最多为 1,000,000",
+  "{amount} can be withdrawn.": "可取出 {amount}。",
+  "Pending buy orders left without the cash are rejected when they try to fill.": "缺少现金的待成交买单会在尝试成交时被拒绝。"
 }

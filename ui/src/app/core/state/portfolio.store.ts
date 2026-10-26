@@ -85,7 +85,8 @@ export class PortfolioStore {
   /** Cash a new order can use: the balance minus what pending buys hold back. */
   readonly availableCash = computed(() => {
     const cash = this.cash();
-    return cash == null ? null : cash - this.reservedCash();
+    // Never below zero: a withdrawal may take cash a pending buy was counting on.
+    return cash == null ? null : Math.max(0, cash - this.reservedCash());
   });
 
   readonly positions = computed<Position[]>(() => {

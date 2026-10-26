@@ -2,7 +2,6 @@ package com.neueda.leap;
 
 import com.neueda.leap.mappers.AccountMapper;
 import com.neueda.leap.mappers.CashTransferMapper;
-import com.neueda.leap.mappers.OrderMapper;
 import com.neueda.leap.services.AccountService;
 import com.neueda.leap.services.InvalidCashException;
 import com.neueda.leap.services.domain.Account;
@@ -36,9 +35,6 @@ class AccountServiceIntegrationTest {
 
     @Autowired
     private CashTransferMapper cashTransferMapper;
-
-    @Autowired
-    private OrderMapper orderMapper;
 
     @Test
     @Transactional
@@ -152,14 +148,16 @@ class AccountServiceIntegrationTest {
 
     @Test
     @Transactional
-    @DisplayName("withdraw cannot take cash held back for pending orders, or more than the account has")
-    void withdrawRefusedBeyondAvailableCash() {
+    @DisplayName("withdraw can take the whole balance but not more")
+    void withdrawLimitedOnlyByBalance() {
         int accountId = 1;
         BigDecimal balance = accountService.findById(accountId).getCashBalance();
-        BigDecimal available = balance.subtract(orderMapper.reservedCash(accountId));
 
         assertThrows(InvalidCashException.class,
-                () -> accountService.withdraw(accountId, available.add(new BigDecimal("0.01"))));
+                () -> accountService.withdraw(accountId, balance.add(new BigDecimal("0.01"))));
         assertEquals(balance, accountMapper.findById(accountId).getCashBalance());
+
+        accountService.withdraw(accountId, balance);
+        assertEquals(0, accountMapper.findById(accountId).getCashBalance().signum());
     }
 }

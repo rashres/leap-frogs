@@ -21,8 +21,9 @@ type Mode = 'deposit' | 'withdraw';
 /**
  * "Add cash" and "Withdraw" next to the Available cash figure. Each opens a
  * small form that posts to /api/accounts/{id}/deposits or /withdrawals, then
- * refreshes everything that shows cash. Only available cash can be withdrawn
- * (cash held for pending buy orders stays put). A frozen account can do neither.
+ * refreshes everything that shows cash. Withdrawals can take the whole balance;
+ * a pending buy left without the cash is rejected when it tries to fill. A
+ * frozen account can do neither.
  *
  * The form opens from the left edge of the nearest positioned ancestor (the
  * Available cash card), never leftwards from the buttons: when the buttons wrap
@@ -109,7 +110,10 @@ type Mode = 'deposit' | 'withdraw';
           @if (m === 'deposit') {
             {{ 'Cash is added straight away. Up to {max} at a time.' | t: { max: usd(max) } }}
           } @else {
-            {{ '{amount} available to withdraw. Cash held for pending orders stays in the account.' | t: { amount: usd(available()) } }}
+            {{ '{amount} can be withdrawn.' | t: { amount: usd(available()) } }}
+            @if (reserved() > 0) {
+              {{ 'Pending buy orders left without the cash are rejected when they try to fill.' | t }}
+            }
           }
         </p>
       </form>
@@ -244,8 +248,10 @@ export class CashActions {
 
   readonly frozen = computed(() => this.account.active()?.status === 'FROZEN');
   readonly locked = computed(() => this.frozen() || this.account.activeId() == null);
-  /** Cash not held back for pending buy orders, rounded down to the cent. */
-  readonly available = computed(() => Math.max(0, Math.floor((this.portfolio.availableCash() ?? 0) * 100) / 100));
+  /** The whole cash balance, rounded down to the cent: withdrawals have no other limit. */
+  readonly available = computed(() => Math.max(0, Math.floor((this.portfolio.cash() ?? 0) * 100) / 100));
+  /** Cash pending buy orders are counting on. */
+  readonly reserved = computed(() => this.portfolio.reservedCash());
   readonly quickWithdrawals = computed(() => {
     const all = this.available();
     const half = Math.floor(all * 50) / 100;

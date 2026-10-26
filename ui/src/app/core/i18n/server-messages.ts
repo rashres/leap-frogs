@@ -12,6 +12,7 @@ export const SERVER_MESSAGES: readonly string[] = [
   tk('Account is frozen; new orders are not allowed'),
   tk('Account is frozen; deposits are not allowed'),
   tk('Account is frozen; withdrawals are not allowed'),
+  tk('amount must be at most 1,000,000'),
   tk('An account cannot copy its own trades'),
   tk('An account with that email already exists'),
   tk('Cannot freeze the Super Admin account'),

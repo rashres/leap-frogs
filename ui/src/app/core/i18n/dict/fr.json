@@ -806,7 +806,6 @@
   "This account is frozen, so cash cannot be added or withdrawn.": "Ce compte est gelé : impossible d’ajouter ou de retirer des liquidités.",
   "No cash available to withdraw.": "Aucune liquidité disponible à retirer.",
   "Withdraw": "Retirer",
-  "{amount} available to withdraw. Cash held for pending orders stays in the account.": "{amount} disponibles au retrait. Les liquidités réservées aux ordres en attente restent sur le compte.",
   "Half": "La moitié",
   "All available": "Tout le disponible",
   "You can withdraw up to {max}.": "Vous pouvez retirer jusqu’à {max}.",
@@ -814,5 +813,8 @@
   "Withdraw cash": "Retirer des liquidités",
   "Withdrawing…": "Retrait…",
   "Log In to Your Account!": "Connectez-vous à votre compte !",
-  "Log In to Your Account": "Se connecter à votre compte"
+  "Log In to Your Account": "Se connecter à votre compte",
+  "amount must be at most 1,000,000": "Le montant doit être au maximum de 1 000 000",
+  "{amount} can be withdrawn.": "{amount} peuvent être retirés.",
+  "Pending buy orders left without the cash are rejected when they try to fill.": "Les ordres d’achat en attente qui n’ont plus les liquidités nécessaires seront refusés au moment de s’exécuter."
 }

@@ -806,7 +806,6 @@
   "This account is frozen, so cash cannot be added or withdrawn.": "यह खाता फ़्रीज़ है, इसलिए नकद न जोड़ा जा सकता है न निकाला जा सकता है।",
   "No cash available to withdraw.": "निकालने के लिए कोई नकद उपलब्ध नहीं।",
   "Withdraw": "निकालें",
-  "{amount} available to withdraw. Cash held for pending orders stays in the account.": "{amount} निकालने के लिए उपलब्ध। पेंडिंग ऑर्डर के लिए रोका गया नकद खाते में ही रहता है।",
   "Half": "आधा",
   "All available": "सारा उपलब्ध",
   "You can withdraw up to {max}.": "आप अधिकतम {max} निकाल सकते हैं।",
@@ -814,5 +813,8 @@
   "Withdraw cash": "नकद निकालें",
   "Withdrawing…": "निकाल रहे हैं…",
   "Log In to Your Account!": "अपने खाते में लॉग इन करें!",
-  "Log In to Your Account": "अपने खाते में लॉग इन करें"
+  "Log In to Your Account": "अपने खाते में लॉग इन करें",
+  "amount must be at most 1,000,000": "राशि अधिकतम 1,000,000 हो सकती है",
+  "{amount} can be withdrawn.": "{amount} निकाले जा सकते हैं।",
+  "Pending buy orders left without the cash are rejected when they try to fill.": "जिन पेंडिंग खरीद ऑर्डर के लिए नकद नहीं बचेगा, वे पूरा होने की कोशिश पर अस्वीकार हो जाएँगे।"
 }

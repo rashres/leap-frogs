@@ -120,8 +120,8 @@ public class AccountController {
      */
     @PostMapping("/{id}/deposits")
     @Operation(summary = "Add cash",
-            description = "Adds cash to the account and records the deposit. Only the account's trader "
-                    + "(or the Super Admin) may add cash, and not while the account is frozen. In USD.")
+            description = "Adds cash to the account (up to 1,000,000 at a time) and records the deposit. Only the "
+                    + "account's trader (or the Super Admin) may add cash, and not while the account is frozen. In USD.")
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
@@ -144,16 +144,16 @@ public class AccountController {
      */
     @PostMapping("/{id}/withdrawals")
     @Operation(summary = "Withdraw cash",
-            description = "Takes cash out of the account and records the withdrawal. Cash held back for pending "
-                    + "buy orders cannot be withdrawn. Only the account's trader (or the Super Admin) may withdraw, "
-                    + "and not while the account is frozen. In USD.")
+            description = "Takes cash out of the account and records the withdrawal, up to the whole balance. "
+                    + "A pending buy left without the cash is rejected when it tries to fill. Only the account's "
+                    + "trader (or the Super Admin) may withdraw, and not while the account is frozen. In USD.")
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
             description = "Cash withdrawn; returns the account with its new balance",
             content = @Content(mediaType = "application/json", schema = @Schema(implementation = AccountResponse.class))
         ),
-        @ApiResponse(responseCode = "400", description = "Invalid amount, not enough available cash, or the account is frozen"),
+        @ApiResponse(responseCode = "400", description = "Invalid amount, more than the balance, or the account is frozen"),
         @ApiResponse(responseCode = "403", description = "Not allowed to withdraw from this account"),
         @ApiResponse(responseCode = "404", description = "Account not found")
     })
