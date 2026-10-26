@@ -13,7 +13,10 @@
 
   <section class="metrics panel" [attr.aria-label]="'Key figures' | t">
     <div class="metric cash-metric">
-      <h2 class="m-label">{{ 'Available cash' | t }}</h2>
+      <div class="m-head">
+        <h2 class="m-label">{{ 'Available cash' | t }}</h2>
+        <leap-cash-actions (click)="cashOpen.set(false)" />
+      </div>
       <p class="m-value num">{{ cashText() }}</p>
       <button
         type="button"
@@ -55,13 +58,10 @@
     </div>
   </section>
 
-  <div class="row row-chart">
-    <leap-value-chart-panel />
-    <leap-watchlist-rail />
-  </div>
+  <leap-value-chart-panel />
 
   <div class="row row-market">
-    <leap-exchange-panel />
+    <leap-watchlist-rail />
     <leap-market-overview />
   </div>
 

@@ -178,8 +178,9 @@ interface Pad {
               <text [attr.x]="t.x" [attr.y]="axis + 19" text-anchor="middle" [attr.class]="'tick t-' + t.tone">{{ t.label }}</text>
             }
 
-            @for (p of pads(); track p.id) {
-              <g class="pad" tabindex="0" role="button" [class.low]="p.low" [class.dim]="selected() !== null && selected() !== p.id"
+            <!-- The picked pad is drawn last so it sits on top of any it overlaps. -->
+            @for (p of drawn(); track p.id) {
+              <g class="pad" tabindex="0" role="button" [class.low]="p.low" [class.on]="selected() === p.id" [class.dim]="selected() !== null && selected() !== p.id"
                  [attr.aria-pressed]="selected() === p.id" [attr.aria-label]="p.label"
                  (click)="pickStock.emit(p.id)" (keydown.enter)="pickStock.emit(p.id)" (keydown.space)="$event.preventDefault(); pickStock.emit(p.id)">
                 <title>{{ p.label }}</title>
@@ -349,14 +350,26 @@ interface Pad {
       .pad {
         cursor: pointer;
         outline: none;
-        transition: opacity 0.15s ease;
+        transition: opacity 0.15s ease, transform 0.18s ease;
       }
       .pad.low {
         opacity: 0.6;
       }
       .pad.dim {
-        opacity: 0.35;
+        opacity: 0.28;
       }
+      .pad.dim:hover {
+        opacity: 0.7;
+      }
+      /* The picked stock: full strength, lifted slightly, with a shadow so it reads above its neighbours. */
+      .pad.on {
+        opacity: 1;
+        transform: scale(1.06);
+        transform-box: fill-box;
+        transform-origin: center;
+        filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.28));
+      }
+
       .ring {
         fill: none;
         stroke: transparent;
@@ -364,6 +377,7 @@ interface Pad {
       }
       .ring.on {
         stroke: var(--accent);
+        stroke-width: 4;
       }
       .pad:focus-visible .ring {
         stroke: var(--accent);
@@ -401,8 +415,13 @@ interface Pad {
         stroke: var(--border);
       }
       .tag.on {
+        fill: var(--accent);
         stroke: var(--accent);
         stroke-width: 2;
+      }
+      .pad.on .tag-sym,
+      .pad.on .tag-sub {
+        fill: var(--on-accent);
       }
       .tag-sym {
         font-size: 11px;
@@ -513,6 +532,14 @@ export class NewsPond {
   protected readonly tone = MOOD_TONE;
   protected readonly signed = signed;
   protected readonly ticks = TICKS.map(([v, label]) => ({ x: xOf(v), label, tone: MOOD_TONE[zoneOf(v)] }));
+
+  /** Pads in paint order: the picked one last, so nothing covers it. */
+  protected readonly drawn = computed(() => {
+    const id = this.selected();
+    const pads = this.pads();
+    const picked = pads.find((p) => p.id === id);
+    return picked ? [...pads.filter((p) => p !== picked), picked] : pads;
+  });
 
   protected readonly silent = computed(() => this.rows().filter((r) => r.counts.total === 0).map((r) => r.symbol));
 

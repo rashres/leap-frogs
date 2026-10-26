@@ -1,7 +1,9 @@
 package com.neueda.leap.services;
 
+import com.neueda.leap.mappers.CashTransferMapper;
 import com.neueda.leap.mappers.OrderMapper;
 import com.neueda.leap.mappers.PriceHistoryMapper;
+import com.neueda.leap.services.domain.CashTransfer;
 import com.neueda.leap.services.domain.Holding;
 import com.neueda.leap.services.domain.Order;
 import com.neueda.leap.services.domain.PortfolioValuePoint;
@@ -14,6 +16,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.stream.Stream;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -23,12 +26,14 @@ import java.util.TreeMap;
 
 /**
  * An account's value over time, worked out from data already stored: today's
- * cash and holdings, filled orders (transactions) and recorded prices
+ * cash and holdings, filled orders (transactions), cash deposits and
+ * withdrawals (cash_deposit, cash_withdrawal) and recorded prices
  * (instrument_price). Nothing is written.
  *
- * Starting from today's cash and holdings, every order filled after the
- * start of the range is undone, then replayed forwards point by point. So the
- * last point always matches the account's current cash and holdings.
+ * Starting from today's cash and holdings, every order filled and every
+ * deposit or withdrawal made after the start of the range is undone, then replayed forwards
+ * point by point. So the last point always matches the account's current cash
+ * and holdings.
  */
 @Service
 public class PortfolioHistoryService {
@@ -39,14 +44,38 @@ public class PortfolioHistoryService {
     private final AccountService accountService;
     private final HoldingService holdingService;
     private final OrderMapper orderMapper;
+    private final CashTransferMapper cashTransferMapper;
     private final PriceHistoryMapper priceHistoryMapper;
 
     public PortfolioHistoryService(AccountService accountService, HoldingService holdingService,
-                                   OrderMapper orderMapper, PriceHistoryMapper priceHistoryMapper) {
+                                   OrderMapper orderMapper, CashTransferMapper cashTransferMapper,
+                                   PriceHistoryMapper priceHistoryMapper) {
         this.accountService = accountService;
         this.holdingService = holdingService;
         this.orderMapper = orderMapper;
+        this.cashTransferMapper = cashTransferMapper;
         this.priceHistoryMapper = priceHistoryMapper;
+    }
+
+    /** One change to the account: a filled order (cash and a holding), or a deposit or withdrawal (cash only, no instrument). */
+    private record Move(Instant at, BigDecimal cash, Integer instrumentId, BigDecimal quantity) {
+        static Move of(Order order) {
+            return new Move(order.getEffectiveTime(), cashChange(order), order.getInstrument().getInstrumentId(), quantityChange(order));
+        }
+
+        static Move deposit(CashTransfer deposit) {
+            return new Move(deposit.getAt(), deposit.getAmount(), null, BigDecimal.ZERO);
+        }
+
+        static Move withdrawal(CashTransfer withdrawal) {
+            return new Move(withdrawal.getAt(), withdrawal.getAmount().negate(), null, BigDecimal.ZERO);
+        }
+
+        void apply(Map<Integer, BigDecimal> quantities, boolean undo) {
+            if (instrumentId != null) {
+                quantities.merge(instrumentId, undo ? quantity.negate() : quantity, BigDecimal::add);
+            }
+        }
     }
 
     public List<PortfolioValuePoint> valueHistory(int accountId, PriceRange range) {
@@ -59,13 +88,18 @@ public class PortfolioHistoryService {
         Instant end = Instant.now().truncatedTo(ChronoUnit.MINUTES);
         Instant start = end.minus(range.span());
 
-        List<Order> inRange = orderMapper.findByAccountId(accountId).stream()
+        Stream<Move> orders = orderMapper.findByAccountId(accountId).stream()
                 .filter(o -> "COMPLETE".equals(o.getStatus()) && o.getEffectiveTime().isAfter(start))
                 .sorted(Comparator.comparing(Order::getEffectiveTime).thenComparing(Order::getOrderId))
-                .toList();
-        for (Order order : inRange) {
-            cash = cash.subtract(cashChange(order));
-            quantities.merge(instrumentId(order), quantityChange(order).negate(), BigDecimal::add);
+                .map(Move::of);
+        Stream<Move> deposits = cashTransferMapper.depositsSince(accountId, start).stream().map(Move::deposit);
+        Stream<Move> withdrawals = cashTransferMapper.withdrawalsSince(accountId, start).stream().map(Move::withdrawal);
+        // Stable sort: orders keep their id order within the same instant.
+        List<Move> inRange = Stream.of(orders, deposits, withdrawals).flatMap(m -> m)
+                .sorted(Comparator.comparing(Move::at)).toList();
+        for (Move move : inRange) {
+            cash = cash.subtract(move.cash());
+            move.apply(quantities, true);
         }
 
         Map<Integer, NavigableMap<Instant, BigDecimal>> prices = new HashMap<>();
@@ -80,20 +114,16 @@ public class PortfolioHistoryService {
         List<PortfolioValuePoint> points = new ArrayList<>();
         int next = 0;
         for (Instant at = start; !at.isAfter(end); at = at.plus(range.step())) {
-            // The last point takes every order, including ones placed since `end` was rounded down.
+            // The last point takes every move, including ones made since `end` was rounded down.
             boolean last = at.equals(end);
-            while (next < inRange.size() && (last || !inRange.get(next).getEffectiveTime().isAfter(at))) {
-                Order order = inRange.get(next++);
-                cash = cash.add(cashChange(order));
-                quantities.merge(instrumentId(order), quantityChange(order), BigDecimal::add);
+            while (next < inRange.size() && (last || !inRange.get(next).at().isAfter(at))) {
+                Move move = inRange.get(next++);
+                cash = cash.add(move.cash());
+                move.apply(quantities, false);
             }
             points.add(new PortfolioValuePoint(at, scale(cash), scale(holdingsValue(quantities, prices, at))));
         }
         return points;
-    }
-
-    private static int instrumentId(Order order) {
-        return order.getInstrument().getInstrumentId();
     }
 
     /** A buy takes cash out, a sell puts it back. */

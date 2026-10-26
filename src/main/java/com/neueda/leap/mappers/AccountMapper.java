@@ -43,6 +43,17 @@ public interface AccountMapper {
     @Update("UPDATE account SET cash_balance = #{cashBalance} WHERE account_id = #{accountId}")
     void updateBalance(@Param("accountId") int accountId, @Param("cashBalance") java.math.BigDecimal cashBalance);
 
+    /** Adds to the balance in one statement, so a deposit cannot overwrite an order settling at the same time. */
+    @Update("UPDATE account SET cash_balance = cash_balance + #{amount} WHERE account_id = #{accountId}")
+    int addCash(@Param("accountId") int accountId, @Param("amount") java.math.BigDecimal amount);
+
+    /** Takes cash out in one statement, only if the balance covers it. Returns 0 when it does not. */
+    @Update("""
+            UPDATE account SET cash_balance = cash_balance - #{amount}
+            WHERE account_id = #{accountId} AND cash_balance >= #{amount}
+            """)
+    int withdrawCash(@Param("accountId") int accountId, @Param("amount") java.math.BigDecimal amount);
+
     @Update("UPDATE account SET status = #{status} WHERE account_id = #{accountId}")
     int updateStatus(@Param("accountId") int accountId, @Param("status") String status);
 }

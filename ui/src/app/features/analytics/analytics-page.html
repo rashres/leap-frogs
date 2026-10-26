@@ -232,13 +232,13 @@
               </tbody>
             </table>
           </div>
-          @if (hiddenInstruments() > 0) {
-            <div class="more">
-              <button type="button" class="btn btn-ghost btn-sm" (click)="showAll.set(!showAll())">
-                {{ (showAll() ? 'Show top 10' : 'Show all {n}') | t: { n: instrumentRows().length } }}
-              </button>
-            </div>
-          }
+          <leap-pager
+            [page]="instrumentPage()"
+            [count]="instrumentRows().length"
+            [size]="instrumentsPerPage"
+            label="Instrument pages"
+            (pageChange)="instrumentPage.set($event)"
+          />
         </section>
 
         <div class="side">
@@ -288,7 +288,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @for (c of clientRows(); track c.month) {
+                  @for (c of visibleClients(); track c.month) {
                     <tr [attr.title]="'{amount} traded' | t: { amount: c.value }">
                       <td>{{ c.label }}</td>
                       <td class="r num">{{ c.activeClients }}</td>
@@ -299,6 +299,13 @@
                 </tbody>
               </table>
             </div>
+            <leap-pager
+              [page]="clientPage()"
+              [count]="clientRows().length"
+              [size]="monthsPerPage"
+              label="Client activity pages"
+              (pageChange)="clientPage.set($event)"
+            />
           </section>
         </div>
       </div>

@@ -41,7 +41,7 @@
         </tr>
       </thead>
       <tbody>
-        @for (a of rows(); track a.accountId) {
+        @for (a of pageRows(); track a.accountId) {
           <tr>
             <td class="num">{{ a.accountId }}</td>
             <td>{{ a.name }}</td>
@@ -61,5 +61,6 @@
         }
       </tbody>
     </table>
+    <leap-pager [page]="page()" [count]="rows().length" [size]="pageSize" label="Account pages" (pageChange)="page.set($event)" />
   </div>
 }

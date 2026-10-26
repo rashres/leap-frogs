@@ -59,6 +59,15 @@
   font-weight: 500;
 }
 
+/* Available cash label with the Add cash and Withdraw buttons on the same line. */
+.m-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+}
+
 /* Cash breakdown: a small popover off the Cash available figure. */
 .cash-metric {
   position: relative;
@@ -150,10 +159,6 @@
   align-items: stretch;
 }
 
-.row-chart {
-  grid-template-columns: minmax(0, 7fr) minmax(300px, 3fr);
-}
-
 .row-market {
   grid-template-columns: minmax(300px, 3fr) minmax(0, 7fr);
 }
@@ -179,7 +184,6 @@
 /* ---- Responsive ----------------------------------------------------------- */
 
 @media (max-width: 1100px) {
-  .row-chart,
   .row-market {
     grid-template-columns: minmax(0, 1fr);
   }

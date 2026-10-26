@@ -10,6 +10,9 @@ const tk = <T extends string>(text: T): T => text;
 export const SERVER_MESSAGES: readonly string[] = [
   tk('A reason is required when freezing an account'),
   tk('Account is frozen; new orders are not allowed'),
+  tk('Account is frozen; deposits are not allowed'),
+  tk('Account is frozen; withdrawals are not allowed'),
+  tk('amount must be at most 1,000,000'),
   tk('An account cannot copy its own trades'),
   tk('An account with that email already exists'),
   tk('Cannot freeze the Super Admin account'),
@@ -35,6 +38,7 @@ export const SERVER_MESSAGES: readonly string[] = [
 const PATTERNS: readonly { re: RegExp; key: string; names: readonly string[] }[] = [
   { re: /^Insufficient cash: required (\S+), available (\S+)$/, key: tk('Insufficient cash: required {need}, available {have}'), names: ['need', 'have'] },
   { re: /^Insufficient shares: required (\S+), available (\S+)$/, key: tk('Insufficient shares: required {need}, available {have}'), names: ['need', 'have'] },
+  { re: /^Insufficient cash to withdraw: available (\S+)$/, key: tk('Insufficient cash to withdraw: available {have}'), names: ['have'] },
 ];
 
 /** The dictionary key and values for an API message with numbers in it, or null. */

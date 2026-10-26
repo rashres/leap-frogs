@@ -66,7 +66,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (order of rows(); track order.id) {
+            @for (order of pageRows(); track order.id) {
               <tr class="row" [class.open]="expanded() === order.id" (click)="toggle(order.id)">
                 <td class="num faint">{{ order.submitted }}</td>
                 <td>
@@ -202,6 +202,7 @@
           </tbody>
         </table>
       </div>
+      <leap-pager [page]="currentPage()" [count]="rows().length" [size]="pageSize" label="Order pages" (pageChange)="page.set($event)" />
     }
   </section>
 </div>

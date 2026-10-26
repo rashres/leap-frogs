@@ -1,7 +1,9 @@
 package com.neueda.leap;
 
 import com.neueda.leap.mappers.AccountMapper;
+import com.neueda.leap.mappers.CashTransferMapper;
 import com.neueda.leap.services.AccountService;
+import com.neueda.leap.services.InvalidCashException;
 import com.neueda.leap.services.domain.Account;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,8 +12,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Integration tests for AccountService with real database.
@@ -28,6 +32,9 @@ class AccountServiceIntegrationTest {
 
     @Autowired
     private AccountMapper accountMapper;
+
+    @Autowired
+    private CashTransferMapper cashTransferMapper;
 
     @Test
     @Transactional
@@ -96,5 +103,61 @@ class AccountServiceIntegrationTest {
         Account updatedAccountFromDb = accountMapper.findById(accountId);
         assertEquals(expectedBalance, updatedAccountFromDb.getCashBalance(),
                 "All balance updates should persist to database");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("deposit adds cash and records the deposit")
+    void depositAddsCashAndRecordsIt() {
+        int accountId = 1;
+        BigDecimal originalBalance = accountService.findById(accountId).getCashBalance();
+        int originalDeposits = cashTransferMapper.depositsSince(accountId, Instant.EPOCH).size();
+
+        accountService.deposit(accountId, new BigDecimal("250.50"));
+
+        assertEquals(originalBalance.add(new BigDecimal("250.50")), accountMapper.findById(accountId).getCashBalance());
+        assertEquals(originalDeposits + 1, cashTransferMapper.depositsSince(accountId, Instant.EPOCH).size());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("deposit is refused on a frozen account")
+    void depositRefusedWhenFrozen() {
+        int accountId = 1;
+        accountMapper.updateStatus(accountId, "FROZEN");
+        BigDecimal originalBalance = accountService.findById(accountId).getCashBalance();
+
+        assertThrows(InvalidCashException.class, () -> accountService.deposit(accountId, new BigDecimal("100")));
+        assertEquals(originalBalance, accountMapper.findById(accountId).getCashBalance());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("withdraw takes cash out and records the withdrawal")
+    void withdrawTakesCashOutAndRecordsIt() {
+        int accountId = 1;
+        accountService.deposit(accountId, new BigDecimal("300.00"));
+        BigDecimal balance = accountService.findById(accountId).getCashBalance();
+        int originalWithdrawals = cashTransferMapper.withdrawalsSince(accountId, Instant.EPOCH).size();
+
+        accountService.withdraw(accountId, new BigDecimal("120.25"));
+
+        assertEquals(balance.subtract(new BigDecimal("120.25")), accountMapper.findById(accountId).getCashBalance());
+        assertEquals(originalWithdrawals + 1, cashTransferMapper.withdrawalsSince(accountId, Instant.EPOCH).size());
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("withdraw can take the whole balance but not more")
+    void withdrawLimitedOnlyByBalance() {
+        int accountId = 1;
+        BigDecimal balance = accountService.findById(accountId).getCashBalance();
+
+        assertThrows(InvalidCashException.class,
+                () -> accountService.withdraw(accountId, balance.add(new BigDecimal("0.01"))));
+        assertEquals(balance, accountMapper.findById(accountId).getCashBalance());
+
+        accountService.withdraw(accountId, balance);
+        assertEquals(0, accountMapper.findById(accountId).getCashBalance().signum());
     }
 }

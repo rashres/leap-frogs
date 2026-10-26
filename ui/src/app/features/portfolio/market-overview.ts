@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { VolumeService, type Volume } from '../../core/markets/volume.service';
 import { formatPrice, formatSignedPct, formatTime } from '../../shared/format';
@@ -11,6 +11,8 @@ import { currentLocale, tk } from '../../core/i18n/i18n.service';
 
 const SHOWN = 5;
 
+type Tab = 'all' | 'gainers' | 'losers';
+
 const compact = { format: (v: number) => v.toLocaleString(currentLocale(), { notation: 'compact', maximumFractionDigits: 1 }) };
 
 function formatVolume(v: Volume | null): string {
@@ -18,7 +20,7 @@ function formatVolume(v: Volume | null): string {
   return v.isValue ? `$${compact.format(v.value)}` : compact.format(v.value);
 }
 
-/** Live prices and the recorded 24-hour move, linking to Markets for the rest. */
+/** Live prices and the recorded 24-hour move, with the day's top gainers and losers, linking to Markets for the rest. */
 @Component({
   selector: 'leap-market-overview',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -27,7 +29,16 @@ function formatVolume(v: Volume | null): string {
     <section class="card">
       <div class="head">
         <h2 class="title">{{ 'Market Overview' | t }}</h2>
-        <a class="btn btn-secondary btn-sm" routerLink="/markets">{{ 'View All' | t }} <leap-icon name="external" [size]="14" /></a>
+        <div class="head-actions">
+          <div class="segmented" role="group" [attr.aria-label]="'Filter instruments' | t">
+            @for (t of tabs; track t.key) {
+              <button type="button" [class.on]="tab() === t.key" [attr.aria-pressed]="tab() === t.key" (click)="tab.set(t.key)">
+                {{ t.label | t }}
+              </button>
+            }
+          </div>
+          <a class="btn btn-secondary btn-sm" routerLink="/markets">{{ 'View All' | t }} <leap-icon name="external" [size]="14" /></a>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -74,6 +85,10 @@ function formatVolume(v: Volume | null): string {
           <p class="empty">
             @if (!store.loaded()) {
               {{ 'Loading prices…' | t }}
+            } @else if (tab() === 'gainers') {
+              {{ 'No instruments up over the last day.' | t }}
+            } @else if (tab() === 'losers') {
+              {{ 'No instruments down over the last day.' | t }}
             } @else {
               {{ 'No instruments in the database.' | t }}
             }
@@ -105,6 +120,12 @@ function formatVolume(v: Volume | null): string {
         gap: 10px 16px;
         min-height: 34px;
         margin-bottom: 14px;
+      }
+      .head-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
       }
       .title {
         margin: 0;
@@ -233,7 +254,31 @@ function formatVolume(v: Volume | null): string {
 export class MarketOverview {
   protected readonly store = inject(DayChangeStore);
   private readonly volumes = inject(VolumeService);
-  private readonly shown = computed(() => this.store.rows().slice(0, SHOWN));
+  readonly tab = signal<Tab>('all');
+  readonly tabs: readonly { key: Tab; label: string }[] = [
+    { key: 'all', label: tk('All') },
+    { key: 'gainers', label: tk('Top gainers') },
+    { key: 'losers', label: tk('Top losers') },
+  ];
+
+  /** The first few instruments, or the biggest risers or fallers over the last day. */
+  private readonly shown = computed(() => {
+    const rows = this.store.rows();
+    switch (this.tab()) {
+      case 'gainers':
+        return rows
+          .filter((r) => (r.changePct ?? 0) > 0)
+          .sort((a, b) => b.changePct! - a.changePct!)
+          .slice(0, SHOWN);
+      case 'losers':
+        return rows
+          .filter((r) => (r.changePct ?? 0) < 0)
+          .sort((a, b) => a.changePct! - b.changePct!)
+          .slice(0, SHOWN);
+      default:
+        return rows.slice(0, SHOWN);
+    }
+  });
 
   constructor() {
     effect(() => this.volumes.load(this.shown().map((r) => r.symbol)));

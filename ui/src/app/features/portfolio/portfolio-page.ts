@@ -9,7 +9,7 @@ import { HoldingsTable } from './holdings-table';
 import { ValueChartPanel } from './value-chart-panel';
 import { WatchlistRail } from './watchlist-rail';
 import { DayChangeStore } from './day-change.store';
-import { ExchangePanel } from './exchange-panel';
+import { CashActions } from './cash-actions';
 import { MarketOverview } from './market-overview';
 import { TickerBelt } from './ticker-belt';
 import { LastTransactions } from './last-transactions';
@@ -26,7 +26,7 @@ import { translate } from '../../core/i18n/i18n.service';
 @Component({
   selector: 'leap-portfolio-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TPipe, ValueChartPanel, HoldingsTable, WatchlistRail, PageHeader, Icon, TickerBelt, ExchangePanel, MarketOverview, LastTransactions, MarketNews],
+  imports: [TPipe, CashActions, ValueChartPanel, HoldingsTable, WatchlistRail, PageHeader, Icon, TickerBelt, MarketOverview, LastTransactions, MarketNews],
   providers: [DayChangeStore],
   templateUrl: './portfolio-page.html',
   styleUrl: './portfolio-page.scss',

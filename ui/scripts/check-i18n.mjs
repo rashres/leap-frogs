@@ -21,7 +21,7 @@ const patterns = [
   new RegExp(String.raw`\b(?:tr|translate|tk)\(\s*` + literal, 'g'),
   // Route titles, and text inputs that are translated where they are shown.
   new RegExp(String.raw`\btitle: ` + literal, 'g'),
-  /\b(?:heading|idleLabel)="([^"{}]+)"/g,
+  /(?<![\w-])(?:heading|idleLabel|label)="([^"{}]+)"/g,
 ];
 
 // `(a ? 'x' : 'y') | t` and `translate(a ? 'x' : 'y')`: every literal inside the brackets.
@@ -42,7 +42,7 @@ for (const file of files(root)) {
       // Only the condition-style literals, not the placeholder values passed after the text.
       const head = m[1].split(/,\s*\{/)[0];
       for (const lit of head.matchAll(new RegExp(literal, 'g'))) {
-        if (!/^(COMPLETE|PENDING|FAILED|CANCELLED|EXPIRED|LIMIT|MARKET|GTC|DAY|FROZEN|ACTIVE|ALL|1D|positive|negative|neutral|dark|summary|edit|follow|closed|gainers|losers|pond|table|tone|newest|all|day|week|month|pos|neg|neu)$/.test(lit[1])) add(lit[1], file);
+        if (!/^(COMPLETE|PENDING|FAILED|CANCELLED|EXPIRED|LIMIT|MARKET|GTC|DAY|FROZEN|ACTIVE|ALL|1D|positive|negative|neutral|dark|summary|edit|follow|deposit|withdraw|closed|gainers|losers|pond|table|tone|newest|all|day|week|month|pos|neg|neu)$/.test(lit[1])) add(lit[1], file);
       }
     }
   }
