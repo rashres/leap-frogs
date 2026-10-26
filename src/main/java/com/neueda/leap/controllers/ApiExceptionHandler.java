@@ -2,8 +2,8 @@ package com.neueda.leap.controllers;
 
 import com.neueda.leap.controllers.dto.ErrorResponse;
 import com.neueda.leap.services.AccessDeniedException;
+import com.neueda.leap.services.InvalidCashException;
 import com.neueda.leap.services.InvalidCopyTradeException;
-import com.neueda.leap.services.InvalidDepositException;
 import com.neueda.leap.services.InvalidOrderException;
 import com.neueda.leap.services.InvalidWatchlistException;
 import com.neueda.leap.services.OrderNotCancellableException;
@@ -57,8 +57,8 @@ public class ApiExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
     }
 
-    @ExceptionHandler(InvalidDepositException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidDeposit(InvalidDepositException ex, HttpServletRequest request) {
+    @ExceptionHandler(InvalidCashException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCash(InvalidCashException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
     }
 

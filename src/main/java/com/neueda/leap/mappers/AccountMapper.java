@@ -47,6 +47,17 @@ public interface AccountMapper {
     @Update("UPDATE account SET cash_balance = cash_balance + #{amount} WHERE account_id = #{accountId}")
     int addCash(@Param("accountId") int accountId, @Param("amount") java.math.BigDecimal amount);
 
+    /**
+     * Takes cash out in one statement, only if at least `keep` is left afterwards
+     * (cash held back for pending buy orders). Returns 0 when there is not enough.
+     */
+    @Update("""
+            UPDATE account SET cash_balance = cash_balance - #{amount}
+            WHERE account_id = #{accountId} AND cash_balance - #{amount} >= #{keep}
+            """)
+    int withdrawCash(@Param("accountId") int accountId, @Param("amount") java.math.BigDecimal amount,
+                     @Param("keep") java.math.BigDecimal keep);
+
     @Update("UPDATE account SET status = #{status} WHERE account_id = #{accountId}")
     int updateStatus(@Param("accountId") int accountId, @Param("status") String status);
 }

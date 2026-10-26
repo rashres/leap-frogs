@@ -55,6 +55,7 @@ pipeline {
 					  --volume "$WORKSPACE/database/rbac-schema.sql:/docker-entrypoint-initdb.d/4-rbac-schema.sql:ro" \\
 					  --volume "$WORKSPACE/database/rbac-seed.sql:/docker-entrypoint-initdb.d/5-rbac-seed.sql:ro" \\
 					  --volume "$WORKSPACE/database/cash-deposits.sql:/docker-entrypoint-initdb.d/5b-cash-deposits.sql:ro" \\
+					  --volume "$WORKSPACE/database/cash-withdrawals.sql:/docker-entrypoint-initdb.d/5c-cash-withdrawals.sql:ro" \\
 					  --volume "$WORKSPACE/database/load-analytics-schema.sh:/docker-entrypoint-initdb.d/6-load-analytics-schema.sh:ro" \\
 					  --volume "$WORKSPACE/database/capstone-analytics-schema.sql:/analytics-schema.sql:ro" \\
 					  postgres:16

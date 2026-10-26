@@ -1,9 +1,9 @@
 package com.neueda.leap.services;
 
-import com.neueda.leap.mappers.CashDepositMapper;
+import com.neueda.leap.mappers.CashTransferMapper;
 import com.neueda.leap.mappers.OrderMapper;
 import com.neueda.leap.mappers.PriceHistoryMapper;
-import com.neueda.leap.services.domain.CashDeposit;
+import com.neueda.leap.services.domain.CashTransfer;
 import com.neueda.leap.services.domain.Holding;
 import com.neueda.leap.services.domain.Order;
 import com.neueda.leap.services.domain.PortfolioValuePoint;
@@ -26,11 +26,12 @@ import java.util.TreeMap;
 
 /**
  * An account's value over time, worked out from data already stored: today's
- * cash and holdings, filled orders (transactions), cash deposits
- * (cash_deposit) and recorded prices (instrument_price). Nothing is written.
+ * cash and holdings, filled orders (transactions), cash deposits and
+ * withdrawals (cash_deposit, cash_withdrawal) and recorded prices
+ * (instrument_price). Nothing is written.
  *
  * Starting from today's cash and holdings, every order filled and every
- * deposit made after the start of the range is undone, then replayed forwards
+ * deposit or withdrawal made after the start of the range is undone, then replayed forwards
  * point by point. So the last point always matches the account's current cash
  * and holdings.
  */
@@ -43,27 +44,31 @@ public class PortfolioHistoryService {
     private final AccountService accountService;
     private final HoldingService holdingService;
     private final OrderMapper orderMapper;
-    private final CashDepositMapper cashDepositMapper;
+    private final CashTransferMapper cashTransferMapper;
     private final PriceHistoryMapper priceHistoryMapper;
 
     public PortfolioHistoryService(AccountService accountService, HoldingService holdingService,
-                                   OrderMapper orderMapper, CashDepositMapper cashDepositMapper,
+                                   OrderMapper orderMapper, CashTransferMapper cashTransferMapper,
                                    PriceHistoryMapper priceHistoryMapper) {
         this.accountService = accountService;
         this.holdingService = holdingService;
         this.orderMapper = orderMapper;
-        this.cashDepositMapper = cashDepositMapper;
+        this.cashTransferMapper = cashTransferMapper;
         this.priceHistoryMapper = priceHistoryMapper;
     }
 
-    /** One change to the account: a filled order (cash and a holding) or a deposit (cash only, no instrument). */
+    /** One change to the account: a filled order (cash and a holding), or a deposit or withdrawal (cash only, no instrument). */
     private record Move(Instant at, BigDecimal cash, Integer instrumentId, BigDecimal quantity) {
         static Move of(Order order) {
             return new Move(order.getEffectiveTime(), cashChange(order), order.getInstrument().getInstrumentId(), quantityChange(order));
         }
 
-        static Move of(CashDeposit deposit) {
-            return new Move(deposit.getDepositedAt(), deposit.getAmount(), null, BigDecimal.ZERO);
+        static Move deposit(CashTransfer deposit) {
+            return new Move(deposit.getAt(), deposit.getAmount(), null, BigDecimal.ZERO);
+        }
+
+        static Move withdrawal(CashTransfer withdrawal) {
+            return new Move(withdrawal.getAt(), withdrawal.getAmount().negate(), null, BigDecimal.ZERO);
         }
 
         void apply(Map<Integer, BigDecimal> quantities, boolean undo) {
@@ -87,9 +92,11 @@ public class PortfolioHistoryService {
                 .filter(o -> "COMPLETE".equals(o.getStatus()) && o.getEffectiveTime().isAfter(start))
                 .sorted(Comparator.comparing(Order::getEffectiveTime).thenComparing(Order::getOrderId))
                 .map(Move::of);
-        Stream<Move> deposits = cashDepositMapper.findSince(accountId, start).stream().map(Move::of);
+        Stream<Move> deposits = cashTransferMapper.depositsSince(accountId, start).stream().map(Move::deposit);
+        Stream<Move> withdrawals = cashTransferMapper.withdrawalsSince(accountId, start).stream().map(Move::withdrawal);
         // Stable sort: orders keep their id order within the same instant.
-        List<Move> inRange = Stream.concat(orders, deposits).sorted(Comparator.comparing(Move::at)).toList();
+        List<Move> inRange = Stream.of(orders, deposits, withdrawals).flatMap(m -> m)
+                .sorted(Comparator.comparing(Move::at)).toList();
         for (Move move : inRange) {
             cash = cash.subtract(move.cash());
             move.apply(quantities, true);

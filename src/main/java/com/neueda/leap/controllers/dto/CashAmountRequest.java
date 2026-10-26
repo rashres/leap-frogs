@@ -7,8 +7,8 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
 
-/** Cash to add to an account, in USD. */
-public record DepositRequest(
+/** Cash to add to or take out of an account, in USD. */
+public record CashAmountRequest(
         @NotNull(message = "amount is required")
         @DecimalMin(value = "0.01", message = "amount must be at least 0.01")
         @DecimalMax(value = "1000000", message = "amount must be at most 1,000,000")

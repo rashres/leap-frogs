@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.neueda.leap.controllers.dto.AccountResponse;
-import com.neueda.leap.controllers.dto.DepositRequest;
+import com.neueda.leap.controllers.dto.CashAmountRequest;
 import com.neueda.leap.controllers.dto.PortfolioValuePointResponse;
 import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.AccountService;
@@ -30,7 +30,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 /**
- * REST API Controller for Accounts: read accounts and value history, and add cash.
+ * REST API Controller for Accounts: read accounts and value history, and add or withdraw cash.
  */
 @RestController
 @RequestMapping("/accounts")
@@ -134,8 +134,33 @@ public class AccountController {
     })
     public AccountResponse deposit(
             @PathVariable @Parameter(description = "The unique identifier of the account", example = "1001") int id,
-            @Valid @RequestBody DepositRequest body) {
+            @Valid @RequestBody CashAmountRequest body) {
         access.assertCanTrade(id);
         return AccountResponse.from(accountService.deposit(id, body.amount()));
+    }
+
+    /**
+     * POST /api/accounts/{id}/withdrawals
+     */
+    @PostMapping("/{id}/withdrawals")
+    @Operation(summary = "Withdraw cash",
+            description = "Takes cash out of the account and records the withdrawal. Cash held back for pending "
+                    + "buy orders cannot be withdrawn. Only the account's trader (or the Super Admin) may withdraw, "
+                    + "and not while the account is frozen. In USD.")
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Cash withdrawn; returns the account with its new balance",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = AccountResponse.class))
+        ),
+        @ApiResponse(responseCode = "400", description = "Invalid amount, not enough available cash, or the account is frozen"),
+        @ApiResponse(responseCode = "403", description = "Not allowed to withdraw from this account"),
+        @ApiResponse(responseCode = "404", description = "Account not found")
+    })
+    public AccountResponse withdraw(
+            @PathVariable @Parameter(description = "The unique identifier of the account", example = "1001") int id,
+            @Valid @RequestBody CashAmountRequest body) {
+        access.assertCanTrade(id);
+        return AccountResponse.from(accountService.withdraw(id, body.amount()));
     }
 }
