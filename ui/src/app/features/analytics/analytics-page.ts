@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, linkedSignal, signal, untracked } from '@angular/core';
 import {
   AnalyticsService,
   type AnalyticsFilter,
@@ -10,6 +10,7 @@ import { formatStamp, formatUsd } from '../../shared/format';
 import { Icon } from '../../shared/icon';
 import { InstrumentLogo } from '../../shared/instrument-logo';
 import { PageHeader } from '../../shared/page-header';
+import { Pager, pageOf } from '../../shared/pager';
 import { dayLabel, downloadCsv, isoDay, periodLabel } from './analytics-format';
 import { VolumeBars } from './volume-bars';
 import { TPipe } from '../../core/i18n/t.pipe';
@@ -19,7 +20,9 @@ type Preset = '30D' | '90D' | 'YTD' | 'ALL';
 
 /** Reporting data older than this gets a warning; the ETL is meant to run every 15 minutes. */
 const STALE_AFTER_MS = 30 * 60_000;
-const TOP_ROWS = 10;
+/** Rows per page in the instruments and client activity tables. */
+const INSTRUMENTS_PER_PAGE = 10;
+const MONTHS_PER_PAGE = 12;
 const RELOAD_EVERY_MS = 5 * 60_000;
 
 /**
@@ -29,7 +32,7 @@ const RELOAD_EVERY_MS = 5 * 60_000;
 @Component({
   selector: 'leap-analytics-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [TPipe, PageHeader, Icon, InstrumentLogo, VolumeBars],
+  imports: [TPipe, PageHeader, Icon, InstrumentLogo, VolumeBars, Pager],
   templateUrl: './analytics-page.html',
   styleUrl: './analytics-page.scss',
 })
@@ -50,7 +53,6 @@ export class AnalyticsPage {
   readonly instrumentSearch = signal('');
   readonly instrumentSuggestionsOpen = signal(false);
   readonly interval = signal<AnalyticsInterval>('week');
-  readonly showAll = signal(false);
 
   readonly today = isoDay(new Date());
   readonly rangeError = computed(() => {
@@ -131,10 +133,10 @@ export class AnalyticsPage {
     }));
   });
 
-  readonly visibleInstruments = computed(() =>
-    this.showAll() ? this.instrumentRows() : this.instrumentRows().slice(0, TOP_ROWS),
-  );
-  readonly hiddenInstruments = computed(() => Math.max(0, this.instrumentRows().length - TOP_ROWS));
+  readonly instrumentsPerPage = INSTRUMENTS_PER_PAGE;
+  /** Zero-based; back to the first page whenever the report reloads. */
+  readonly instrumentPage = linkedSignal({ source: this.instrumentRows, computation: () => 0 });
+  readonly visibleInstruments = computed(() => pageOf(this.instrumentRows(), this.instrumentPage(), INSTRUMENTS_PER_PAGE));
 
   readonly marketRows = computed(() => {
     const data = this.report.data();
@@ -154,6 +156,9 @@ export class AnalyticsPage {
       value: formatUsd(c.valueTraded),
     })),
   );
+  readonly monthsPerPage = MONTHS_PER_PAGE;
+  readonly clientPage = linkedSignal({ source: this.clientRows, computation: () => 0 });
+  readonly visibleClients = computed(() => pageOf(this.clientRows(), this.clientPage(), MONTHS_PER_PAGE));
 
   constructor() {
     effect(() => {
@@ -216,7 +221,6 @@ export class AnalyticsPage {
       this.instrumentSearch.set('');
       this.symbol.set(null);
       this.instrumentSuggestionsOpen.set(false);
-      this.showAll.set(false);
       return;
     }
 
@@ -229,7 +233,6 @@ export class AnalyticsPage {
     this.instrumentSearch.set(match.symbol);
     this.symbol.set(match.symbol);
     this.instrumentSuggestionsOpen.set(false);
-    this.showAll.set(false);
   }
 
   reset(): void {

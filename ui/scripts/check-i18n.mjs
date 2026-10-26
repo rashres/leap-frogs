@@ -21,7 +21,7 @@ const patterns = [
   new RegExp(String.raw`\b(?:tr|translate|tk)\(\s*` + literal, 'g'),
   // Route titles, and text inputs that are translated where they are shown.
   new RegExp(String.raw`\btitle: ` + literal, 'g'),
-  /\b(?:heading|idleLabel)="([^"{}]+)"/g,
+  /(?<![\w-])(?:heading|idleLabel|label)="([^"{}]+)"/g,
 ];
 
 // `(a ? 'x' : 'y') | t` and `translate(a ? 'x' : 'y')`: every literal inside the brackets.

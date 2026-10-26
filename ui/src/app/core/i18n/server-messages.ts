@@ -10,6 +10,7 @@ const tk = <T extends string>(text: T): T => text;
 export const SERVER_MESSAGES: readonly string[] = [
   tk('A reason is required when freezing an account'),
   tk('Account is frozen; new orders are not allowed'),
+  tk('Account is frozen; deposits are not allowed'),
   tk('An account cannot copy its own trades'),
   tk('An account with that email already exists'),
   tk('Cannot freeze the Super Admin account'),
