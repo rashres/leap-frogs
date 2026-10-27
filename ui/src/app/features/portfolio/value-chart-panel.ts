@@ -18,9 +18,10 @@ import { tk } from '../../core/i18n/i18n.service';
 const LIVE_REFRESH_MS = 15_000;
 
 /**
- * The active account's value (cash plus holdings) over a range, from
- * GET /accounts/{id}/value-history. The API works it out from filled orders and
- * recorded prices; the line ends at the live value shown in the hero.
+ * The value of the active account's holdings over a range, from
+ * GET /accounts/{id}/value-history (its holdingsValue; cash is left out, so
+ * deposits and withdrawals do not show as performance). The API works it out
+ * from filled orders and recorded prices; the line ends at the live value.
  */
 @Component({
   selector: 'leap-value-chart-panel',
@@ -42,7 +43,7 @@ const LIVE_REFRESH_MS = 15_000;
               }
             </p>
           } @else {
-            <p class="chg lbl">{{ 'Cash plus holdings, from filled orders' | t }}</p>
+            <p class="chg lbl">{{ 'Holdings value, from filled orders' | t }}</p>
           }
         </div>
         <div class="segmented" role="group" [attr.aria-label]="'Chart range' | t">
@@ -79,9 +80,9 @@ const LIVE_REFRESH_MS = 15_000;
       </div>
       <p class="note faint">
         @if (todayWindow()) {
-          {{ 'Cash plus today’s holdings at each minute’s price, previous close dotted. Times in Central.' | t }}
+          {{ 'Today’s holdings at each minute’s price, previous close dotted. Cash is not included. Times in Central.' | t }}
         } @else {
-          {{ 'Cash plus each holding at the price recorded at that time, worked out from this account’s filled orders.' | t }}
+          {{ 'Each holding at the price recorded at that time, worked out from this account’s filled orders. Cash is not included.' | t }}
         }
       </p>
     </section>
@@ -195,10 +196,9 @@ export class ValueChartPanel {
 
   /** What today's line is built from; a new key means the line must be rebuilt. */
   private readonly todayKey = computed(() => {
-    const cash = this.portfolio.cash();
-    if (this.range() !== '1D' || cash == null || !this.portfolio.holdings.data()) return null;
+    if (this.range() !== '1D' || !this.portfolio.holdings.data()) return null;
     const held = this.portfolio.positions().map((p) => `${p.symbol}:${p.quantity}`);
-    return `${this.account.activeId()}|${cash}|${held.join(',')}`;
+    return `${this.account.activeId()}|${held.join(',')}`;
   });
   /** 1D: today's value minute by minute from Yahoo; the recorded history is the fallback. */
   private readonly today = signal<{ key: string; series: IntradaySeries | null } | null>(null);
@@ -220,12 +220,12 @@ export class ValueChartPanel {
     return this.portfolio.positions().some((p) => marketFor(p.exchange)?.isOpen(now) ?? false);
   });
 
-  /** Value per point, ending at the live total from the hero. Filter out flat lines (duplicate prices). */
+  /** Holdings value per point, ending at the live holdings value. Filter out flat lines (duplicate prices). */
   readonly series = computed<readonly PricePoint[]>(() => {
     const today = this.todaySeries();
     if (today) return today.points;
     if (today === undefined && this.range() === '1D') return [];
-    const rawPoints = (this.history.data() ?? []).map((p) => ({ at: new Date(p.at), price: p.totalValue }));
+    const rawPoints = (this.history.data() ?? []).map((p) => ({ at: new Date(p.at), price: p.holdingsValue }));
     
     // Filter consecutive duplicates while keeping the first and last
     const points: PricePoint[] = [];
@@ -235,8 +235,8 @@ export class ValueChartPanel {
       }
     }
     
-    const live = this.portfolio.totalValue();
-    if (live != null && points.length && points[points.length - 1].price !== live) {
+    const live = this.portfolio.marketValue();
+    if (points.length && points[points.length - 1].price !== live) {
       points.push({ at: new Date(), price: live });
     }
     return points;
@@ -258,7 +258,7 @@ export class ValueChartPanel {
   });
 
   readonly scrubbedText = computed(() => formatUsd(this.scrubbed()?.price));
-  readonly totalText = computed(() => formatUsd(this.todaySeries()?.points.at(-1)?.price ?? this.portfolio.totalValue()));
+  readonly totalText = computed(() => formatUsd(this.todaySeries()?.points.at(-1)?.price ?? this.portfolio.marketValue()));
 
   constructor() {
     effect(() => {
@@ -289,10 +289,9 @@ export class ValueChartPanel {
 
   private async loadToday(key: string): Promise<void> {
     const positions = this.portfolio.positions();
-    const cash = this.portfolio.cash() ?? 0;
     const loaded = await Promise.all(positions.map((p) => this.intraday.series(p.symbol)));
     const series = loaded.every((s) => s != null)
-      ? portfolioIntraday(positions.map((p, i) => ({ quantity: p.quantity, series: loaded[i]! })), cash)
+      ? portfolioIntraday(positions.map((p, i) => ({ quantity: p.quantity, series: loaded[i]! })), 0)
       : null;
     if (this.todayKey() !== key) return;
     // A failed refresh keeps the line already drawn.

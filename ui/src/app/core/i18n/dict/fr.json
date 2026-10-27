@@ -739,11 +739,8 @@
   "Live prices": "Prix en direct",
   "Portfolio performance": "Performance du portefeuille",
   "at {time}": "à {time}",
-  "Cash plus holdings, from filled orders": "Liquidités plus positions, d’après les ordres exécutés",
   "Loading value history…": "Chargement de l’historique de valeur…",
   "No value history for this account yet.": "Pas encore d’historique de valeur pour ce compte.",
-  "Cash plus today’s holdings at each minute’s price, previous close dotted. Times in Central.": "Liquidités plus positions du jour au prix de chaque minute, clôture précédente en pointillés. Heures du Centre (États-Unis).",
-  "Cash plus each holding at the price recorded at that time, worked out from this account’s filled orders.": "Liquidités plus chaque position au prix enregistré à ce moment-là, calculé d’après les ordres exécutés de ce compte.",
   "Past day": "Dernier jour",
   "My watchlist": "Ma liste de suivi",
   "Search to add instruments": "Rechercher pour ajouter des instruments",
@@ -816,5 +813,8 @@
   "Log In to Your Account": "Se connecter à votre compte",
   "amount must be at most 1,000,000": "Le montant doit être au maximum de 1 000 000",
   "{amount} can be withdrawn.": "{amount} peuvent être retirés.",
-  "Pending buy orders left without the cash are rejected when they try to fill.": "Les ordres d’achat en attente qui n’ont plus les liquidités nécessaires seront refusés au moment de s’exécuter."
+  "Pending buy orders left without the cash are rejected when they try to fill.": "Les ordres d’achat en attente qui n’ont plus les liquidités nécessaires seront refusés au moment de s’exécuter.",
+  "Holdings value, from filled orders": "Valeur des positions, d’après les ordres exécutés",
+  "Today’s holdings at each minute’s price, previous close dotted. Cash is not included. Times in Central.": "Positions du jour au prix de chaque minute, clôture précédente en pointillés. Liquidités non incluses. Heures du Centre (États-Unis).",
+  "Each holding at the price recorded at that time, worked out from this account’s filled orders. Cash is not included.": "Chaque position au prix enregistré à ce moment-là, calculé d’après les ordres exécutés de ce compte. Liquidités non incluses."
 }
