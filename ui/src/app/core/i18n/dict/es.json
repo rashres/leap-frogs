@@ -739,11 +739,8 @@
   "Live prices": "Precios en vivo",
   "Portfolio performance": "Rendimiento de la cartera",
   "at {time}": "a las {time}",
-  "Cash plus holdings, from filled orders": "Efectivo más posiciones, a partir de las órdenes ejecutadas",
   "Loading value history…": "Cargando historial de valor…",
   "No value history for this account yet.": "Todavía no hay historial de valor para esta cuenta.",
-  "Cash plus today’s holdings at each minute’s price, previous close dotted. Times in Central.": "Efectivo más las posiciones de hoy al precio de cada minuto; el cierre anterior va punteado. Horas en hora del Centro.",
-  "Cash plus each holding at the price recorded at that time, worked out from this account’s filled orders.": "Efectivo más cada posición al precio registrado en ese momento, calculado a partir de las órdenes ejecutadas de esta cuenta.",
   "Past day": "Último día",
   "My watchlist": "Mi lista de seguimiento",
   "Search to add instruments": "Busca para agregar instrumentos",
@@ -816,5 +813,8 @@
   "Log In to Your Account": "Iniciar sesión en tu cuenta",
   "amount must be at most 1,000,000": "El monto debe ser como máximo 1,000,000",
   "{amount} can be withdrawn.": "Puedes retirar {amount}.",
-  "Pending buy orders left without the cash are rejected when they try to fill.": "Las órdenes de compra pendientes que se queden sin efectivo se rechazarán al intentar ejecutarse."
+  "Pending buy orders left without the cash are rejected when they try to fill.": "Las órdenes de compra pendientes que se queden sin efectivo se rechazarán al intentar ejecutarse.",
+  "Holdings value, from filled orders": "Valor de las posiciones, a partir de las órdenes ejecutadas",
+  "Today’s holdings at each minute’s price, previous close dotted. Cash is not included. Times in Central.": "Las posiciones de hoy al precio de cada minuto; el cierre anterior va punteado. No incluye efectivo. Horas en hora del Centro.",
+  "Each holding at the price recorded at that time, worked out from this account’s filled orders. Cash is not included.": "Cada posición al precio registrado en ese momento, calculado a partir de las órdenes ejecutadas de esta cuenta. No incluye efectivo."
 }

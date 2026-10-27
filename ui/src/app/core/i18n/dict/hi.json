@@ -739,11 +739,8 @@
   "Live prices": "लाइव कीमतें",
   "Portfolio performance": "पोर्टफ़ोलियो प्रदर्शन",
   "at {time}": "{time} पर",
-  "Cash plus holdings, from filled orders": "नकद और होल्डिंग, पूरे हुए ऑर्डर से",
   "Loading value history…": "मूल्य का इतिहास लोड हो रहा है…",
   "No value history for this account yet.": "इस खाते का अभी कोई मूल्य इतिहास नहीं।",
-  "Cash plus today’s holdings at each minute’s price, previous close dotted. Times in Central.": "नकद और आज की होल्डिंग हर मिनट की कीमत पर, पिछला बंद भाव बिंदीदार। समय सेंट्रल टाइम में।",
-  "Cash plus each holding at the price recorded at that time, worked out from this account’s filled orders.": "नकद और हर होल्डिंग उस समय दर्ज कीमत पर, इस खाते के पूरे हुए ऑर्डर से निकाला गया।",
   "Past day": "पिछला दिन",
   "My watchlist": "मेरी वॉचलिस्ट",
   "Search to add instruments": "इंस्ट्रूमेंट जोड़ने के लिए खोजें",
@@ -816,5 +813,8 @@
   "Log In to Your Account": "अपने खाते में लॉग इन करें",
   "amount must be at most 1,000,000": "राशि अधिकतम 1,000,000 हो सकती है",
   "{amount} can be withdrawn.": "{amount} निकाले जा सकते हैं।",
-  "Pending buy orders left without the cash are rejected when they try to fill.": "जिन पेंडिंग खरीद ऑर्डर के लिए नकद नहीं बचेगा, वे पूरा होने की कोशिश पर अस्वीकार हो जाएँगे।"
+  "Pending buy orders left without the cash are rejected when they try to fill.": "जिन पेंडिंग खरीद ऑर्डर के लिए नकद नहीं बचेगा, वे पूरा होने की कोशिश पर अस्वीकार हो जाएँगे।",
+  "Holdings value, from filled orders": "होल्डिंग का मूल्य, पूरे हुए ऑर्डर से",
+  "Today’s holdings at each minute’s price, previous close dotted. Cash is not included. Times in Central.": "आज की होल्डिंग हर मिनट की कीमत पर, पिछला बंद भाव बिंदीदार। नकद शामिल नहीं है। समय सेंट्रल टाइम में।",
+  "Each holding at the price recorded at that time, worked out from this account’s filled orders. Cash is not included.": "हर होल्डिंग उस समय दर्ज कीमत पर, इस खाते के पूरे हुए ऑर्डर से निकाली गई। नकद शामिल नहीं है।"
 }

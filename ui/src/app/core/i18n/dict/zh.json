@@ -739,11 +739,8 @@
   "Live prices": "实时价格",
   "Portfolio performance": "投资组合表现",
   "at {time}": "{time} 时",
-  "Cash plus holdings, from filled orders": "现金加持仓，根据已成交订单计算",
   "Loading value history…": "正在加载价值历史…",
   "No value history for this account yet.": "此账户还没有价值历史。",
-  "Cash plus today’s holdings at each minute’s price, previous close dotted. Times in Central.": "现金加今日持仓按每分钟价格计算，前收盘价以虚线表示。时间为美国中部时间。",
-  "Cash plus each holding at the price recorded at that time, worked out from this account’s filled orders.": "现金加每个持仓在当时记录的价格，根据此账户的已成交订单计算。",
   "Past day": "过去一天",
   "My watchlist": "我的自选",
   "Search to add instruments": "搜索以添加交易品种",
@@ -816,5 +813,8 @@
   "Log In to Your Account": "登录你的账户",
   "amount must be at most 1,000,000": "金额最多为 1,000,000",
   "{amount} can be withdrawn.": "可取出 {amount}。",
-  "Pending buy orders left without the cash are rejected when they try to fill.": "缺少现金的待成交买单会在尝试成交时被拒绝。"
+  "Pending buy orders left without the cash are rejected when they try to fill.": "缺少现金的待成交买单会在尝试成交时被拒绝。",
+  "Holdings value, from filled orders": "持仓价值，根据已成交订单计算",
+  "Today’s holdings at each minute’s price, previous close dotted. Cash is not included. Times in Central.": "今日持仓按每分钟价格计算，前收盘价以虚线表示。不含现金。时间为美国中部时间。",
+  "Each holding at the price recorded at that time, worked out from this account’s filled orders. Cash is not included.": "每个持仓在当时记录的价格，根据此账户的已成交订单计算。不含现金。"
 }
