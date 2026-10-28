@@ -3,8 +3,8 @@ import { ApiError, toApiError } from '../api/api-error';
 import { InstrumentsService } from '../api/instruments.service';
 import type { Instrument } from '../api/models';
 
-/** The price fetcher refreshes instrument.last_price every few seconds. */
-const REFRESH_MS = 10_000;
+/** The API refreshes instrument.last_price every 3 seconds (price.update.interval.ms); read it as often. */
+const REFRESH_MS = 3_000;
 
 /**
  * Every instrument from GET /api/instruments, re-read on a timer so lastPrice
