@@ -38,9 +38,11 @@ We use **Gitflow** to keep things organized:
 - **OrderExecutor** - Executes trades and updates holdings
 - **Main** - Interactive demo showing trading workflow
 
-Market prices are **not** simulated in Java. `etl/price_fetcher.py` pulls them
-from Yahoo Finance into `instrument.last_price`, and orders are priced from
-that column at the moment they are created.
+Market prices are **not** simulated. While the API runs, it pulls them from
+Yahoo Finance into `instrument.last_price` every 3 seconds
+(`price.update.interval.ms`), all instruments in one request per 20 symbols,
+and orders are priced from that column at the moment they are created.
+`etl/price_fetcher.py` does the same once, without the API.
 
 ### Database Layer (`database/`)
 - **leapfrogsdb** - Source database (accounts, transactions, instruments)
@@ -116,13 +118,16 @@ Seeded users share the local demo password from `LEAP_DEMO_PASSWORD` in your `.e
 | `david` | TRADING_OPERATIONS | http://localhost:4200/login → Operations |
 
 ### 4. Fetch Market Prices
+The API keeps prices live by itself once it is running (every 3 seconds; set
+`price.update.enabled=false` to turn it off). New instruments also get a year
+of price history the first time they are priced. To fetch prices once without
+the API:
 ```bash
 docker compose run --rm price-fetcher
 ```
 Pulls live prices from Yahoo Finance (yfinance) into `instrument.last_price`.
 Runs in a container, so yfinance does not need to be installed on the host.
-The API prices orders from this column, so **run this before placing orders** —
-an instrument with no price yet is rejected rather than traded at a fake price.
+An instrument with no price yet is rejected rather than traded at a fake price.
 Re-run it (or schedule it) to keep prices current.
 
 The first run also loads a year of price history into `instrument_price`. Once
@@ -213,6 +218,13 @@ tables (safe to run more than once):
 ```bash
 docker exec -i leap-frogs-postgres psql -U postgres -d leapfrogsdb < database/cash-deposits.sql
 docker exec -i leap-frogs-postgres psql -U postgres -d leapfrogsdb < database/cash-withdrawals.sql
+```
+
+To add the newer instruments (NVDA, GOOGL, META, JPM, SOL-USD) to an existing
+database (safe to run more than once):
+
+```bash
+docker exec -i leap-frogs-postgres psql -U postgres -d leapfrogsdb < database/more-instruments.sql
 ```
 
 Do not run `docker compose down -v` unless you intend to delete the database
