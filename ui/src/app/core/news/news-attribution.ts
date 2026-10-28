@@ -138,6 +138,19 @@ export const COVERAGE: Readonly<Record<string, Coverage>> = {
     exclude: ['nikola tesla', 'tesla coil'],
   },
   MSFT: { names: ['msft', 'microsoft'], ambiguous: [], exclude: [] },
+  // Alphabet trades as GOOGL; most headlines say Google.
+  GOOGL: { names: ['googl', 'goog', 'alphabet inc', 'google'], ambiguous: ['alphabet'], exclude: [] },
+  // "Meta" alone is an ordinary word ("meta-analysis"), so it needs a market word nearby.
+  META: {
+    names: ['meta platforms', 'facebook parent', 'instagram parent'],
+    ambiguous: ['meta'],
+    exclude: ['meta analysis', 'meta data'],
+  },
+  JPM: {
+    names: ['jpm', 'jpmorgan', 'jp morgan', 'jpmorgan chase'],
+    ambiguous: ['chase'],
+    exclude: ['car chase', 'police chase', 'paper chase', 'chase down'],
+  },
   AMZN: {
     names: ['amzn', 'amazon com', 'amazon web services'],
     ambiguous: ['amazon'],

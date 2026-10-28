@@ -5,9 +5,13 @@ import com.neueda.leap.controllers.dto.CopySettingsRequest;
 import com.neueda.leap.controllers.dto.CopySubscriptionRequest;
 import com.neueda.leap.controllers.dto.CopySubscriptionResponse;
 import com.neueda.leap.controllers.dto.CopyTraderResponse;
+import com.neueda.leap.controllers.dto.HoldingResponse;
 import com.neueda.leap.controllers.dto.OrderResponse;
+import com.neueda.leap.controllers.dto.PortfolioValuePointResponse;
 import com.neueda.leap.security.AccessControl;
 import com.neueda.leap.services.CopyTradingService;
+import com.neueda.leap.services.HoldingService;
+import com.neueda.leap.services.PortfolioHistoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -28,10 +32,15 @@ import java.util.List;
 public class CopyTradingController {
 
     private final CopyTradingService copyTradingService;
+    private final HoldingService holdingService;
+    private final PortfolioHistoryService portfolioHistoryService;
     private final AccessControl access;
 
-    public CopyTradingController(CopyTradingService copyTradingService, AccessControl access) {
+    public CopyTradingController(CopyTradingService copyTradingService, HoldingService holdingService,
+                                 PortfolioHistoryService portfolioHistoryService, AccessControl access) {
         this.copyTradingService = copyTradingService;
+        this.holdingService = holdingService;
+        this.portfolioHistoryService = portfolioHistoryService;
         this.access = access;
     }
 
@@ -73,6 +82,45 @@ public class CopyTradingController {
             @PathVariable @Parameter(description = "The unique identifier of the lead trader", example = "1") int copyTraderId) {
         return copyTradingService.findTraderOrders(copyTraderId).stream()
                 .map(OrderResponse::from)
+                .toList();
+    }
+
+    /**
+     * GET /api/copy-traders/{copyTraderId}/holdings
+     *
+     * A lead trader's portfolio is public to anyone signed in, like their trades,
+     * so copiers can see what they would be following. The /accounts/{id}
+     * endpoints stay limited to the account's own trader and staff.
+     */
+    @GetMapping("/copy-traders/{copyTraderId}/holdings")
+    @Operation(summary = "List a lead trader's holdings", description = "What the trader holds right now")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Holdings retrieved (empty list if none)"),
+        @ApiResponse(responseCode = "404", description = "Lead trader not found")
+    })
+    public List<HoldingResponse> listTraderHoldings(
+            @PathVariable @Parameter(description = "The unique identifier of the lead trader", example = "1") int copyTraderId) {
+        return holdingService.findByAccountId(copyTradingService.traderAccountId(copyTraderId)).stream()
+                .map(HoldingResponse::from)
+                .toList();
+    }
+
+    /**
+     * GET /api/copy-traders/{copyTraderId}/value-history?range=1M
+     */
+    @GetMapping("/copy-traders/{copyTraderId}/value-history")
+    @Operation(summary = "Get a lead trader's value history",
+            description = "The trader's account value (cash plus holdings) over a range, oldest first. In USD.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Value history retrieved"),
+        @ApiResponse(responseCode = "400", description = "Unknown range"),
+        @ApiResponse(responseCode = "404", description = "Lead trader not found")
+    })
+    public List<PortfolioValuePointResponse> getTraderValueHistory(
+            @PathVariable @Parameter(description = "The unique identifier of the lead trader", example = "1") int copyTraderId,
+            @RequestParam(defaultValue = "1M") @Parameter(description = "One of 1D, 1W, 1M, 3M, 1Y") String range) {
+        return portfolioHistoryService.valueHistory(copyTradingService.traderAccountId(copyTraderId), ChartRanges.parse(range)).stream()
+                .map(PortfolioValuePointResponse::from)
                 .toList();
     }
 

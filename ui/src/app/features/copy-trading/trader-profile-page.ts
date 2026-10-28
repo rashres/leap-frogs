@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { AccountsService } from '../../core/api/accounts.service';
 import { CopyTradingService } from '../../core/api/copy-trading.service';
 import { createLoader } from '../../core/api/loader';
 import type { PriceRange } from '../../core/api/models';
@@ -45,7 +44,6 @@ const SLICE_COLORS = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)', '
 })
 export class TraderProfilePage {
   private readonly api = inject(CopyTradingService);
-  private readonly accountsApi = inject(AccountsService);
   private readonly ordersApi = inject(OrdersService);
   private readonly market = inject(MarketStore);
   private readonly intraday = inject(IntradayService);
@@ -57,9 +55,10 @@ export class TraderProfilePage {
 
   readonly trader = createLoader(() => this.api.trader(this.traderId()));
   readonly trades = createLoader(() => this.api.traderOrders(this.traderId()));
-  readonly holdings = createLoader(() => this.accountsApi.holdings(this.trader.data()!.accountId));
+  // Through /copy-traders/{id}: a trader may not read another account's /accounts/{id} endpoints.
+  readonly holdings = createLoader(() => this.api.traderHoldings(this.traderId()));
   readonly subscriptions = createLoader(() => this.api.subscriptions(this.account.activeId()!));
-  readonly history = createLoader(() => this.accountsApi.valueHistory(this.trader.data()!.accountId, this.range()));
+  readonly history = createLoader(() => this.api.traderValueHistory(this.traderId(), this.range()));
 
   readonly ranges: readonly PriceRange[] = ['1D', '1W', '1M', '3M', '1Y', 'All'];
   readonly range = signal<PriceRange>('1D');

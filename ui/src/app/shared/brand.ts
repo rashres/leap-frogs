@@ -36,6 +36,9 @@ const BRANDS: Readonly<Record<string, Brand>> = {
   BTC: { bg: '#f7931a', fg: '#ffffff', mark: 'bitcoin' },
   ETH: { bg: '#5b73e8', fg: '#ffffff', mark: 'ethereum' },
   SOL: { bg: '#0e0f16', fg: '#14f195', mark: 'solana', gradient: ['#9945ff', '#14f195'] },
+  GOOGL: { bg: '#ffffff', fg: '#4285f4', mark: 'google' },
+  META: { bg: '#0866ff', fg: '#ffffff', mark: 'meta' },
+  JPM: { bg: '#117aca', fg: '#ffffff', mark: 'chase' },
 };
 
 const FALLBACK: Brand = { bg: '#1c242e', fg: '#9aa6b4', glyph: 'mono', mono: '•' };

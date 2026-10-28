@@ -2,11 +2,14 @@ package com.neueda.leap.mappers;
 
 import com.neueda.leap.services.domain.Instrument;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Result;
 import org.apache.ibatis.annotations.ResultMap;
 import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Mapper
@@ -36,4 +39,8 @@ public interface InstrumentMapper {
     @Select(SELECT_WITH_EXCHANGE + " WHERE i.instrument_id = #{instrumentId}")
     @ResultMap("instrumentWithExchange")
     Instrument findByInstrumentId(int instrumentId);
+
+    /** The latest price in USD, as the live price updater writes it. */
+    @Update("UPDATE instrument SET last_price = #{price}, price_updated_at = now() WHERE instrument_id = #{instrumentId}")
+    int updateLastPrice(@Param("instrumentId") int instrumentId, @Param("price") BigDecimal price);
 }

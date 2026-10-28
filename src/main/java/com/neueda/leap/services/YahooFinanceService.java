@@ -89,6 +89,16 @@ public class YahooFinanceService {
         return get(pathAndQuery, false, liveFresh);
     }
 
+    /**
+     * Yahoo's JSON straight from the source, never from the cache: for the live
+     * price updater, which polls every few seconds and must not reuse an old answer.
+     *
+     * @throws ResponseStatusException as {@link #get}, with no cached fallback
+     */
+    public String getUncached(String pathAndQuery) {
+        return fetch(pathAndQuery, false);
+    }
+
     /** As {@link #get}, for Yahoo's RSS feeds, which answer XML instead of JSON. */
     public String getXml(String pathAndQuery) {
         return get(pathAndQuery, true, fresh);
