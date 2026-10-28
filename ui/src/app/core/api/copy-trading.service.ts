@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type { Observable } from 'rxjs';
-import type { CopiedOrder, CopySettings, CopySubscription, CopyTrader, Order } from './models';
+import type { CopiedOrder, CopySettings, CopySubscription, CopyTrader, Holding, Order, PortfolioValuePointDto, PriceRange } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class CopyTradingService {
@@ -18,6 +18,16 @@ export class CopyTradingService {
   /** Every filled order of the trader, newest first. */
   traderOrders(copyTraderId: number): Observable<Order[]> {
     return this.http.get<Order[]>(`/api/copy-traders/${copyTraderId}/orders`);
+  }
+
+  /** The lead trader's holdings. Public to anyone signed in, unlike /accounts/{id}/holdings. */
+  traderHoldings(copyTraderId: number): Observable<Holding[]> {
+    return this.http.get<Holding[]>(`/api/copy-traders/${copyTraderId}/holdings`);
+  }
+
+  /** The lead trader's value over a range. Public to anyone signed in, unlike /accounts/{id}/value-history. */
+  traderValueHistory(copyTraderId: number, range: PriceRange): Observable<PortfolioValuePointDto[]> {
+    return this.http.get<PortfolioValuePointDto[]>(`/api/copy-traders/${copyTraderId}/value-history`, { params: { range } });
   }
 
   subscriptions(accountId: number): Observable<CopySubscription[]> {

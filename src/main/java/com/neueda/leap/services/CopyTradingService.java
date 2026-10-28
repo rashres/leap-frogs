@@ -68,6 +68,11 @@ public class CopyTradingService {
         return summarize(traderById(copyTraderId));
     }
 
+    /** The trading account behind a lead trader, for the trader's public holdings and value history. */
+    public int traderAccountId(int copyTraderId) {
+        return traderById(copyTraderId).getAccountId();
+    }
+
     /** Every filled order of the trader, newest first. */
     public List<Order> findTraderOrders(int copyTraderId) {
         CopyTrader trader = traderById(copyTraderId);
